@@ -11,44 +11,64 @@ export async function getCurrentProfile(): Promise<UserProfile | null> {
       return null;
     }
 
-    const profile = await prisma.profile.findUnique({
-      where: { id: user.id },
-    });
+    const defaultName = user.user_metadata?.name || user.email?.split('@')[0] || 'User';
 
-    if (profile) {
-      return {
-        id: profile.id,
-        name: profile.name,
-        email: profile.email,
-        role: profile.role,
-        avatarUrl: profile.avatarUrl,
-        plan: profile.plan,
-        createdAt: profile.createdAt.toISOString(),
-      };
+    // 1. Try fetching via Supabase HTTPS REST API
+    try {
+      const { data: sbProfile, error: sbErr } = await supabase
+        .from('Profile')
+        .select('*')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (!sbErr && sbProfile) {
+        return {
+          id: sbProfile.id,
+          name: sbProfile.name || defaultName,
+          email: sbProfile.email || user.email || '',
+          role: sbProfile.role || 'USER',
+          avatarUrl: sbProfile.avatarUrl,
+          plan: sbProfile.plan || 'Free',
+          createdAt: typeof sbProfile.createdAt === 'string' ? sbProfile.createdAt : new Date().toISOString(),
+        };
+      }
+    } catch (sbException) {
+      console.warn('Supabase profile query warning:', sbException);
     }
 
-    // Fallback: Create profile if trigger was delayed or in local environment
-    const newProfile = await prisma.profile.create({
-      data: {
-        id: user.id,
-        email: user.email || 'user@easydoc.com',
-        name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
-        role: 'USER',
-        plan: 'Free',
-      },
-    });
+    // 2. Fallback: Query or create via Prisma
+    try {
+      const profile = await prisma.profile.findUnique({
+        where: { id: user.id },
+      });
 
+      if (profile) {
+        return {
+          id: profile.id,
+          name: profile.name,
+          email: profile.email,
+          role: profile.role,
+          avatarUrl: profile.avatarUrl,
+          plan: profile.plan,
+          createdAt: profile.createdAt.toISOString(),
+        };
+      }
+    } catch (prismaErr) {
+      console.warn('Prisma profile fetch warning:', prismaErr);
+    }
+
+    // 3. Fallback: Return basic profile constructed from Supabase Auth session
     return {
-      id: newProfile.id,
-      name: newProfile.name,
-      email: newProfile.email,
-      role: newProfile.role,
-      avatarUrl: newProfile.avatarUrl,
-      plan: newProfile.plan,
-      createdAt: newProfile.createdAt.toISOString(),
+      id: user.id,
+      name: defaultName,
+      email: user.email || 'user@easydoc.com',
+      role: 'USER',
+      avatarUrl: null,
+      plan: 'Free',
+      createdAt: new Date().toISOString(),
     };
   } catch (err) {
-    console.error('Error fetching current profile:', err);
+    console.error('Error in getCurrentProfile:', err);
     return null;
   }
 }
