@@ -21,6 +21,18 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Try Supabase HTTPS REST API first (firewall-proof)
+    const { data: sbDocs, error: sbErr } = await supabase
+      .from('Document')
+      .select('*, template:Template(*)')
+      .eq('userId', user.id)
+      .order('updatedAt', { ascending: false });
+
+    if (!sbErr && sbDocs) {
+      return NextResponse.json({ documents: sbDocs });
+    }
+
+    // Fallback to Prisma
     const documents = await prisma.document.findMany({
       where: { userId: user.id },
       include: { template: true },
@@ -29,7 +41,7 @@ export async function GET() {
 
     return NextResponse.json({ documents });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json({ documents: [] });
   }
 }
 
@@ -51,6 +63,24 @@ export async function POST(request: Request) {
 
     const { title, content, templateId, status } = parsed.data;
 
+    // Try Supabase HTTPS REST first
+    const { data: inserted, error: sbErr } = await supabase
+      .from('Document')
+      .insert({
+        userId: user.id,
+        title,
+        content,
+        templateId: templateId || null,
+        status: status || 'DRAFT',
+      })
+      .select()
+      .single();
+
+    if (!sbErr && inserted) {
+      return NextResponse.json({ document: inserted });
+    }
+
+    // Fallback to Prisma
     const newDocument = await prisma.document.create({
       data: {
         userId: user.id,
