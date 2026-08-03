@@ -1,0 +1,78 @@
+// Prisma Schema for EasyDoc
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum DocStatus {
+  DRAFT
+  COMPLETE
+}
+
+model Profile {
+  id            String         @id @default(uuid()) // matches Supabase auth.users.id
+  name          String
+  email         String         @unique
+  role          Role           @default(USER)
+  avatarUrl     String?
+  plan          String         @default("Free")
+  createdAt     DateTime       @default(now())
+  documents     Document[]
+  aiRequests    AIRequest[]
+  notifications Notification[]
+}
+
+model Document {
+  id         String    @id @default(uuid())
+  userId     String
+  user       Profile   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title      String
+  content    String    // rich text / markdown / HTML
+  templateId String?
+  template   Template? @relation(fields: [templateId], references: [id])
+  status     DocStatus @default(DRAFT)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+model Template {
+  id           String     @id @default(uuid())
+  name         String
+  category     String
+  description  String
+  previewImage String?
+  usageCount   Int        @default(0)
+  documents    Document[]
+}
+
+model AIRequest {
+  id             String   @id @default(uuid())
+  userId         String
+  user           Profile  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  prompt         String
+  provider       String   // "openai" | "anthropic" | "gemini"
+  responseTimeMs Int
+  success        Boolean  @default(true)
+  createdAt      DateTime @default(now())
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      Profile  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message   String
+  type      String   @default("info") // success | error | info
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
