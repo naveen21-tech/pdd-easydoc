@@ -24,7 +24,7 @@ function GenerateFormAndPreview() {
 
   const [title, setTitle] = useState('');
   const [tone, setTone] = useState('Professional');
-  const [provider, setProvider] = useState<AIProvider>('openai');
+  const [provider, setProvider] = useState<AIProvider>('gemini');
   const [instructions, setInstructions] = useState('');
   const [templateName, setTemplateName] = useState('');
   const [templateId, setTemplateId] = useState('');
@@ -149,9 +149,9 @@ function GenerateFormAndPreview() {
               </label>
               <div className="grid grid-cols-3 gap-2">
                 {[
+                  { id: 'gemini', name: 'Google Gemini', icon: Zap },
                   { id: 'openai', name: 'OpenAI GPT-4', icon: Bot },
                   { id: 'anthropic', name: 'Claude 3.5', icon: Cpu },
-                  { id: 'gemini', name: 'Gemini 1.5', icon: Zap },
                 ].map((p) => {
                   const Icon = p.icon;
                   const selected = provider === p.id;
