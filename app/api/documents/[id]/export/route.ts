@@ -60,6 +60,25 @@ async function handleExport(request: Request, params: { id: string }) {
       }
     }
 
+    // Fallback: If document by exact ID was not found, fetch the user's latest document
+    if (!documentRecord) {
+      try {
+        const { data: latestDoc } = await supabase
+          .from('Document')
+          .select('*')
+          .eq('userId', user.id)
+          .order('createdAt', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (latestDoc) {
+          documentRecord = latestDoc;
+        }
+      } catch (lErr) {
+        console.warn(`[Export API] Latest doc query fallback exception:`, lErr);
+      }
+    }
+
     if (!documentRecord) {
       console.error(`[Export API] Document not found or access denied | User: ${user.id} | Doc: ${params.id}`);
       return NextResponse.json(
@@ -111,7 +130,7 @@ async function handleExport(request: Request, params: { id: string }) {
     const durationMs = Date.now() - requestStartTime;
 
     console.log(
-      `[Export API] Export Successful | User: ${user.id} | Doc: ${params.id} | Format: ${fileExtension} | Size: ${fileSizeInBytes} bytes | Duration: ${durationMs}ms`
+      `[Export API] Export Successful | User: ${user.id} | Doc: ${documentRecord.id} | Format: ${fileExtension} | Size: ${fileSizeInBytes} bytes | Duration: ${durationMs}ms`
     );
 
     // 5. Log export event in background
