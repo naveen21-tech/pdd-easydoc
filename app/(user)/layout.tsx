@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   Sparkles,
   FileText,
+  FileCheck2,
   Clock,
   User,
   LogOut,
@@ -78,6 +79,7 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Generate AI', href: '/generate', icon: Sparkles },
     { name: 'Templates', href: '/templates', icon: FileText },
+    { name: 'ATS Resume', href: '/resume-builder', icon: FileCheck2 },
     { name: 'History', href: '/history', icon: Clock },
     { name: 'Profile', href: '/profile', icon: User },
   ];
