@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import {
   FileText,
   Search,
@@ -210,13 +211,13 @@ export default function HistoryPage() {
 
                 <div className="pt-4 border-t border-slate-100 space-y-3">
                   <div className="flex items-center justify-between gap-2">
-                    <button
-                      onClick={() => handleOpenDoc(doc)}
-                      className="inline-flex items-center space-x-1 text-xs font-semibold text-brand-600 hover:text-blue-700 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100"
+                    <Link
+                      href={`/editor/${doc.id}`}
+                      className="inline-flex items-center space-x-1 text-xs font-semibold text-brand-600 hover:text-blue-700 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100 transition-all hover:shadow-sm"
                     >
                       <Edit3 className="w-3.5 h-3.5" />
-                      <span>View / Edit</span>
-                    </button>
+                      <span>Edit in Word Editor</span>
+                    </Link>
 
                     <button
                       onClick={() => handleDeleteDoc(doc.id)}
