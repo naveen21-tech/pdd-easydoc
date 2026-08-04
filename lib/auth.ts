@@ -32,7 +32,10 @@ export async function getCurrentProfile(): Promise<UserProfile | null> {
           createdAt: typeof sbProfile.createdAt === 'string' ? sbProfile.createdAt : new Date().toISOString(),
         };
       }
-    } catch (sbException) {
+    } catch (sbException: any) {
+      if (sbException?.digest === 'DYNAMIC_SERVER_USAGE' || sbException?.message?.includes('DYNAMIC_SERVER_USAGE')) {
+        throw sbException;
+      }
       console.warn('Supabase profile query warning:', sbException);
     }
 
@@ -53,7 +56,10 @@ export async function getCurrentProfile(): Promise<UserProfile | null> {
           createdAt: profile.createdAt.toISOString(),
         };
       }
-    } catch (prismaErr) {
+    } catch (prismaErr: any) {
+      if (prismaErr?.digest === 'DYNAMIC_SERVER_USAGE' || prismaErr?.message?.includes('DYNAMIC_SERVER_USAGE')) {
+        throw prismaErr;
+      }
       console.warn('Prisma profile fetch warning:', prismaErr);
     }
 
@@ -67,8 +73,11 @@ export async function getCurrentProfile(): Promise<UserProfile | null> {
       plan: 'Free',
       createdAt: new Date().toISOString(),
     };
-  } catch (err) {
-    console.error('Error in getCurrentProfile:', err);
+  } catch (err: any) {
+    if (err?.digest === 'DYNAMIC_SERVER_USAGE' || err?.message?.includes('DYNAMIC_SERVER_USAGE')) {
+      throw err; // Let Next.js handle dynamic route switching silently
+    }
+    console.warn('getCurrentProfile session lookup:', err?.message || err);
     return null;
   }
 }
