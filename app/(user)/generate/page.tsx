@@ -180,9 +180,10 @@ function GenerateFormAndPreview() {
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-2">
                 AI Engine Provider
               </label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {[
-                  { id: 'gemini', name: 'Google Gemini', icon: Zap },
+                  { id: 'groq', name: 'Groq Llama-3', icon: Zap },
+                  { id: 'gemini', name: 'Google Gemini', icon: Sparkles },
                   { id: 'openai', name: 'OpenAI GPT-4', icon: Bot },
                   { id: 'anthropic', name: 'Claude 3.5', icon: Cpu },
                 ].map((p) => {
@@ -193,14 +194,14 @@ function GenerateFormAndPreview() {
                       key={p.id}
                       type="button"
                       onClick={() => setProvider(p.id as AIProvider)}
-                      className={`p-3 rounded-xl border text-xs font-semibold flex flex-col items-center justify-center space-y-1.5 transition-all ${
+                      className={`p-2.5 rounded-xl border text-xs font-semibold flex flex-col items-center justify-center space-y-1 transition-all ${
                         selected
                           ? 'bg-blue-50 border-brand-600 text-brand-700 ring-2 ring-brand-600/20'
                           : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-white'
                       }`}
                     >
-                      <Icon className={`w-5 h-5 ${selected ? 'text-brand-600' : 'text-slate-400'}`} />
-                      <span>{p.name}</span>
+                      <Icon className={`w-4.5 h-4.5 ${selected ? 'text-brand-600' : 'text-slate-400'}`} />
+                      <span className="text-[11px] truncate">{p.name}</span>
                     </button>
                   );
                 })}

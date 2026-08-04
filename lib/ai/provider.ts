@@ -36,21 +36,61 @@ ${instructions}`;
 
   try {
     let generatedText = '';
+    let usedProvider: AIProvider = provider;
 
-    // Primary AI: Google Gemini AI (no OpenAI or Anthropic API key required)
-    const geminiKey = process.env.GEMINI_API_KEY;
-    if (geminiKey && geminiKey !== 'mock-key' && !geminiKey.includes('your-gemini-key')) {
-      try {
-        const ai = new GoogleGenerativeAI(geminiKey);
-        const model = ai.getGenerativeModel({ model: 'gemini-1.5-flash' });
-        const response = await model.generateContent(`${systemPrompt}\n\n${userPrompt}`);
-        generatedText = response.response.text() || '';
-      } catch (geminiErr) {
-        console.warn('Gemini API call failed, falling back to structured generator:', geminiErr);
+    // 1. Primary AI: Groq (Ultra-Fast Llama-3.3 70B Inference)
+    const groqKey = process.env.GROQ_API_KEY;
+    if (groqKey && groqKey !== 'mock-key' && !groqKey.includes('your-groq-key')) {
+      if (provider === 'groq' || !generatedText) {
+        try {
+          const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${groqKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model: 'llama-3.3-70b-versatile',
+              messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: userPrompt },
+              ],
+              temperature: 0.7,
+              max_tokens: 4096,
+            }),
+          });
+
+          if (groqRes.ok) {
+            const groqData = await groqRes.json();
+            const text = groqData.choices?.[0]?.message?.content;
+            if (text) {
+              generatedText = text;
+              usedProvider = 'groq';
+            }
+          }
+        } catch (groqErr) {
+          console.warn('Groq API call warning, falling back to Gemini:', groqErr);
+        }
       }
     }
 
-    // Secondary fallback: Try OpenAI or Anthropic if configured
+    // 2. Secondary AI: Google Gemini AI
+    if (!generatedText) {
+      const geminiKey = process.env.GEMINI_API_KEY;
+      if (geminiKey && geminiKey !== 'mock-key' && !geminiKey.includes('your-gemini-key')) {
+        try {
+          const ai = new GoogleGenerativeAI(geminiKey);
+          const model = ai.getGenerativeModel({ model: 'gemini-1.5-flash' });
+          const response = await model.generateContent(`${systemPrompt}\n\n${userPrompt}`);
+          generatedText = response.response.text() || '';
+          usedProvider = 'gemini';
+        } catch (geminiErr) {
+          console.warn('Gemini API call failed, falling back to structured generator:', geminiErr);
+        }
+      }
+    }
+
+    // 3. Optional OpenAI Fallback
     if (!generatedText && provider === 'openai' && process.env.OPENAI_API_KEY) {
       try {
         const { default: OpenAI } = await import('openai');
@@ -66,13 +106,14 @@ ${instructions}`;
             temperature: 0.7,
           });
           generatedText = response.choices[0]?.message?.content || '';
+          usedProvider = 'openai';
         }
       } catch (e) {
         // Ignored
       }
     }
 
-    // Built-in intelligent document synthesis engine (Zero API Key requirement)
+    // 4. Built-in intelligent document synthesis engine (Zero API Key requirement)
     if (!generatedText) {
       generatedText = generateFallbackDocument(title, templateName, tone, instructions, provider);
     }
@@ -80,7 +121,7 @@ ${instructions}`;
     const responseTimeMs = Date.now() - startTime;
     return {
       content: generatedText,
-      provider,
+      provider: usedProvider,
       responseTimeMs,
       success: true,
     };
