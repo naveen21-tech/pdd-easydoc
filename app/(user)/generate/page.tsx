@@ -14,8 +14,11 @@ import {
   Loader2,
   FileCheck,
   AlertCircle,
+  CheckCircle2,
+  FileType,
 } from 'lucide-react';
 import { AIProvider } from '@/lib/types';
+import { downloadDocumentFile, ExportFormat } from '@/lib/download';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,7 +37,9 @@ function GenerateFormAndPreview() {
   const [createdDocId, setCreatedDocId] = useState<string | null>(null);
   const [responseTimeMs, setResponseTimeMs] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [downloadSuccess, setDownloadSuccess] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [downloadingFormat, setDownloadingFormat] = useState<ExportFormat | null>(null);
 
   useEffect(() => {
     const tmplNameParam = searchParams.get('templateName');
@@ -52,6 +57,7 @@ function GenerateFormAndPreview() {
 
     setGenerating(true);
     setError(null);
+    setDownloadSuccess(null);
     setOutputContent('');
     setCreatedDocId(null);
 
@@ -92,6 +98,26 @@ function GenerateFormAndPreview() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const triggerDownload = (fmt: ExportFormat) => {
+    if (!createdDocId) return;
+    setError(null);
+    setDownloadSuccess(null);
+
+    downloadDocumentFile({
+      documentId: createdDocId,
+      title,
+      format: fmt,
+      onStart: () => setDownloadingFormat(fmt),
+      onSuccess: (filename) => {
+        setDownloadSuccess(`Downloaded "${filename}" successfully!`);
+      },
+      onError: (msg) => {
+        setError(msg);
+      },
+      onFinish: () => setDownloadingFormat(null),
+    });
+  };
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -123,6 +149,13 @@ function GenerateFormAndPreview() {
             <div className="p-4 rounded-xl bg-red-50 border border-red-200 flex items-start space-x-3 text-red-700 text-xs">
               <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
               <span>{error}</span>
+            </div>
+          )}
+
+          {downloadSuccess && (
+            <div className="p-4 rounded-xl bg-green-50 border border-green-200 flex items-start space-x-3 text-green-700 text-xs">
+              <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0 mt-0.5" />
+              <span>{downloadSuccess}</span>
             </div>
           )}
 
@@ -289,29 +322,65 @@ function GenerateFormAndPreview() {
 
           {/* Bottom Export Bar */}
           {createdDocId && (
-            <div className="pt-4 mt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
-              <span className="text-xs text-slate-500 font-semibold">
-                Document saved to your history!
-              </span>
+            <div className="pt-4 mt-4 border-t border-slate-100 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-500 font-semibold">
+                  Document saved! Select download format:
+                </span>
+              </div>
 
-              <div className="flex items-center space-x-3 w-full sm:w-auto">
-                <a
-                  href={`/api/documents/${createdDocId}/export?format=docx`}
-                  target="_blank"
-                  className="flex-1 sm:flex-initial inline-flex items-center justify-center space-x-1.5 bg-slate-100 hover:bg-slate-200 text-ink font-semibold text-xs px-4 py-2.5 rounded-xl border border-slate-200 transition-colors"
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <button
+                  onClick={() => triggerDownload('pdf')}
+                  disabled={downloadingFormat !== null}
+                  className="inline-flex items-center justify-center space-x-1.5 bg-brand-600 hover:bg-blue-700 text-white font-semibold text-xs py-2.5 px-3 rounded-xl shadow-sm transition-all disabled:opacity-50"
                 >
-                  <Download className="w-4 h-4 text-slate-600" />
-                  <span>Download DOCX</span>
-                </a>
+                  {downloadingFormat === 'pdf' ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Download className="w-4 h-4" />
+                  )}
+                  <span>PDF Document</span>
+                </button>
 
-                <a
-                  href={`/api/documents/${createdDocId}/export?format=pdf`}
-                  target="_blank"
-                  className="flex-1 sm:flex-initial inline-flex items-center justify-center space-x-1.5 bg-brand-600 hover:bg-blue-700 text-white font-semibold text-xs px-4 py-2.5 rounded-xl shadow-sm transition-all"
+                <button
+                  onClick={() => triggerDownload('docx')}
+                  disabled={downloadingFormat !== null}
+                  className="inline-flex items-center justify-center space-x-1.5 bg-slate-800 hover:bg-slate-900 text-white font-semibold text-xs py-2.5 px-3 rounded-xl shadow-sm transition-all disabled:opacity-50"
                 >
-                  <Download className="w-4 h-4" />
-                  <span>Export PDF</span>
-                </a>
+                  {downloadingFormat === 'docx' ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Download className="w-4 h-4" />
+                  )}
+                  <span>DOCX Word</span>
+                </button>
+
+                <button
+                  onClick={() => triggerDownload('txt')}
+                  disabled={downloadingFormat !== null}
+                  className="inline-flex items-center justify-center space-x-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-xs py-2.5 px-3 rounded-xl transition-all disabled:opacity-50"
+                >
+                  {downloadingFormat === 'txt' ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <FileType className="w-4 h-4 text-slate-500" />
+                  )}
+                  <span>Plain TXT</span>
+                </button>
+
+                <button
+                  onClick={() => triggerDownload('md')}
+                  disabled={downloadingFormat !== null}
+                  className="inline-flex items-center justify-center space-x-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-xs py-2.5 px-3 rounded-xl transition-all disabled:opacity-50"
+                >
+                  {downloadingFormat === 'md' ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <FileText className="w-4 h-4 text-slate-500" />
+                  )}
+                  <span>Markdown</span>
+                </button>
               </div>
             </div>
           )}

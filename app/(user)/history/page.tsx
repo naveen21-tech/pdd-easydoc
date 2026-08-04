@@ -12,7 +12,10 @@ import {
   Save,
   Loader2,
   FileCode,
+  AlertCircle,
+  FileType,
 } from 'lucide-react';
+import { downloadDocumentFile, ExportFormat } from '@/lib/download';
 
 export default function HistoryPage() {
   const [documents, setDocuments] = useState<any[]>([]);
@@ -22,6 +25,10 @@ export default function HistoryPage() {
   const [editTitle, setEditTitle] = useState('');
   const [editContent, setEditContent] = useState('');
   const [saving, setSaving] = useState(false);
+  const [downloadingDocId, setDownloadingDocId] = useState<string | null>(null);
+  const [downloadingFormat, setDownloadingFormat] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     fetchDocuments();
@@ -50,6 +57,8 @@ export default function HistoryPage() {
   const handleSaveDoc = async () => {
     if (!selectedDoc) return;
     setSaving(true);
+    setErrorMessage(null);
+    setToastMessage(null);
     try {
       const res = await fetch(`/api/documents/${selectedDoc.id}`, {
         method: 'PUT',
@@ -66,6 +75,7 @@ export default function HistoryPage() {
           prev.map((d) => (d.id === selectedDoc.id ? data.document : d))
         );
         setSelectedDoc(data.document);
+        setToastMessage('Document updated successfully.');
       }
     } catch (e) {
       console.error(e);
@@ -87,6 +97,31 @@ export default function HistoryPage() {
     } catch (e) {
       console.error(e);
     }
+  };
+
+  const triggerDownload = (docId: string, title: string, format: ExportFormat) => {
+    setErrorMessage(null);
+    setToastMessage(null);
+
+    downloadDocumentFile({
+      documentId: docId,
+      title,
+      format,
+      onStart: () => {
+        setDownloadingDocId(docId);
+        setDownloadingFormat(format);
+      },
+      onSuccess: (filename) => {
+        setToastMessage(`Downloaded "${filename}" successfully!`);
+      },
+      onError: (msg) => {
+        setErrorMessage(msg);
+      },
+      onFinish: () => {
+        setDownloadingDocId(null);
+        setDownloadingFormat(null);
+      },
+    });
   };
 
   const filteredDocs = documents.filter((d) =>
@@ -116,6 +151,20 @@ export default function HistoryPage() {
         </div>
       </div>
 
+      {toastMessage && (
+        <div className="p-4 rounded-xl bg-green-50 border border-green-200 flex items-center space-x-3 text-green-700 text-xs">
+          <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
+
+      {errorMessage && (
+        <div className="p-4 rounded-xl bg-red-50 border border-red-200 flex items-center space-x-3 text-red-700 text-xs">
+          <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
+          <span>{errorMessage}</span>
+        </div>
+      )}
+
       {/* Document List */}
       {loading ? (
         <div className="py-20 text-center text-slate-400 text-sm">Loading document history...</div>
@@ -127,66 +176,115 @@ export default function HistoryPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredDocs.map((doc) => (
-            <div
-              key={doc.id}
-              className="paper-stack p-6 bg-white rounded-2xl border border-border flex flex-col justify-between"
-            >
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <span
-                    className={`inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
-                      doc.status === 'COMPLETE'
-                        ? 'bg-green-50 text-green-700 border border-green-200'
-                        : 'bg-amber-50 text-amber-700 border border-amber-200'
-                    }`}
-                  >
-                    <CheckCircle2 className="w-3 h-3" />
-                    <span>{doc.status}</span>
-                  </span>
-                  <span className="text-[11px] text-slate-400">
-                    {new Date(doc.createdAt).toLocaleDateString()}
-                  </span>
+          {filteredDocs.map((doc) => {
+            const isDownloading = downloadingDocId === doc.id;
+            return (
+              <div
+                key={doc.id}
+                className="paper-stack p-6 bg-white rounded-2xl border border-border flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <span
+                      className={`inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
+                        doc.status === 'COMPLETE'
+                          ? 'bg-green-50 text-green-700 border border-green-200'
+                          : 'bg-amber-50 text-amber-700 border border-amber-200'
+                      }`}
+                    >
+                      <CheckCircle2 className="w-3 h-3" />
+                      <span>{doc.status}</span>
+                    </span>
+                    <span className="text-[11px] text-slate-400">
+                      {new Date(doc.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+
+                  <h3 className="font-display font-bold text-base text-ink mb-2 line-clamp-1">
+                    {doc.title}
+                  </h3>
+                  <p className="text-xs text-slate-500 line-clamp-3 leading-relaxed mb-6 font-mono bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                    {doc.content}
+                  </p>
                 </div>
 
-                <h3 className="font-display font-bold text-base text-ink mb-2 line-clamp-1">
-                  {doc.title}
-                </h3>
-                <p className="text-xs text-slate-500 line-clamp-3 leading-relaxed mb-6 font-mono bg-slate-50 p-2.5 rounded-lg border border-slate-100">
-                  {doc.content}
-                </p>
-              </div>
+                <div className="pt-4 border-t border-slate-100 space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <button
+                      onClick={() => handleOpenDoc(doc)}
+                      className="inline-flex items-center space-x-1 text-xs font-semibold text-brand-600 hover:text-blue-700 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                      <span>View / Edit</span>
+                    </button>
 
-              <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-2">
-                <button
-                  onClick={() => handleOpenDoc(doc)}
-                  className="inline-flex items-center space-x-1 text-xs font-semibold text-brand-600 hover:text-blue-700 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100"
-                >
-                  <Edit3 className="w-3.5 h-3.5" />
-                  <span>View / Edit</span>
-                </button>
+                    <button
+                      onClick={() => handleDeleteDoc(doc.id)}
+                      className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Delete Document"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
 
-                <div className="flex items-center space-x-1">
-                  <a
-                    href={`/api/documents/${doc.id}/export?format=pdf`}
-                    target="_blank"
-                    className="p-1.5 text-slate-600 hover:text-brand-600 hover:bg-slate-100 rounded-lg"
-                    title="Export PDF"
-                  >
-                    <Download className="w-4 h-4" />
-                  </a>
+                  {/* Format Download Buttons */}
+                  <div className="grid grid-cols-4 gap-1.5 pt-1">
+                    <button
+                      onClick={() => triggerDownload(doc.id, doc.title, 'pdf')}
+                      disabled={isDownloading}
+                      className="px-2 py-1.5 bg-brand-600 hover:bg-blue-700 text-white rounded-lg text-[11px] font-semibold flex items-center justify-center space-x-1 disabled:opacity-50"
+                      title="Download PDF"
+                    >
+                      {isDownloading && downloadingFormat === 'pdf' ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <span>PDF</span>
+                      )}
+                    </button>
 
-                  <button
-                    onClick={() => handleDeleteDoc(doc.id)}
-                    className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                    title="Delete Document"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                    <button
+                      onClick={() => triggerDownload(doc.id, doc.title, 'docx')}
+                      disabled={isDownloading}
+                      className="px-2 py-1.5 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-[11px] font-semibold flex items-center justify-center space-x-1 disabled:opacity-50"
+                      title="Download DOCX"
+                    >
+                      {isDownloading && downloadingFormat === 'docx' ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <span>DOCX</span>
+                      )}
+                    </button>
+
+                    <button
+                      onClick={() => triggerDownload(doc.id, doc.title, 'txt')}
+                      disabled={isDownloading}
+                      className="px-2 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[11px] font-semibold flex items-center justify-center space-x-1 disabled:opacity-50 border border-slate-200"
+                      title="Download TXT"
+                    >
+                      {isDownloading && downloadingFormat === 'txt' ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <span>TXT</span>
+                      )}
+                    </button>
+
+                    <button
+                      onClick={() => triggerDownload(doc.id, doc.title, 'md')}
+                      disabled={isDownloading}
+                      className="px-2 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[11px] font-semibold flex items-center justify-center space-x-1 disabled:opacity-50 border border-slate-200"
+                      title="Download Markdown"
+                    >
+                      {isDownloading && downloadingFormat === 'md' ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <span>MD</span>
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -224,24 +322,39 @@ export default function HistoryPage() {
             </div>
 
             {/* Modal Footer */}
-            <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+            <div className="p-4 bg-slate-50 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center space-x-2">
-                <a
-                  href={`/api/documents/${selectedDoc.id}/export?format=pdf`}
-                  target="_blank"
-                  className="inline-flex items-center space-x-1.5 text-xs font-semibold bg-white border border-slate-200 text-ink px-3 py-2 rounded-lg hover:bg-slate-100"
+                <button
+                  onClick={() => triggerDownload(selectedDoc.id, editTitle, 'pdf')}
+                  className="inline-flex items-center space-x-1.5 text-xs font-semibold bg-brand-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700"
                 >
-                  <Download className="w-3.5 h-3.5 text-slate-500" />
-                  <span>Download PDF</span>
-                </a>
-                <a
-                  href={`/api/documents/${selectedDoc.id}/export?format=docx`}
-                  target="_blank"
-                  className="inline-flex items-center space-x-1.5 text-xs font-semibold bg-white border border-slate-200 text-ink px-3 py-2 rounded-lg hover:bg-slate-100"
+                  <Download className="w-3.5 h-3.5" />
+                  <span>PDF</span>
+                </button>
+
+                <button
+                  onClick={() => triggerDownload(selectedDoc.id, editTitle, 'docx')}
+                  className="inline-flex items-center space-x-1.5 text-xs font-semibold bg-slate-800 text-white px-3 py-2 rounded-lg hover:bg-slate-900"
                 >
-                  <Download className="w-3.5 h-3.5 text-slate-500" />
-                  <span>Download DOCX</span>
-                </a>
+                  <Download className="w-3.5 h-3.5" />
+                  <span>DOCX</span>
+                </button>
+
+                <button
+                  onClick={() => triggerDownload(selectedDoc.id, editTitle, 'txt')}
+                  className="inline-flex items-center space-x-1.5 text-xs font-semibold bg-white border border-slate-200 text-slate-700 px-3 py-2 rounded-lg hover:bg-slate-50"
+                >
+                  <FileType className="w-3.5 h-3.5 text-slate-500" />
+                  <span>TXT</span>
+                </button>
+
+                <button
+                  onClick={() => triggerDownload(selectedDoc.id, editTitle, 'md')}
+                  className="inline-flex items-center space-x-1.5 text-xs font-semibold bg-white border border-slate-200 text-slate-700 px-3 py-2 rounded-lg hover:bg-slate-50"
+                >
+                  <FileText className="w-3.5 h-3.5 text-slate-500" />
+                  <span>MD</span>
+                </button>
               </div>
 
               <button

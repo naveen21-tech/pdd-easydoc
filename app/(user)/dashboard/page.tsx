@@ -13,12 +13,15 @@ import {
   FileCode,
   Download,
   Plus,
+  Loader2,
 } from 'lucide-react';
+import { downloadDocumentFile } from '@/lib/download';
 
 export default function UserDashboard() {
   const [documents, setDocuments] = useState<any[]>([]);
   const [templates, setTemplates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchDashboardData();
@@ -45,6 +48,16 @@ export default function UserDashboard() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleExportPdf = (docId: string, title: string) => {
+    downloadDocumentFile({
+      documentId: docId,
+      title,
+      format: 'pdf',
+      onStart: () => setDownloadingId(docId),
+      onFinish: () => setDownloadingId(null),
+    });
   };
 
   const totalDocs = documents.length;
@@ -206,14 +219,18 @@ export default function UserDashboard() {
                         {new Date(doc.createdAt).toLocaleDateString()}
                       </td>
                       <td className="py-3.5 text-right">
-                        <a
-                          href={`/api/documents/${doc.id}/export?format=pdf`}
-                          target="_blank"
-                          className="inline-flex items-center space-x-1 text-xs font-semibold text-brand-600 hover:text-blue-700 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100 transition-colors"
+                        <button
+                          onClick={() => handleExportPdf(doc.id, doc.title)}
+                          disabled={downloadingId === doc.id}
+                          className="inline-flex items-center space-x-1 text-xs font-semibold text-brand-600 hover:text-blue-700 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100 transition-colors disabled:opacity-50"
                         >
-                          <Download className="w-3.5 h-3.5" />
+                          {downloadingId === doc.id ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Download className="w-3.5 h-3.5" />
+                          )}
                           <span>Export PDF</span>
-                        </a>
+                        </button>
                       </td>
                     </tr>
                   ))}
