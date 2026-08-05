@@ -10,28 +10,30 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Palette values matching exact user image swatch
+        // Ultra-attractive Electric Purple, Amethyst & Soft Lavender palette
         brand: {
-          50: '#fff5f5',
-          100: '#ffe3e3',
-          200: '#ffc9c9',
-          300: '#ffa88b', // Warm Peach Sunset Coral (#FFA88B)
-          400: '#f87171',
-          500: '#e63946',
-          600: '#d62828', // Primary Crimson Red (#D62828)
-          700: '#b91c1c',
-          800: '#991b1b',
-          900: '#5c1d24', // Velvet Wine Maroon (#5C1D24)
-          peach: '#ffa88b',
-          maroon: '#5c1d24',
-          crimson: '#d62828',
+          50: '#faf5ff',
+          100: '#f3e8ff',
+          200: '#e9d5ff',
+          300: '#c084fc', // Soft Lavender Glow (#C084FC)
+          400: '#a855f7',
+          500: '#9333ea',
+          600: '#7c3aed', // Vibrant Primary Royal Purple (#7C3AED)
+          700: '#6d28d9',
+          800: '#5b21b6',
+          900: '#1e1b4b', // Deep Amethyst Velvet (#1E1B4B)
+          lavender: '#c084fc',
+          amethyst: '#1e1b4b',
+          purple: '#7c3aed',
+          violet: '#8b5cf6',
+          pink: '#ec4899',
         },
         dark: {
-          bg: '#141a29',      // Deep Midnight Navy (#141A29)
-          surface: '#222d42', // Dark Slate Navy Surface (#222D42)
-          card: '#222d42',    // Card Background (#222D42)
-          border: '#3e4a5e',  // Steel Slate Navy Border (#3E4A5E)
-          hover: '#2a3750',   // Hover state
+          bg: '#0f0d24',      // Deep Midnight Violet (#0F0D24)
+          surface: '#17153b', // Dark Amethyst Surface (#17153B)
+          card: '#17153b',    // Card Background (#17153B)
+          border: '#2e2a64',  // Steel Purple Border (#2E2A64)
+          hover: '#221f52',   // Hover state
         },
         light: {
           bg: '#f8fafc',
@@ -50,10 +52,10 @@ const config: Config = {
         '3xl': '1.5rem',
       },
       boxShadow: {
-        'glow': '0 0 25px -5px rgba(214, 40, 40, 0.35)',
-        'glow-peach': '0 0 25px -5px rgba(255, 168, 139, 0.4)',
-        'card-hover': '0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.2)',
-        'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.25)',
+        'glow': '0 0 25px -5px rgba(124, 58, 237, 0.45)',
+        'glow-lavender': '0 0 25px -5px rgba(192, 132, 252, 0.45)',
+        'card-hover': '0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3)',
+        'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.35)',
       },
       animation: {
         'fade-in': 'fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards',

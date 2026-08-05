@@ -12,12 +12,12 @@
 }
 
 .dark {
-  --bg-color: #141A29;
-  --surface-color: #222D42;
+  --bg-color: #0F0D24;
+  --surface-color: #17153B;
   --text-primary: #F8FAFC;
-  --text-secondary: #FFA88B;
-  --border-color: #3E4A5E;
-  --card-bg: #222D42;
+  --text-secondary: #C084FC;
+  --border-color: #2E2A64;
+  --card-bg: #17153B;
 }
 
 body {
@@ -45,10 +45,10 @@ code, pre {
 }
 
 .dark .glass-panel {
-  background: rgba(34, 45, 66, 0.85);
+  background: rgba(23, 21, 59, 0.85);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(62, 74, 94, 0.8);
+  border: 1px solid rgba(46, 42, 100, 0.8);
 }
 
 /* Glass Card */
@@ -61,91 +61,91 @@ code, pre {
 }
 
 .dark .glass-card {
-  background: rgba(34, 45, 66, 0.9);
+  background: rgba(23, 21, 59, 0.9);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(62, 74, 94, 0.9);
+  border: 1px solid rgba(46, 42, 100, 0.9);
 }
 
 .glass-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 12px 30px -5px rgba(214, 40, 40, 0.3);
-  border-color: rgba(255, 168, 139, 0.6);
+  box-shadow: 0 12px 30px -5px rgba(124, 58, 237, 0.35);
+  border-color: rgba(192, 132, 252, 0.6);
 }
 
 /* Gradient Typography Helpers */
-.text-gradient-peach {
-  background: linear-gradient(135deg, #FFA88B 0%, #FF7B54 100%);
+.text-gradient-purple {
+  background: linear-gradient(135deg, #C084FC 0%, #7C3AED 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
-.text-gradient-sunset {
-  background: linear-gradient(135deg, #FFFFFF 0%, #FFA88B 50%, #D62828 100%);
+.text-gradient-lavender {
+  background: linear-gradient(135deg, #FFFFFF 0%, #C084FC 50%, #8B5CF6 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
-.text-gradient-crimson {
-  background: linear-gradient(135deg, #FF7B54 0%, #D62828 100%);
+.text-gradient-neon {
+  background: linear-gradient(135deg, #F43F5E 0%, #C084FC 50%, #06B6D4 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
-.text-gradient-gold {
-  background: linear-gradient(135deg, #FDE68A 0%, #F59E0B 100%);
+.text-gradient-amethyst {
+  background: linear-gradient(135deg, #E9D5FF 0%, #A855F7 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
-/* 10 Unique Dark Wallpaper Backgrounds */
-.wp-sunset-crimson {
-  background: linear-gradient(135deg, #5C1D24 0%, #D62828 35%, #FFA88B 70%, #141A29 100%);
+/* 10 Unique Dark Purple & Cyber Wallpapers */
+.wp-cyber-purple {
+  background: linear-gradient(135deg, #1E1B4B 0%, #7C3AED 40%, #C084FC 75%, #0F0D24 100%);
 }
 
-.wp-obsidian-flame {
-  background: radial-gradient(circle at 15% 20%, rgba(214, 40, 40, 0.35) 0%, transparent 45%),
-              radial-gradient(circle at 85% 80%, rgba(255, 168, 139, 0.25) 0%, transparent 45%),
-              #141A29;
+.wp-obsidian-violet {
+  background: radial-gradient(circle at 15% 20%, rgba(124, 58, 237, 0.4) 0%, transparent 45%),
+              radial-gradient(circle at 85% 80%, rgba(192, 132, 252, 0.3) 0%, transparent 45%),
+              #0F0D24;
 }
 
-.wp-peach-matrix {
+.wp-lavender-matrix {
   background-size: 36px 36px;
-  background-image: linear-gradient(to right, rgba(255, 168, 139, 0.1) 1px, transparent 1px),
-                    linear-gradient(to bottom, rgba(255, 168, 139, 0.1) 1px, transparent 1px);
-  background-color: #141A29;
+  background-image: linear-gradient(to right, rgba(192, 132, 252, 0.12) 1px, transparent 1px),
+                    linear-gradient(to bottom, rgba(192, 132, 252, 0.12) 1px, transparent 1px);
+  background-color: #0F0D24;
 }
 
-.wp-velvet-rose {
-  background: linear-gradient(160deg, #5C1D24 0%, #222D42 55%, #141A29 100%);
+.wp-deep-amethyst {
+  background: linear-gradient(160deg, #1E1B4B 0%, #2E1065 55%, #0F0D24 100%);
 }
 
-.wp-crimson-mesh {
-  background-image: radial-gradient(at 20% 20%, hsla(355,80%,40%,0.3) 0px, transparent 50%),
-                    radial-gradient(at 80% 10%, hsla(16,100%,75%,0.3) 0px, transparent 50%),
-                    radial-gradient(at 50% 80%, hsla(220,35%,12%,0.4) 0px, transparent 50%);
-  background-color: #141A29;
+.wp-neon-fuchsia {
+  background-image: radial-gradient(at 20% 20%, hsla(270,85%,55%,0.35) 0px, transparent 50%),
+                    radial-gradient(at 80% 10%, hsla(330,90%,65%,0.3) 0px, transparent 50%),
+                    radial-gradient(at 50% 80%, hsla(260,60%,15%,0.4) 0px, transparent 50%);
+  background-color: #0F0D24;
 }
 
-.wp-amethyst-flame {
-  background: linear-gradient(135deg, #1e1b4b 0%, #5c1d24 50%, #141a29 100%);
+.wp-cyber-cyan {
+  background: linear-gradient(135deg, #1e1b4b 0%, #7c3aed 50%, #06b6d4 100%);
 }
 
-.wp-sapphire-sunset {
-  background: radial-gradient(circle at 80% 20%, rgba(255, 168, 139, 0.3) 0%, transparent 40%),
-              linear-gradient(180deg, #141a29 0%, #222d42 100%);
+.wp-midnight-velvet {
+  background: radial-gradient(circle at 80% 20%, rgba(192, 132, 252, 0.35) 0%, transparent 40%),
+              linear-gradient(180deg, #0f0d24 0%, #17153b 100%);
 }
 
-.wp-emerald-dusk {
-  background: radial-gradient(circle at 20% 80%, rgba(13, 148, 136, 0.3) 0%, transparent 50%),
-              linear-gradient(135deg, #042f2e 0%, #141a29 100%);
+.wp-emerald-purple {
+  background: radial-gradient(circle at 20% 80%, rgba(13, 148, 136, 0.35) 0%, transparent 50%),
+              linear-gradient(135deg, #2e1065 0%, #0f0d24 100%);
 }
 
-.wp-gold-sunset {
-  background: linear-gradient(135deg, #5c1d24 0%, #d62828 40%, #f59e0b 80%, #141a29 100%);
+.wp-luxe-violet {
+  background: linear-gradient(135deg, #1e1b4b 0%, #7c3aed 40%, #f43f5e 80%, #0f0d24 100%);
 }
 
 .wp-midnight-pure {
-  background-color: #141A29;
+  background-color: #0F0D24;
 }
 
 /* Custom scrollbars */
@@ -159,14 +159,14 @@ code, pre {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #3e4a5e;
+  background: #2e2a64;
   border-radius: 9999px;
 }
 
 .dark ::-webkit-scrollbar-thumb {
-  background: #3e4a5e;
+  background: #2e2a64;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #d62828;
+  background: #7c3aed;
 }

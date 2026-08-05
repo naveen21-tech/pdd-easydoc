@@ -140,16 +140,16 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
         {/* Brand Logo Header */}
         <div className="p-4 border-b border-slate-200 dark:border-dark-border flex items-center justify-between">
           <Link href="/dashboard" className="flex items-center space-x-3 overflow-hidden">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-brand-crimson via-brand-peach to-brand-maroon flex items-center justify-center font-display font-extrabold text-xl text-white shadow-glow shrink-0">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-brand-purple via-brand-lavender to-brand-amethyst flex items-center justify-center font-display font-extrabold text-xl text-white shadow-glow shrink-0">
               E
             </div>
             {!isCollapsed && (
               <div className="truncate">
                 <span className="font-display font-extrabold text-lg tracking-tight text-slate-900 dark:text-white block">
-                  Easy<span className="text-brand-peach">Doc</span>
+                  Easy<span className="text-brand-lavender">Doc</span>
                 </span>
-                <span className="text-[10px] uppercase font-bold tracking-wider text-brand-peach/80 block">
-                  Sunset Studio
+                <span className="text-[10px] uppercase font-bold tracking-wider text-brand-lavender/80 block">
+                  Cyber AI Studio
                 </span>
               </div>
             )}
@@ -168,11 +168,11 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
         <div className="p-3">
           <Link
             href="/generate"
-            className={`w-full flex items-center justify-center space-x-2 bg-gradient-to-r from-brand-crimson to-brand-maroon text-white font-bold py-2.5 px-4 rounded-xl text-xs shadow-md shadow-red-600/30 hover:shadow-glow transition-all ${
+            className={`w-full flex items-center justify-center space-x-2 bg-gradient-to-r from-brand-purple to-brand-amethyst text-white font-bold py-2.5 px-4 rounded-xl text-xs shadow-md shadow-purple-600/30 hover:shadow-glow transition-all ${
               isCollapsed ? 'p-2.5 justify-center' : ''
             }`}
           >
-            <Plus className="w-4 h-4 text-brand-peach" />
+            <Plus className="w-4 h-4 text-brand-lavender" />
             {!isCollapsed && <span>Create Document</span>}
           </Link>
         </div>
@@ -185,10 +185,10 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
               className="w-full flex items-center justify-between px-3 py-2 bg-slate-100 dark:bg-dark-bg/80 text-slate-500 dark:text-slate-300 rounded-xl text-xs font-medium hover:bg-slate-200 dark:hover:bg-dark-hover transition-colors border border-dark-border"
             >
               <div className="flex items-center space-x-2">
-                <Search className="w-3.5 h-3.5 text-brand-peach" />
+                <Search className="w-3.5 h-3.5 text-brand-lavender" />
                 <span>Search app...</span>
               </div>
-              <kbd className="text-[10px] bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border px-1.5 py-0.5 rounded font-mono text-brand-peach font-bold">
+              <kbd className="text-[10px] bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border px-1.5 py-0.5 rounded font-mono text-brand-lavender font-bold">
                 ⌘K
               </kbd>
             </button>
@@ -206,15 +206,15 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
                 href={item.href}
                 className={`flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all relative ${
                   active
-                    ? 'bg-rose-50 dark:bg-brand-maroon/80 text-brand-crimson dark:text-brand-peach shadow-sm border border-brand-peach/30'
+                    ? 'bg-purple-50 dark:bg-brand-amethyst/80 text-brand-purple dark:text-brand-lavender shadow-sm border border-brand-lavender/30'
                     : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-dark-hover hover:text-white'
                 } ${isCollapsed ? 'justify-center px-0' : ''}`}
                 title={item.name}
               >
                 {active && (
-                  <span className="absolute left-0 top-2 bottom-2 w-1 bg-brand-peach rounded-r-full shadow-glow-peach" />
+                  <span className="absolute left-0 top-2 bottom-2 w-1 bg-brand-lavender rounded-r-full shadow-glow-lavender" />
                 )}
-                <Icon className={`w-4.5 h-4.5 ${active ? 'text-brand-peach' : 'text-slate-400'}`} />
+                <Icon className={`w-4.5 h-4.5 ${active ? 'text-brand-lavender' : 'text-slate-400'}`} />
                 {!isCollapsed && <span>{item.name}</span>}
               </Link>
             );
@@ -223,17 +223,17 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
           {profile?.role === 'ADMIN' && (
             <div className="pt-4 mt-4 border-t border-slate-200 dark:border-dark-border">
               {!isCollapsed && (
-                <span className="px-3 text-[10px] font-bold uppercase tracking-wider text-brand-peach/80 block mb-2">
+                <span className="px-3 text-[10px] font-bold uppercase tracking-wider text-brand-lavender/80 block mb-2">
                   Admin Console
                 </span>
               )}
               <Link
                 href="/admin"
-                className={`flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-bold bg-brand-maroon/60 text-brand-peach border border-brand-peach/30 hover:bg-brand-maroon transition-all ${
+                className={`flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-bold bg-brand-amethyst/60 text-brand-lavender border border-brand-lavender/30 hover:bg-brand-amethyst transition-all ${
                   isCollapsed ? 'justify-center px-0' : ''
                 }`}
               >
-                <ShieldAlert className="w-4.5 h-4.5 text-brand-peach" />
+                <ShieldAlert className="w-4.5 h-4.5 text-brand-lavender" />
                 {!isCollapsed && <span>Admin Dashboard</span>}
               </Link>
             </div>
@@ -244,7 +244,7 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
         <div className="p-3 border-t border-slate-200 dark:border-dark-border bg-slate-50/50 dark:bg-dark-bg/60">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3 overflow-hidden">
-              <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-brand-crimson to-brand-peach text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-sm">
+              <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-brand-purple to-brand-lavender text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-sm">
                 {profile?.name?.charAt(0)?.toUpperCase() || 'U'}
               </div>
               {!isCollapsed && (
@@ -252,7 +252,7 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
                   <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
                     {profile?.name || 'User'}
                   </p>
-                  <p className="text-[10px] text-brand-peach/80 truncate">{profile?.email}</p>
+                  <p className="text-[10px] text-brand-lavender/80 truncate">{profile?.email}</p>
                 </div>
               )}
             </div>
@@ -299,9 +299,9 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
               onClick={() => setCmdPaletteOpen(true)}
               className="hidden sm:flex items-center space-x-2 bg-slate-100 dark:bg-dark-bg text-slate-500 dark:text-slate-300 px-3 py-1.5 rounded-xl text-xs font-medium hover:bg-slate-200 dark:hover:bg-dark-hover transition-colors border border-dark-border"
             >
-              <Search className="w-3.5 h-3.5 text-brand-peach" />
+              <Search className="w-3.5 h-3.5 text-brand-lavender" />
               <span>Search</span>
-              <kbd className="text-[10px] bg-white dark:bg-dark-surface px-1.5 py-0.5 rounded border border-slate-200 dark:border-dark-border font-mono text-brand-peach font-bold">
+              <kbd className="text-[10px] bg-white dark:bg-dark-surface px-1.5 py-0.5 rounded border border-slate-200 dark:border-dark-border font-mono text-brand-lavender font-bold">
                 ⌘K
               </kbd>
             </button>
@@ -328,7 +328,7 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
               >
                 <Bell className="w-4.5 h-4.5" />
                 {unreadCount > 0 && (
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-brand-crimson rounded-full ring-2 ring-white dark:ring-dark-surface" />
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-brand-purple rounded-full ring-2 ring-white dark:ring-dark-surface" />
                 )}
               </button>
 
@@ -336,7 +336,7 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
                 <div className="absolute right-0 mt-3 w-80 sm:w-96 bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-2xl shadow-2xl p-4 z-50 animate-scale-in">
                   <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-dark-border mb-3">
                     <h3 className="font-display font-bold text-sm text-slate-900 dark:text-white">Notifications</h3>
-                    <span className="text-xs bg-rose-50 dark:bg-brand-maroon/60 text-brand-crimson dark:text-brand-peach px-2 py-0.5 rounded-full font-bold">
+                    <span className="text-xs bg-purple-50 dark:bg-brand-amethyst/60 text-brand-purple dark:text-brand-lavender px-2 py-0.5 rounded-full font-bold">
                       {notifications.length} total
                     </span>
                   </div>
@@ -353,11 +353,11 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
                           className={`p-3 rounded-xl border text-xs leading-relaxed ${
                             n.isRead
                               ? 'bg-slate-50 dark:bg-dark-bg/50 border-slate-100 dark:border-dark-border text-slate-600 dark:text-slate-300'
-                              : 'bg-rose-50/50 dark:bg-brand-maroon/40 border-rose-100 dark:border-dark-border text-slate-900 dark:text-white font-medium'
+                              : 'bg-purple-50/50 dark:bg-brand-amethyst/40 border-purple-100 dark:border-dark-border text-slate-900 dark:text-white font-medium'
                           }`}
                         >
                           <div className="flex items-center justify-between mb-1">
-                            <span className="font-bold capitalize text-brand-crimson dark:text-brand-peach">
+                            <span className="font-bold capitalize text-brand-purple dark:text-brand-lavender">
                               {n.type}
                             </span>
                             <span className="text-[10px] text-slate-400">
@@ -377,8 +377,8 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
             </div>
 
             {/* Profile Plan Badge */}
-            <div className="hidden sm:flex items-center space-x-2 bg-rose-50 dark:bg-brand-maroon/60 text-brand-crimson dark:text-brand-peach border border-rose-200 dark:border-dark-border px-3 py-1 rounded-full text-xs font-bold">
-              <span className="w-2 h-2 rounded-full bg-brand-crimson animate-pulse" />
+            <div className="hidden sm:flex items-center space-x-2 bg-purple-50 dark:bg-brand-amethyst/60 text-brand-purple dark:text-brand-lavender border border-purple-200 dark:border-dark-border px-3 py-1 rounded-full text-xs font-bold">
+              <span className="w-2 h-2 rounded-full bg-brand-purple animate-pulse" />
               <span>{profile?.plan || 'Free Plan'}</span>
             </div>
           </div>
@@ -394,7 +394,7 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
                 onClick={() => setMobileMenuOpen(false)}
                 className="flex items-center space-x-3 px-4 py-3 rounded-xl text-xs font-bold hover:bg-slate-100 dark:hover:bg-dark-hover text-slate-900 dark:text-white"
               >
-                <item.icon className="w-5 h-5 text-brand-crimson dark:text-brand-peach" />
+                <item.icon className="w-5 h-5 text-brand-purple dark:text-brand-lavender" />
                 <span>{item.name}</span>
               </Link>
             ))}
