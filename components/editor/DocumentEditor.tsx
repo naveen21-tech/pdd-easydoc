@@ -18,6 +18,7 @@ import {
   Heading2,
   Heading3,
   Minus,
+  Plus,
   Link as LinkIcon,
   Table,
   Calendar,
@@ -42,6 +43,11 @@ import {
   PanelLeftOpen,
   PanelLeftClose,
   ListTree,
+  FileBadge,
+  Palette,
+  X,
+  Check,
+  Type,
 } from 'lucide-react';
 import { downloadDocumentFile, ExportFormat } from '@/lib/download';
 
@@ -71,6 +77,21 @@ export function DocumentEditor({
   const [fontSize, setFontSize] = useState(16);
   const [textColor, setTextColor] = useState('#0F172A');
   const [alignment, setAlignment] = useState<'left' | 'center' | 'right' | 'justify'>('left');
+
+  // PDF Border Customizer state
+  const [pdfBorderColor, setPdfBorderColor] = useState('#7C3AED');
+  const [pdfBorderStyle, setPdfBorderStyle] = useState<'solid' | 'double' | 'formal' | 'none'>('solid');
+  const [showPdfBorderModal, setShowPdfBorderModal] = useState(false);
+
+  // Cover Page Generator Modal state
+  const [showCoverPageModal, setShowCoverPageModal] = useState(false);
+  const [coverTitle, setCoverTitle] = useState(initialTitle);
+  const [coverSubtitle, setCoverSubtitle] = useState('');
+  const [coverAuthor, setCoverAuthor] = useState('');
+  const [coverRegNo, setCoverRegNo] = useState('');
+  const [coverDept, setCoverDept] = useState('');
+  const [coverInstitution, setCoverInstitution] = useState('');
+  const [coverDate, setCoverDate] = useState(new Date().toLocaleDateString());
 
   // View state
   const [zoom, setZoom] = useState(100);
@@ -103,6 +124,17 @@ export function DocumentEditor({
     { name: 'Elegant Classic', font: 'Times New Roman', size: 16, color: '#0F172A' },
     { name: 'Clean Code', font: 'Courier New', size: 14, color: '#334155' },
     { name: 'Creative Studio', font: 'Sora', size: 16, color: '#2563EB' },
+  ];
+
+  // PDF Border Color Palette
+  const BORDER_COLOR_OPTIONS = [
+    { name: 'Royal Purple', color: '#7C3AED' },
+    { name: 'Soft Lavender', color: '#C084FC' },
+    { name: 'Emerald Green', color: '#0D9488' },
+    { name: 'Flame Crimson', color: '#D62828' },
+    { name: 'Midnight Navy', color: '#141A29' },
+    { name: 'Sunset Gold', color: '#D97706' },
+    { name: 'Classic Black', color: '#000000' },
   ];
 
   // Auto-Save Effect (Every 5 Seconds)
@@ -145,46 +177,38 @@ export function DocumentEditor({
     }
   };
 
-  // Keyboard Shortcuts Listener
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey || e.metaKey) {
-        switch (e.key.toLowerCase()) {
-          case 'b':
-            e.preventDefault();
-            applyWrapFormat('**', '**');
-            break;
-          case 'i':
-            e.preventDefault();
-            applyWrapFormat('*', '*');
-            break;
-          case 'u':
-            e.preventDefault();
-            applyWrapFormat('<u>', '</u>');
-            break;
-          case 'z':
-            e.preventDefault();
-            if (e.shiftKey) handleRedo();
-            else handleUndo();
-            break;
-          case 'y':
-            e.preventDefault();
-            handleRedo();
-            break;
-          case 'f':
-            e.preventDefault();
-            setShowFindReplace(true);
-            break;
-          case 's':
-            e.preventDefault();
-            performSave();
-            break;
-        }
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [content, historyIndex, history]);
+  // Font Size Helpers
+  const increaseFontSize = () => {
+    setFontSize((prev) => Math.min(72, prev + 2));
+  };
+
+  const decreaseFontSize = () => {
+    setFontSize((prev) => Math.max(8, prev - 2));
+  };
+
+  // Insert Cover Page / Title Page Generator
+  const handleInsertCoverPage = () => {
+    const coverPageMarkdown = `# ${coverTitle || 'DOCUMENT TITLE'}
+${coverSubtitle ? `## ${coverSubtitle}\n` : ''}
+
+---
+
+**Submitted By:** ${coverAuthor || '[Name]'}  
+**Register No / Roll No:** ${coverRegNo || '[Reg No]'}  
+**Department / Branch:** ${coverDept || '[Department]'}  
+**Institution:** ${coverInstitution || '[Institution / Organization]'}  
+**Date:** ${coverDate}  
+
+---
+
+<div style="page-break-after: always; break-after: page;"></div>
+
+`;
+
+    const newContent = coverPageMarkdown + content;
+    handleContentChange(newContent);
+    setShowCoverPageModal(false);
+  };
 
   // Format Helpers
   const applyWrapFormat = (prefix: string, suffix: string) => {
@@ -232,12 +256,14 @@ export function DocumentEditor({
       documentId,
       title,
       format: fmt,
+      borderColor: pdfBorderColor,
+      borderStyle: pdfBorderStyle,
       onStart: () => setDownloadingFormat(fmt),
       onFinish: () => setDownloadingFormat(null),
     });
   };
 
-  // AI Assistant Panel Action
+  // AI Assistant Action
   const handleAiAction = async (actionType: string) => {
     setAiProcessing(true);
     try {
@@ -294,7 +320,7 @@ Additional User Instructions: ${aiInstruction || 'Improve readability and overal
       {/* 1. TOP TOOLBAR & HEADER */}
       <header className="bg-slate-950 border-b border-slate-800 px-4 py-2.5 flex items-center justify-between gap-4 sticky top-0 z-40">
         <div className="flex items-center space-x-3 flex-1 min-w-0">
-          <div className="w-8 h-8 rounded-xl bg-brand-600 flex items-center justify-center font-bold text-white shrink-0 shadow-sm">
+          <div className="w-8 h-8 rounded-xl bg-purple-600 flex items-center justify-center font-bold text-white shrink-0 shadow-sm">
             E
           </div>
 
@@ -312,8 +338,8 @@ Additional User Instructions: ${aiInstruction || 'Improve readability and overal
           <div className="flex items-center space-x-1.5 text-xs px-2.5 py-1 rounded-full bg-slate-900 border border-slate-800 shrink-0">
             {saveStatus === 'saving' ? (
               <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-brand-400" />
-                <span className="text-brand-300 font-medium">Saving...</span>
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-400" />
+                <span className="text-purple-300 font-medium">Saving...</span>
               </>
             ) : saveStatus === 'saved' ? (
               <>
@@ -330,10 +356,30 @@ Additional User Instructions: ${aiInstruction || 'Improve readability and overal
         </div>
 
         <div className="flex items-center space-x-2 shrink-0">
+          {/* Cover Page Generator Button */}
+          <button
+            onClick={() => setShowCoverPageModal(true)}
+            className="bg-slate-900 hover:bg-slate-800 border border-slate-700 text-purple-300 hover:text-white px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5"
+            title="Insert Cover / Title Page (Name, Reg No, Title)"
+          >
+            <FileBadge className="w-4 h-4 text-purple-400" />
+            <span className="hidden sm:inline">Insert Title Page</span>
+          </button>
+
+          {/* PDF Border Customizer Button */}
+          <button
+            onClick={() => setShowPdfBorderModal(true)}
+            className="bg-slate-900 hover:bg-slate-800 border border-slate-700 text-purple-300 hover:text-white px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5"
+            title="Configure PDF Page Borders"
+          >
+            <Palette className="w-4 h-4 text-purple-400" />
+            <span className="hidden sm:inline">PDF Border</span>
+          </button>
+
           <button
             onClick={() => setShowLeftOutline(!showLeftOutline)}
             className={`p-2 rounded-lg text-xs font-semibold flex items-center space-x-1 border ${
-              showLeftOutline ? 'bg-brand-600 border-brand-500 text-white' : 'bg-slate-900 border-slate-800 text-slate-400'
+              showLeftOutline ? 'bg-purple-700 border-purple-600 text-white' : 'bg-slate-900 border-slate-800 text-slate-400'
             }`}
             title="Toggle Outline"
           >
@@ -343,16 +389,16 @@ Additional User Instructions: ${aiInstruction || 'Improve readability and overal
           <button
             onClick={() => setShowRightAiPanel(!showRightAiPanel)}
             className={`p-2 rounded-lg text-xs font-semibold flex items-center space-x-1 border ${
-              showRightAiPanel ? 'bg-brand-600 border-brand-500 text-white' : 'bg-slate-900 border-slate-800 text-slate-400'
+              showRightAiPanel ? 'bg-purple-700 border-purple-600 text-white' : 'bg-slate-900 border-slate-800 text-slate-400'
             }`}
             title="Toggle AI Assistant"
           >
-            <Sparkles className="w-4 h-4 text-brand-accent" />
+            <Sparkles className="w-4 h-4 text-purple-300" />
           </button>
 
           <button
             onClick={() => performSave()}
-            className="bg-brand-600 hover:bg-blue-700 text-white font-semibold text-xs px-3.5 py-2 rounded-xl transition-all shadow-sm flex items-center space-x-1"
+            className="bg-purple-600 hover:bg-purple-700 text-white font-semibold text-xs px-3.5 py-2 rounded-xl transition-all shadow-sm flex items-center space-x-1"
           >
             <Save className="w-3.5 h-3.5" />
             <span>Save</span>
@@ -361,15 +407,20 @@ Additional User Instructions: ${aiInstruction || 'Improve readability and overal
           <button
             onClick={() => triggerDownload('pdf')}
             disabled={downloadingFormat !== null}
-            className="p-2 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg text-xs border border-slate-800"
+            className="p-2 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg text-xs border border-slate-800 flex items-center space-x-1"
             title="Export PDF"
           >
-            <Download className="w-4 h-4 text-brand-400" />
+            {downloadingFormat === 'pdf' ? (
+              <Loader2 className="w-4 h-4 animate-spin text-purple-400" />
+            ) : (
+              <Download className="w-4 h-4 text-purple-400" />
+            )}
+            <span className="text-xs font-bold text-purple-300">PDF</span>
           </button>
         </div>
       </header>
 
-      {/* 2. STICKY FORMATTING TOOLBAR */}
+      {/* 2. STICKY FORMATTING TOOLBAR WITH FONT SIZE INCREASER/DECREASER */}
       {!focusMode && (
         <div className="bg-slate-900 border-b border-slate-800 px-4 py-2 flex flex-wrap items-center gap-2 sticky top-[49px] z-30 shadow-md">
           {/* Undo / Redo */}
@@ -404,6 +455,28 @@ Additional User Instructions: ${aiInstruction || 'Improve readability and overal
             </select>
           </div>
 
+          {/* FONT SIZE INCREASER / DECREASER CONTROLS */}
+          <div className="flex items-center space-x-1 pr-2 border-r border-slate-800 bg-slate-950 px-2 py-1 rounded-lg border border-slate-800">
+            <Type className="w-3.5 h-3.5 text-purple-400 mr-1" />
+            <button
+              onClick={decreaseFontSize}
+              className="p-1 text-slate-300 hover:text-white hover:bg-slate-800 rounded font-extrabold text-xs"
+              title="Decrease Font Size (-2px)"
+            >
+              <Minus className="w-3.5 h-3.5" />
+            </button>
+            <span className="text-xs font-mono font-bold text-purple-300 min-w-[28px] text-center">
+              {fontSize}px
+            </span>
+            <button
+              onClick={increaseFontSize}
+              className="p-1 text-slate-300 hover:text-white hover:bg-slate-800 rounded font-extrabold text-xs"
+              title="Increase Font Size (+2px)"
+            >
+              <Plus className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
           {/* Formatting buttons */}
           <div className="flex items-center space-x-1 pr-2 border-r border-slate-800">
             <button onClick={() => applyWrapFormat('**', '**')} className="p-1.5 text-slate-300 hover:bg-slate-800 rounded">
@@ -435,13 +508,13 @@ Additional User Instructions: ${aiInstruction || 'Improve readability and overal
 
           {/* Alignment */}
           <div className="flex items-center space-x-1">
-            <button onClick={() => setAlignment('left')} className={`p-1.5 rounded ${alignment === 'left' ? 'bg-brand-600 text-white' : 'text-slate-400'}`}>
+            <button onClick={() => setAlignment('left')} className={`p-1.5 rounded ${alignment === 'left' ? 'bg-purple-700 text-white' : 'text-slate-400'}`}>
               <AlignLeft className="w-4 h-4" />
             </button>
-            <button onClick={() => setAlignment('center')} className={`p-1.5 rounded ${alignment === 'center' ? 'bg-brand-600 text-white' : 'text-slate-400'}`}>
+            <button onClick={() => setAlignment('center')} className={`p-1.5 rounded ${alignment === 'center' ? 'bg-purple-700 text-white' : 'text-slate-400'}`}>
               <AlignCenter className="w-4 h-4" />
             </button>
-            <button onClick={() => setAlignment('right')} className={`p-1.5 rounded ${alignment === 'right' ? 'bg-brand-600 text-white' : 'text-slate-400'}`}>
+            <button onClick={() => setAlignment('right')} className={`p-1.5 rounded ${alignment === 'right' ? 'bg-purple-700 text-white' : 'text-slate-400'}`}>
               <AlignRight className="w-4 h-4" />
             </button>
           </div>
@@ -454,7 +527,7 @@ Additional User Instructions: ${aiInstruction || 'Improve readability and overal
         {showLeftOutline && (
           <aside className="w-64 bg-slate-900 border-r border-slate-800 p-4 shrink-0 overflow-y-auto hidden lg:block">
             <div className="flex items-center space-x-2 pb-3 border-b border-slate-800 mb-3 text-xs font-bold uppercase tracking-wider text-slate-400">
-              <ListTree className="w-4 h-4 text-brand-400" />
+              <ListTree className="w-4 h-4 text-purple-400" />
               <span>Document Outline</span>
             </div>
 
@@ -466,7 +539,7 @@ Additional User Instructions: ${aiInstruction || 'Improve readability and overal
                   <div
                     key={i}
                     style={{ paddingLeft: `${(h.level - 1) * 12}px` }}
-                    className="text-slate-300 hover:text-brand-400 py-1 truncate font-medium cursor-pointer"
+                    className="text-slate-300 hover:text-purple-400 py-1 truncate font-medium cursor-pointer"
                   >
                     • {h.text}
                   </div>
@@ -509,7 +582,7 @@ Additional User Instructions: ${aiInstruction || 'Improve readability and overal
         {showRightAiPanel && (
           <aside className="w-80 bg-slate-900 border-l border-slate-800 p-5 shrink-0 overflow-y-auto space-y-6 hidden md:block">
             <div className="flex items-center space-x-2 pb-3 border-b border-slate-800">
-              <Sparkles className="w-5 h-5 text-brand-accent animate-pulse" />
+              <Sparkles className="w-5 h-5 text-purple-400 animate-pulse" />
               <h3 className="font-display font-bold text-sm text-white">AI Writing Assistant</h3>
             </div>
 
@@ -522,16 +595,16 @@ Additional User Instructions: ${aiInstruction || 'Improve readability and overal
                 <button
                   onClick={() => handleAiAction('Improve Writing & Tone')}
                   disabled={aiProcessing}
-                  className="p-2.5 bg-slate-800 hover:bg-brand-600 rounded-xl text-xs font-semibold text-slate-200 hover:text-white transition-all flex items-center space-x-1.5 disabled:opacity-50"
+                  className="p-2.5 bg-slate-800 hover:bg-purple-700 rounded-xl text-xs font-semibold text-slate-200 hover:text-white transition-all flex items-center space-x-1.5 disabled:opacity-50"
                 >
-                  <Wand2 className="w-3.5 h-3.5 text-brand-accent" />
+                  <Wand2 className="w-3.5 h-3.5 text-purple-300" />
                   <span>Improve</span>
                 </button>
 
                 <button
                   onClick={() => handleAiAction('Rewrite & Rephrase')}
                   disabled={aiProcessing}
-                  className="p-2.5 bg-slate-800 hover:bg-brand-600 rounded-xl text-xs font-semibold text-slate-200 hover:text-white transition-all flex items-center space-x-1.5 disabled:opacity-50"
+                  className="p-2.5 bg-slate-800 hover:bg-purple-700 rounded-xl text-xs font-semibold text-slate-200 hover:text-white transition-all flex items-center space-x-1.5 disabled:opacity-50"
                 >
                   <RefreshCw className="w-3.5 h-3.5 text-emerald-400" />
                   <span>Rewrite</span>
@@ -540,7 +613,7 @@ Additional User Instructions: ${aiInstruction || 'Improve readability and overal
                 <button
                   onClick={() => handleAiAction('Expand & Detail')}
                   disabled={aiProcessing}
-                  className="p-2.5 bg-slate-800 hover:bg-brand-600 rounded-xl text-xs font-semibold text-slate-200 hover:text-white transition-all flex items-center space-x-1.5 disabled:opacity-50"
+                  className="p-2.5 bg-slate-800 hover:bg-purple-700 rounded-xl text-xs font-semibold text-slate-200 hover:text-white transition-all flex items-center space-x-1.5 disabled:opacity-50"
                 >
                   <Maximize className="w-3.5 h-3.5 text-amber-400" />
                   <span>Expand</span>
@@ -549,7 +622,7 @@ Additional User Instructions: ${aiInstruction || 'Improve readability and overal
                 <button
                   onClick={() => handleAiAction('Fix Grammar & Spelling')}
                   disabled={aiProcessing}
-                  className="p-2.5 bg-slate-800 hover:bg-brand-600 rounded-xl text-xs font-semibold text-slate-200 hover:text-white transition-all flex items-center space-x-1.5 disabled:opacity-50"
+                  className="p-2.5 bg-slate-800 hover:bg-purple-700 rounded-xl text-xs font-semibold text-slate-200 hover:text-white transition-all flex items-center space-x-1.5 disabled:opacity-50"
                 >
                   <CheckCheck className="w-3.5 h-3.5 text-indigo-400" />
                   <span>Fix Grammar</span>
@@ -589,7 +662,7 @@ Additional User Instructions: ${aiInstruction || 'Improve readability and overal
               <button
                 onClick={() => handleAiAction('Custom Refinement')}
                 disabled={aiProcessing}
-                className="w-full py-2.5 bg-brand-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-xl transition-all shadow-md flex items-center justify-center space-x-2 disabled:opacity-50"
+                className="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-semibold text-xs rounded-xl transition-all shadow-md flex items-center justify-center space-x-2 disabled:opacity-50"
               >
                 {aiProcessing ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -605,7 +678,201 @@ Additional User Instructions: ${aiInstruction || 'Improve readability and overal
         )}
       </div>
 
-      {/* 4. BOTTOM STATUS BAR */}
+      {/* 4. COVER PAGE / TITLE PAGE MODAL */}
+      {showCoverPageModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl max-w-lg w-full p-6 space-y-5 animate-scale-in">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="flex items-center space-x-2">
+                <FileBadge className="w-5 h-5 text-purple-400" />
+                <h3 className="font-display font-bold text-lg text-white">
+                  Insert Title / Cover Page
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowCoverPageModal(false)}
+                className="p-1 text-slate-400 hover:text-white rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
+              <div>
+                <label className="text-xs font-bold text-purple-300 block mb-1">Project / Document Title</label>
+                <input
+                  type="text"
+                  value={coverTitle}
+                  onChange={(e) => setCoverTitle(e.target.value)}
+                  placeholder="e.g. AI-Powered Medical Report Analysis"
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-purple-300 block mb-1">Subtitle / Subject</label>
+                <input
+                  type="text"
+                  value={coverSubtitle}
+                  onChange={(e) => setCoverSubtitle(e.target.value)}
+                  placeholder="e.g. Final Year Project Report"
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-purple-300 block mb-1">Author Name</label>
+                  <input
+                    type="text"
+                    value={coverAuthor}
+                    onChange={(e) => setCoverAuthor(e.target.value)}
+                    placeholder="e.g. Naveen Kumar"
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-purple-300 block mb-1">Reg No / Roll No</label>
+                  <input
+                    type="text"
+                    value={coverRegNo}
+                    onChange={(e) => setCoverRegNo(e.target.value)}
+                    placeholder="e.g. 21CS101"
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-purple-300 block mb-1">Department / Branch</label>
+                  <input
+                    type="text"
+                    value={coverDept}
+                    onChange={(e) => setCoverDept(e.target.value)}
+                    placeholder="e.g. Computer Science"
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-purple-300 block mb-1">Institution / Company</label>
+                  <input
+                    type="text"
+                    value={coverInstitution}
+                    onChange={(e) => setCoverInstitution(e.target.value)}
+                    placeholder="e.g. Anna University"
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-purple-300 block mb-1">Submission Date</label>
+                <input
+                  type="text"
+                  value={coverDate}
+                  onChange={(e) => setCoverDate(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500"
+                />
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-slate-800 flex justify-end space-x-2">
+              <button
+                onClick={() => setShowCoverPageModal(false)}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleInsertCoverPage}
+                className="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold shadow-md"
+              >
+                Insert Title Page
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 5. PDF BORDER CUSTOMIZER MODAL */}
+      {showPdfBorderModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl max-w-md w-full p-6 space-y-5 animate-scale-in">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="flex items-center space-x-2">
+                <Palette className="w-5 h-5 text-purple-400" />
+                <h3 className="font-display font-bold text-lg text-white">
+                  PDF Page Border Style
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowPdfBorderModal(false)}
+                className="p-1 text-slate-400 hover:text-white rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-bold text-purple-300 block mb-2">Border Color</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {BORDER_COLOR_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.color}
+                      onClick={() => setPdfBorderColor(opt.color)}
+                      className={`p-2 rounded-xl border text-xs font-bold flex items-center justify-between transition-all ${
+                        pdfBorderColor === opt.color
+                          ? 'border-purple-400 bg-purple-950/60 text-white ring-1 ring-purple-400'
+                          : 'border-slate-800 bg-slate-950 text-slate-300 hover:border-slate-700'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <span className="w-3.5 h-3.5 rounded-full border border-white/20" style={{ backgroundColor: opt.color }} />
+                        <span>{opt.name}</span>
+                      </div>
+                      {pdfBorderColor === opt.color && <Check className="w-3.5 h-3.5 text-purple-400" />}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-purple-300 block mb-2">Border Style</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {(['solid', 'double', 'formal', 'none'] as const).map((style) => (
+                    <button
+                      key={style}
+                      onClick={() => setPdfBorderStyle(style)}
+                      className={`p-2.5 rounded-xl border text-xs font-bold capitalize transition-all ${
+                        pdfBorderStyle === style
+                          ? 'border-purple-400 bg-purple-950/60 text-white ring-1 ring-purple-400'
+                          : 'border-slate-800 bg-slate-950 text-slate-300 hover:border-slate-700'
+                      }`}
+                    >
+                      {style} Frame
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-slate-800 flex justify-end">
+              <button
+                onClick={() => setShowPdfBorderModal(false)}
+                className="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold shadow-md"
+              >
+                Apply PDF Border
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 6. BOTTOM STATUS BAR */}
       <footer className="bg-slate-950 border-t border-slate-800 px-6 py-2 text-[11px] text-slate-400 flex flex-wrap items-center justify-between gap-4 sticky bottom-0 z-40 font-mono">
         <div className="flex items-center space-x-4">
           <span>Page {estimatedPages} of {estimatedPages}</span>

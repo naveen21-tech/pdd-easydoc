@@ -6,6 +6,8 @@ export interface DownloadOptions {
   documentId: string;
   title: string;
   format: ExportFormat;
+  borderColor?: string;
+  borderStyle?: string;
   onStart?: () => void;
   onSuccess?: (filename: string) => void;
   onError?: (errorMessage: string) => void;
@@ -13,14 +15,18 @@ export interface DownloadOptions {
 }
 
 export async function downloadDocumentFile(options: DownloadOptions): Promise<boolean> {
-  const { documentId, title, format, onStart, onSuccess, onError, onFinish } = options;
+  const { documentId, title, format, borderColor, borderStyle, onStart, onSuccess, onError, onFinish } = options;
 
   try {
     if (onStart) onStart();
 
     console.log(`[Client Download] Requesting export for Document ID: ${documentId} | Format: ${format}`);
 
-    const res = await fetch(`/api/documents/${documentId}/export?format=${format}`, {
+    let url = `/api/documents/${documentId}/export?format=${format}`;
+    if (borderColor) url += `&borderColor=${encodeURIComponent(borderColor)}`;
+    if (borderStyle) url += `&borderStyle=${encodeURIComponent(borderStyle)}`;
+
+    const res = await fetch(url, {
       method: 'GET',
       headers: {
         'Accept': '*/*',

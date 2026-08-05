@@ -11,8 +11,10 @@ async function handleExport(request: Request, params: { id: string }) {
   const requestStartTime = Date.now();
   const { searchParams } = new URL(request.url);
   const format = (searchParams.get('format') || 'pdf').toLowerCase();
+  const borderColor = searchParams.get('borderColor') || undefined;
+  const borderStyle = (searchParams.get('borderStyle') as any) || undefined;
 
-  console.log(`[Export API] Request received | Document ID: ${params.id} | Format: ${format}`);
+  console.log(`[Export API] Request received | Document ID: ${params.id} | Format: ${format} | Border: ${borderColor}/${borderStyle}`);
 
   try {
     // 1. Authenticate user session
@@ -117,7 +119,7 @@ async function handleExport(request: Request, params: { id: string }) {
       fileExtension = 'md';
     } else {
       // Default: Styled PDF / Printable HTML Attachment
-      fileBuffer = generateStyledHtmlDocument(title, content);
+      fileBuffer = generateStyledHtmlDocument(title, content, { borderColor, borderStyle });
       contentType = 'text/html; charset=utf-8';
       fileExtension = 'html';
     }
