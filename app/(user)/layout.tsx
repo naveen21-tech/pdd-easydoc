@@ -146,9 +146,9 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
             {!isCollapsed && (
               <div className="truncate">
                 <span className="font-display font-extrabold text-lg tracking-tight text-slate-900 dark:text-white block">
-                  Easy<span className="text-brand-crimson dark:text-brand-peach">Doc</span>
+                  Easy<span className="text-brand-peach">Doc</span>
                 </span>
-                <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">
+                <span className="text-[10px] uppercase font-bold tracking-wider text-brand-peach/80 block">
                   Sunset Studio
                 </span>
               </div>
@@ -168,7 +168,7 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
         <div className="p-3">
           <Link
             href="/generate"
-            className={`w-full flex items-center justify-center space-x-2 bg-gradient-to-r from-brand-crimson to-brand-maroon text-white font-semibold py-2.5 px-4 rounded-xl text-xs shadow-md shadow-red-600/20 hover:shadow-glow transition-all ${
+            className={`w-full flex items-center justify-center space-x-2 bg-gradient-to-r from-brand-crimson to-brand-maroon text-white font-bold py-2.5 px-4 rounded-xl text-xs shadow-md shadow-red-600/30 hover:shadow-glow transition-all ${
               isCollapsed ? 'p-2.5 justify-center' : ''
             }`}
           >
@@ -182,13 +182,13 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
           <div className="px-3 mb-2">
             <button
               onClick={() => setCmdPaletteOpen(true)}
-              className="w-full flex items-center justify-between px-3 py-2 bg-slate-100 dark:bg-dark-bg/60 text-slate-500 dark:text-slate-400 rounded-xl text-xs font-medium hover:bg-slate-200 dark:hover:bg-dark-hover transition-colors"
+              className="w-full flex items-center justify-between px-3 py-2 bg-slate-100 dark:bg-dark-bg/80 text-slate-500 dark:text-slate-300 rounded-xl text-xs font-medium hover:bg-slate-200 dark:hover:bg-dark-hover transition-colors border border-dark-border"
             >
               <div className="flex items-center space-x-2">
-                <Search className="w-3.5 h-3.5 text-slate-400" />
+                <Search className="w-3.5 h-3.5 text-brand-peach" />
                 <span>Search app...</span>
               </div>
-              <kbd className="text-[10px] bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border px-1.5 py-0.5 rounded font-mono text-brand-peach">
+              <kbd className="text-[10px] bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border px-1.5 py-0.5 rounded font-mono text-brand-peach font-bold">
                 ⌘K
               </kbd>
             </button>
@@ -204,17 +204,17 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
               <Link
                 key={item.name}
                 href={item.href}
-                className={`flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all relative ${
+                className={`flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all relative ${
                   active
-                    ? 'bg-rose-50 dark:bg-brand-maroon/60 text-brand-crimson dark:text-brand-peach shadow-sm border border-rose-200 dark:border-dark-border'
-                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-dark-hover hover:text-slate-900 dark:hover:text-white'
+                    ? 'bg-rose-50 dark:bg-brand-maroon/80 text-brand-crimson dark:text-brand-peach shadow-sm border border-brand-peach/30'
+                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-dark-hover hover:text-white'
                 } ${isCollapsed ? 'justify-center px-0' : ''}`}
                 title={item.name}
               >
                 {active && (
-                  <span className="absolute left-0 top-2 bottom-2 w-1 bg-brand-crimson dark:bg-brand-peach rounded-r-full shadow-glow" />
+                  <span className="absolute left-0 top-2 bottom-2 w-1 bg-brand-peach rounded-r-full shadow-glow-peach" />
                 )}
-                <Icon className={`w-4.5 h-4.5 ${active ? 'text-brand-crimson dark:text-brand-peach' : 'text-slate-400'}`} />
+                <Icon className={`w-4.5 h-4.5 ${active ? 'text-brand-peach' : 'text-slate-400'}`} />
                 {!isCollapsed && <span>{item.name}</span>}
               </Link>
             );
@@ -223,13 +223,13 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
           {profile?.role === 'ADMIN' && (
             <div className="pt-4 mt-4 border-t border-slate-200 dark:border-dark-border">
               {!isCollapsed && (
-                <span className="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-2">
+                <span className="px-3 text-[10px] font-bold uppercase tracking-wider text-brand-peach/80 block mb-2">
                   Admin Console
                 </span>
               )}
               <Link
                 href="/admin"
-                className={`flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-rose-950/40 text-brand-peach border border-rose-800/40 hover:bg-rose-900/60 transition-all ${
+                className={`flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-bold bg-brand-maroon/60 text-brand-peach border border-brand-peach/30 hover:bg-brand-maroon transition-all ${
                   isCollapsed ? 'justify-center px-0' : ''
                 }`}
               >
@@ -241,7 +241,7 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
         </nav>
 
         {/* User Card & Sign out */}
-        <div className="p-3 border-t border-slate-200 dark:border-dark-border bg-slate-50/50 dark:bg-dark-bg/50">
+        <div className="p-3 border-t border-slate-200 dark:border-dark-border bg-slate-50/50 dark:bg-dark-bg/60">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3 overflow-hidden">
               <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-brand-crimson to-brand-peach text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-sm">
@@ -252,7 +252,7 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
                   <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
                     {profile?.name || 'User'}
                   </p>
-                  <p className="text-[10px] text-slate-400 truncate">{profile?.email}</p>
+                  <p className="text-[10px] text-brand-peach/80 truncate">{profile?.email}</p>
                 </div>
               )}
             </div>
@@ -297,11 +297,11 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
             {/* Global Search Button */}
             <button
               onClick={() => setCmdPaletteOpen(true)}
-              className="hidden sm:flex items-center space-x-2 bg-slate-100 dark:bg-dark-bg text-slate-500 dark:text-slate-400 px-3 py-1.5 rounded-xl text-xs font-medium hover:bg-slate-200 dark:hover:bg-dark-hover transition-colors"
+              className="hidden sm:flex items-center space-x-2 bg-slate-100 dark:bg-dark-bg text-slate-500 dark:text-slate-300 px-3 py-1.5 rounded-xl text-xs font-medium hover:bg-slate-200 dark:hover:bg-dark-hover transition-colors border border-dark-border"
             >
-              <Search className="w-3.5 h-3.5" />
+              <Search className="w-3.5 h-3.5 text-brand-peach" />
               <span>Search</span>
-              <kbd className="text-[10px] bg-white dark:bg-dark-surface px-1.5 py-0.5 rounded border border-slate-200 dark:border-dark-border font-mono text-brand-peach">
+              <kbd className="text-[10px] bg-white dark:bg-dark-surface px-1.5 py-0.5 rounded border border-slate-200 dark:border-dark-border font-mono text-brand-peach font-bold">
                 ⌘K
               </kbd>
             </button>
@@ -336,7 +336,7 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
                 <div className="absolute right-0 mt-3 w-80 sm:w-96 bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-2xl shadow-2xl p-4 z-50 animate-scale-in">
                   <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-dark-border mb-3">
                     <h3 className="font-display font-bold text-sm text-slate-900 dark:text-white">Notifications</h3>
-                    <span className="text-xs bg-rose-50 dark:bg-brand-maroon/50 text-brand-crimson dark:text-brand-peach px-2 py-0.5 rounded-full font-semibold">
+                    <span className="text-xs bg-rose-50 dark:bg-brand-maroon/60 text-brand-crimson dark:text-brand-peach px-2 py-0.5 rounded-full font-bold">
                       {notifications.length} total
                     </span>
                   </div>
@@ -352,12 +352,12 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
                           key={n.id}
                           className={`p-3 rounded-xl border text-xs leading-relaxed ${
                             n.isRead
-                              ? 'bg-slate-50 dark:bg-dark-bg/50 border-slate-100 dark:border-dark-border text-slate-600 dark:text-slate-400'
-                              : 'bg-rose-50/50 dark:bg-brand-maroon/30 border-rose-100 dark:border-dark-border text-slate-900 dark:text-white font-medium'
+                              ? 'bg-slate-50 dark:bg-dark-bg/50 border-slate-100 dark:border-dark-border text-slate-600 dark:text-slate-300'
+                              : 'bg-rose-50/50 dark:bg-brand-maroon/40 border-rose-100 dark:border-dark-border text-slate-900 dark:text-white font-medium'
                           }`}
                         >
                           <div className="flex items-center justify-between mb-1">
-                            <span className="font-semibold capitalize text-brand-crimson dark:text-brand-peach">
+                            <span className="font-bold capitalize text-brand-crimson dark:text-brand-peach">
                               {n.type}
                             </span>
                             <span className="text-[10px] text-slate-400">
@@ -377,7 +377,7 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
             </div>
 
             {/* Profile Plan Badge */}
-            <div className="hidden sm:flex items-center space-x-2 bg-rose-50 dark:bg-brand-maroon/40 text-brand-crimson dark:text-brand-peach border border-rose-200 dark:border-dark-border px-3 py-1 rounded-full text-xs font-semibold">
+            <div className="hidden sm:flex items-center space-x-2 bg-rose-50 dark:bg-brand-maroon/60 text-brand-crimson dark:text-brand-peach border border-rose-200 dark:border-dark-border px-3 py-1 rounded-full text-xs font-bold">
               <span className="w-2 h-2 rounded-full bg-brand-crimson animate-pulse" />
               <span>{profile?.plan || 'Free Plan'}</span>
             </div>
@@ -392,7 +392,7 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
                 key={item.name}
                 href={item.href}
                 onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center space-x-3 px-4 py-3 rounded-xl text-xs font-semibold hover:bg-slate-100 dark:hover:bg-dark-hover text-slate-900 dark:text-white"
+                className="flex items-center space-x-3 px-4 py-3 rounded-xl text-xs font-bold hover:bg-slate-100 dark:hover:bg-dark-hover text-slate-900 dark:text-white"
               >
                 <item.icon className="w-5 h-5 text-brand-crimson dark:text-brand-peach" />
                 <span>{item.name}</span>

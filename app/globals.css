@@ -68,45 +68,87 @@ code, pre {
 
 .glass-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 12px 30px -5px rgba(214, 40, 40, 0.25);
-  border-color: rgba(255, 168, 139, 0.5);
+  box-shadow: 0 12px 30px -5px rgba(214, 40, 40, 0.3);
+  border-color: rgba(255, 168, 139, 0.6);
 }
 
-/* Sunset Crimson Navy Wallpapers */
-.wallpaper-sunset {
-  background: linear-gradient(180deg, #5C1D24 0%, #D62828 25%, #FFA88B 50%, #3E4A5E 75%, #141A29 100%);
+/* Gradient Typography Helpers */
+.text-gradient-peach {
+  background: linear-gradient(135deg, #FFA88B 0%, #FF7B54 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
-.wallpaper-aurora {
-  background: radial-gradient(circle at 15% 15%, rgba(214, 40, 40, 0.25), transparent 45%),
-              radial-gradient(circle at 85% 85%, rgba(255, 168, 139, 0.2), transparent 45%),
-              radial-gradient(circle at 50% 50%, rgba(92, 29, 36, 0.2), transparent 60%);
+.text-gradient-sunset {
+  background: linear-gradient(135deg, #FFFFFF 0%, #FFA88B 50%, #D62828 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
-.wallpaper-mesh {
-  background-image: radial-gradient(at 40% 20%, hsla(355,75%,45%,0.2) 0px, transparent 50%),
-                    radial-gradient(at 80% 0%, hsla(16,100%,75%,0.25) 0px, transparent 50%),
-                    radial-gradient(at 0% 50%, hsla(220,35%,12%,0.3) 0px, transparent 50%),
-                    radial-gradient(at 80% 50%, hsla(348,55%,24%,0.25) 0px, transparent 50%);
+.text-gradient-crimson {
+  background: linear-gradient(135deg, #FF7B54 0%, #D62828 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
-.wallpaper-grid {
-  background-size: 40px 40px;
-  background-image: 
-    linear-gradient(to right, rgba(255, 168, 139, 0.08) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 168, 139, 0.08) 1px, transparent 1px);
+.text-gradient-gold {
+  background: linear-gradient(135deg, #FDE68A 0%, #F59E0B 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
-.wallpaper-obsidian {
-  background: linear-gradient(135deg, #141A29 0%, #222D42 50%, #5C1D24 100%);
+/* 10 Unique Dark Wallpaper Backgrounds */
+.wp-sunset-crimson {
+  background: linear-gradient(135deg, #5C1D24 0%, #D62828 35%, #FFA88B 70%, #141A29 100%);
 }
 
-.wallpaper-cyber {
-  background: radial-gradient(ellipse at top left, rgba(214, 40, 40, 0.3), transparent 50%),
-              radial-gradient(ellipse at bottom right, rgba(255, 168, 139, 0.3), transparent 50%);
+.wp-obsidian-flame {
+  background: radial-gradient(circle at 15% 20%, rgba(214, 40, 40, 0.35) 0%, transparent 45%),
+              radial-gradient(circle at 85% 80%, rgba(255, 168, 139, 0.25) 0%, transparent 45%),
+              #141A29;
 }
 
-/* Smooth custom scrollbars */
+.wp-peach-matrix {
+  background-size: 36px 36px;
+  background-image: linear-gradient(to right, rgba(255, 168, 139, 0.1) 1px, transparent 1px),
+                    linear-gradient(to bottom, rgba(255, 168, 139, 0.1) 1px, transparent 1px);
+  background-color: #141A29;
+}
+
+.wp-velvet-rose {
+  background: linear-gradient(160deg, #5C1D24 0%, #222D42 55%, #141A29 100%);
+}
+
+.wp-crimson-mesh {
+  background-image: radial-gradient(at 20% 20%, hsla(355,80%,40%,0.3) 0px, transparent 50%),
+                    radial-gradient(at 80% 10%, hsla(16,100%,75%,0.3) 0px, transparent 50%),
+                    radial-gradient(at 50% 80%, hsla(220,35%,12%,0.4) 0px, transparent 50%);
+  background-color: #141A29;
+}
+
+.wp-amethyst-flame {
+  background: linear-gradient(135deg, #1e1b4b 0%, #5c1d24 50%, #141a29 100%);
+}
+
+.wp-sapphire-sunset {
+  background: radial-gradient(circle at 80% 20%, rgba(255, 168, 139, 0.3) 0%, transparent 40%),
+              linear-gradient(180deg, #141a29 0%, #222d42 100%);
+}
+
+.wp-emerald-dusk {
+  background: radial-gradient(circle at 20% 80%, rgba(13, 148, 136, 0.3) 0%, transparent 50%),
+              linear-gradient(135deg, #042f2e 0%, #141a29 100%);
+}
+
+.wp-gold-sunset {
+  background: linear-gradient(135deg, #5c1d24 0%, #d62828 40%, #f59e0b 80%, #141a29 100%);
+}
+
+.wp-midnight-pure {
+  background-color: #141A29;
+}
+
+/* Custom scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;

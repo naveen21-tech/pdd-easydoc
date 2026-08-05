@@ -23,6 +23,9 @@ import {
   Palette,
   X,
   Check,
+  Flame,
+  Layers,
+  Sparkle,
 } from 'lucide-react';
 import { downloadDocumentFile } from '@/lib/download';
 
@@ -33,16 +36,21 @@ export default function UserDashboard() {
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   // Wallpaper state & modal
-  const [wallpaper, setWallpaper] = useState<string>('wallpaper-sunset');
+  const [wallpaper, setWallpaper] = useState<string>('wp-sunset-crimson');
   const [showWallpaperModal, setShowWallpaperModal] = useState<boolean>(false);
 
+  // 10 Unique Dark Wallpapers
   const WALLPAPER_OPTIONS = [
-    { id: 'wallpaper-sunset', name: 'Sunset Crimson Gradient', preview: 'bg-gradient-to-r from-red-600 via-rose-500 to-amber-300' },
-    { id: 'wallpaper-aurora', name: 'Velvet Peach Aurora', preview: 'bg-gradient-to-r from-rose-900 via-red-600 to-orange-300' },
-    { id: 'wallpaper-mesh', name: 'Soft Coral Mesh', preview: 'bg-gradient-to-r from-rose-500 via-amber-300 to-slate-900' },
-    { id: 'wallpaper-grid', name: 'Cyber Crimson Grid', preview: 'bg-slate-900 border border-red-500/40' },
-    { id: 'wallpaper-obsidian', name: 'Midnight Velvet Obsidian', preview: 'bg-gradient-to-r from-slate-950 via-red-950 to-slate-900' },
-    { id: 'none', name: 'Minimalist Clean', preview: 'bg-slate-100 dark:bg-slate-900' },
+    { id: 'wp-sunset-crimson', name: '1. Sunset Crimson', preview: 'bg-gradient-to-r from-red-800 via-red-600 to-amber-300' },
+    { id: 'wp-obsidian-flame', name: '2. Obsidian Flame', preview: 'bg-gradient-to-r from-slate-950 via-red-900 to-orange-400' },
+    { id: 'wp-peach-matrix', name: '3. Peach Cyber Grid', preview: 'bg-slate-900 border border-rose-400/40' },
+    { id: 'wp-velvet-rose', name: '4. Deep Velvet Rose', preview: 'bg-gradient-to-r from-rose-950 via-slate-900 to-slate-950' },
+    { id: 'wp-crimson-mesh', name: '5. Crimson Mesh', preview: 'bg-gradient-to-r from-red-600 via-rose-500 to-indigo-950' },
+    { id: 'wp-amethyst-flame', name: '6. Royal Amethyst', preview: 'bg-gradient-to-r from-indigo-950 via-rose-900 to-slate-950' },
+    { id: 'wp-sapphire-sunset', name: '7. Sapphire Sunset', preview: 'bg-gradient-to-r from-slate-900 via-indigo-900 to-rose-400' },
+    { id: 'wp-emerald-dusk', name: '8. Emerald Dusk', preview: 'bg-gradient-to-r from-teal-950 via-emerald-900 to-slate-950' },
+    { id: 'wp-gold-sunset', name: '9. Sunset Gold Luxe', preview: 'bg-gradient-to-r from-rose-900 via-red-600 to-amber-400' },
+    { id: 'wp-midnight-pure', name: '10. Midnight Pure', preview: 'bg-slate-900 border border-slate-800' },
   ];
 
   useEffect(() => {
@@ -102,42 +110,46 @@ export default function UserDashboard() {
   const latestDocument = documents[0];
 
   return (
-    <div className={`space-y-8 animate-fade-in p-3 rounded-3xl transition-all duration-500 ${wallpaper !== 'none' ? wallpaper : ''}`}>
-      {/* Top Bar with Customize Wallpaper Button */}
+    <div className={`space-y-8 animate-fade-in p-4 rounded-3xl transition-all duration-500 ${wallpaper}`}>
+      {/* Top Header with Wallpaper Launcher */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-display font-bold text-2xl text-slate-900 dark:text-white">Workspace Overview</h1>
-          <p className="text-xs text-slate-500 dark:text-brand-peach/80">Welcome to your EasyDoc Sunset Studio</p>
+          <h1 className="font-display font-extrabold text-3xl tracking-tight text-gradient-peach">
+            Workspace Overview
+          </h1>
+          <p className="text-xs font-semibold text-brand-peach/90 dark:text-brand-peach/90 mt-1">
+            Welcome to your EasyDoc Sunset AI Studio
+          </p>
         </div>
 
         <button
           onClick={() => setShowWallpaperModal(true)}
-          className="inline-flex items-center space-x-2 bg-white/80 dark:bg-dark-surface/80 backdrop-blur-md hover:bg-brand-50 dark:hover:bg-dark-hover text-brand-600 dark:text-brand-peach border border-brand-200 dark:border-dark-border px-3.5 py-2 rounded-xl text-xs font-semibold shadow-sm transition-all"
+          className="inline-flex items-center space-x-2 bg-gradient-to-r from-brand-maroon via-brand-crimson to-slate-900 text-brand-peach border border-brand-peach/30 px-4 py-2.5 rounded-xl text-xs font-bold shadow-lg hover:shadow-glow-peach transition-all"
         >
-          <Palette className="w-4 h-4 text-brand-600 dark:text-brand-peach" />
+          <Palette className="w-4 h-4 text-brand-peach animate-pulse" />
           <span>Dashboard Wallpaper</span>
         </button>
       </div>
 
-      {/* 1. SUNSET CRIMSON WELCOME BANNER */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-brand-maroon via-brand-crimson to-brand-peach dark:from-brand-maroon dark:via-brand-crimson dark:to-slate-900 rounded-3xl p-8 text-white shadow-2xl border border-white/10">
+      {/* 1. SUNSET CRIMSON VELVET BANNER */}
+      <div className="relative overflow-hidden bg-gradient-to-r from-brand-maroon via-brand-crimson to-brand-peach/90 dark:from-brand-maroon dark:via-brand-crimson dark:to-slate-900 rounded-3xl p-8 text-white shadow-2xl border border-brand-peach/30">
         <div className="relative z-10 max-w-2xl space-y-4">
-          <div className="inline-flex items-center space-x-2 bg-black/20 backdrop-blur-md px-3.5 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider text-brand-peach border border-white/20">
-            <Sparkles className="w-3.5 h-3.5 text-brand-peach animate-pulse" />
-            <span>AI Sunset Engine Active</span>
+          <div className="inline-flex items-center space-x-2 bg-black/30 backdrop-blur-md px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider text-brand-peach border border-brand-peach/30">
+            <Flame className="w-3.5 h-3.5 text-brand-peach animate-pulse" />
+            <span>AI Sunset Engine v2.0 Active</span>
           </div>
 
-          <h2 className="font-display text-3xl sm:text-4xl font-extrabold tracking-tight leading-tight">
-            Transform Ideas into Executive Documents
+          <h2 className="font-display text-3xl sm:text-4xl font-extrabold tracking-tight leading-tight text-white">
+            Transform Ideas into <span className="text-gradient-peach">Executive Documents</span>
           </h2>
-          <p className="text-rose-100 text-sm leading-relaxed">
+          <p className="text-rose-100 text-sm leading-relaxed font-medium">
             Create proposals, technical specs, academic papers, and ATS resumes in seconds with Groq & Gemini AI.
           </p>
 
           <div className="flex flex-wrap items-center gap-3 pt-2">
             <Link
               href="/generate"
-              className="inline-flex items-center space-x-2 bg-white text-brand-crimson hover:bg-rose-50 font-bold px-6 py-3 rounded-xl text-xs transition-all shadow-lg hover:scale-[1.02]"
+              className="inline-flex items-center space-x-2 bg-white text-brand-crimson hover:bg-rose-50 font-extrabold px-6 py-3 rounded-xl text-xs transition-all shadow-xl hover:scale-[1.02]"
             >
               <Plus className="w-4 h-4 text-brand-crimson" />
               <span>Generate New Document</span>
@@ -145,7 +157,7 @@ export default function UserDashboard() {
 
             <Link
               href="/resume-builder"
-              className="inline-flex items-center space-x-2 bg-white/10 hover:bg-white/20 text-white font-semibold px-5 py-3 rounded-xl text-xs backdrop-blur-md border border-white/20 transition-all"
+              className="inline-flex items-center space-x-2 bg-black/30 hover:bg-black/40 text-brand-peach font-bold px-5 py-3 rounded-xl text-xs backdrop-blur-md border border-brand-peach/40 transition-all"
             >
               <FileCheck2 className="w-4 h-4 text-brand-peach" />
               <span>ATS Resume Builder</span>
@@ -154,106 +166,106 @@ export default function UserDashboard() {
         </div>
 
         {/* Decorative Watermark */}
-        <div className="absolute right-[-20px] bottom-[-30px] opacity-10 pointer-events-none hidden lg:block">
-          <FileText className="w-96 h-96 text-white" />
+        <div className="absolute right-[-20px] bottom-[-30px] opacity-15 pointer-events-none hidden lg:block">
+          <FileText className="w-96 h-96 text-brand-peach" />
         </div>
       </div>
 
-      {/* 2. STATISTICS METRIC CARDS */}
+      {/* 2. STATISTICS METRIC CARDS WITH UNIQUE COLOR HIGHLIGHTS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="glass-card p-6 flex flex-col justify-between">
+        <div className="glass-card p-6 flex flex-col justify-between border-t-4 border-t-brand-crimson">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            <span className="text-xs font-bold uppercase tracking-wider text-brand-peach">
               Total Documents
             </span>
-            <div className="w-10 h-10 rounded-2xl bg-rose-50 dark:bg-brand-maroon/60 text-brand-crimson dark:text-brand-peach flex items-center justify-center">
+            <div className="w-10 h-10 rounded-2xl bg-brand-maroon text-brand-peach flex items-center justify-center border border-brand-peach/30">
               <FileText className="w-5 h-5" />
             </div>
           </div>
-          <p className="font-display text-3xl font-extrabold text-slate-900 dark:text-white">{totalDocs}</p>
-          <span className="text-xs text-slate-400 mt-2 block">Saved across all workspaces</span>
+          <p className="font-display text-4xl font-black text-gradient-peach">{totalDocs}</p>
+          <span className="text-xs font-semibold text-slate-300 mt-2 block">Saved across all workspaces</span>
         </div>
 
-        <div className="glass-card p-6 flex flex-col justify-between">
+        <div className="glass-card p-6 flex flex-col justify-between border-t-4 border-t-emerald-500">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">
               AI Generations
             </span>
-            <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-950 text-emerald-400 flex items-center justify-center border border-emerald-800">
               <Sparkles className="w-5 h-5" />
             </div>
           </div>
-          <p className="font-display text-3xl font-extrabold text-slate-900 dark:text-white">{completedDocs}</p>
-          <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold mt-2 inline-flex items-center space-x-1">
+          <p className="font-display text-4xl font-black text-emerald-400">{completedDocs}</p>
+          <span className="text-xs text-emerald-400 font-bold mt-2 inline-flex items-center space-x-1">
             <TrendingUp className="w-3.5 h-3.5" />
             <span>100% High Precision</span>
           </span>
         </div>
 
-        <div className="glass-card p-6 flex flex-col justify-between">
+        <div className="glass-card p-6 flex flex-col justify-between border-t-4 border-t-brand-peach">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            <span className="text-xs font-bold uppercase tracking-wider text-brand-peach">
               Active Templates
             </span>
-            <div className="w-10 h-10 rounded-2xl bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-brand-peach flex items-center justify-center">
+            <div className="w-10 h-10 rounded-2xl bg-rose-950 text-brand-peach flex items-center justify-center border border-rose-800">
               <FileCode className="w-5 h-5" />
             </div>
           </div>
-          <p className="font-display text-3xl font-extrabold text-slate-900 dark:text-white">{templates.length}</p>
-          <span className="text-xs text-slate-400 mt-2 block">Curated categories</span>
+          <p className="font-display text-4xl font-black text-gradient-peach">{templates.length}</p>
+          <span className="text-xs font-semibold text-slate-300 mt-2 block">Curated categories</span>
         </div>
 
-        <div className="glass-card p-6 flex flex-col justify-between">
+        <div className="glass-card p-6 flex flex-col justify-between border-t-4 border-t-amber-500">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            <span className="text-xs font-bold uppercase tracking-wider text-amber-400">
               Inference Speed
             </span>
-            <div className="w-10 h-10 rounded-2xl bg-rose-50 dark:bg-brand-maroon/60 text-brand-crimson dark:text-brand-peach flex items-center justify-center">
+            <div className="w-10 h-10 rounded-2xl bg-amber-950 text-amber-400 flex items-center justify-center border border-amber-800">
               <Zap className="w-5 h-5" />
             </div>
           </div>
-          <p className="font-display text-3xl font-extrabold text-slate-900 dark:text-white">Groq 70B</p>
-          <span className="text-xs text-brand-crimson dark:text-brand-peach font-semibold mt-2 block">Sub-Second Processing</span>
+          <p className="font-display text-3xl font-black text-gradient-gold">Groq 70B</p>
+          <span className="text-xs text-amber-400 font-bold mt-2 block">Sub-Second Processing</span>
         </div>
       </div>
 
       {/* 3. CONTINUE EDITING BANNER */}
       {latestDocument && (
-        <div className="glass-card p-6 border-l-4 border-l-brand-crimson flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="glass-card p-6 border-l-4 border-l-brand-peach flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="space-y-1">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-brand-crimson dark:text-brand-peach bg-rose-50 dark:bg-brand-maroon/50 px-2.5 py-0.5 rounded">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-brand-peach bg-brand-maroon/80 px-2.5 py-0.5 rounded border border-brand-peach/30">
               Continue Editing
             </span>
-            <h3 className="font-display font-bold text-base text-slate-900 dark:text-white">
+            <h3 className="font-display font-bold text-lg text-white">
               {latestDocument.title}
             </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1 max-w-xl">
+            <p className="text-xs text-slate-300 line-clamp-1 max-w-xl">
               {latestDocument.content}
             </p>
           </div>
 
           <Link
             href={`/editor/${latestDocument.id}`}
-            className="inline-flex items-center space-x-2 bg-brand-crimson hover:bg-rose-700 text-white font-semibold px-4 py-2.5 rounded-xl text-xs shadow-sm shrink-0"
+            className="inline-flex items-center space-x-2 bg-gradient-to-r from-brand-crimson to-brand-maroon text-white font-bold px-5 py-2.5 rounded-xl text-xs shadow-lg hover:shadow-glow transition-all shrink-0"
           >
             <span>Open Word Editor</span>
-            <ArrowRight className="w-3.5 h-3.5" />
+            <ArrowRight className="w-3.5 h-3.5 text-brand-peach" />
           </Link>
         </div>
       )}
 
-      {/* 4. RECENT DOCUMENTS & POPULAR TEMPLATES */}
+      {/* 4. RECENT DOCUMENTS & FEATURED TEMPLATES */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Recent Documents Table (2 Cols) */}
         <div className="lg:col-span-2 glass-panel rounded-2xl p-6 shadow-card space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-display font-bold text-lg text-slate-900 dark:text-white">Recent Documents</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Manage, edit, and export your recent files</p>
+              <h3 className="font-display font-bold text-lg text-white">Recent Documents</h3>
+              <p className="text-xs text-brand-peach/80">Manage, edit, and export your recent files</p>
             </div>
             <Link
               href="/history"
-              className="text-xs font-semibold text-brand-crimson dark:text-brand-peach hover:underline flex items-center space-x-1"
+              className="text-xs font-bold text-brand-peach hover:underline flex items-center space-x-1"
             >
               <span>View All</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -266,15 +278,15 @@ export default function UserDashboard() {
               <span>Loading documents...</span>
             </div>
           ) : documents.length === 0 ? (
-            <div className="py-12 text-center text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-dark-surface rounded-xl border border-dashed border-slate-200 dark:border-dark-border">
-              <FileText className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
+            <div className="py-12 text-center text-slate-400 bg-slate-900/60 rounded-xl border border-dashed border-slate-800">
+              <FileText className="w-10 h-10 text-slate-600 mx-auto mb-2" />
               <p className="font-semibold text-sm">No documents created yet</p>
               <p className="text-xs text-slate-400 mt-1 mb-4">Jumpstart your first report using EasyDoc AI.</p>
               <Link
                 href="/generate"
-                className="inline-flex items-center space-x-2 bg-brand-crimson text-white text-xs font-semibold px-4 py-2 rounded-xl"
+                className="inline-flex items-center space-x-2 bg-brand-crimson text-white text-xs font-bold px-4 py-2 rounded-xl"
               >
-                <Sparkles className="w-3.5 h-3.5" />
+                <Sparkles className="w-3.5 h-3.5 text-brand-peach" />
                 <span>Generate Document</span>
               </Link>
             </div>
@@ -282,44 +294,44 @@ export default function UserDashboard() {
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead>
-                  <tr className="border-b border-slate-200 dark:border-dark-border text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                  <tr className="border-b border-dark-border text-xs font-bold text-brand-peach uppercase tracking-wider">
                     <th className="pb-3">Title</th>
                     <th className="pb-3">Status</th>
                     <th className="pb-3">Date</th>
                     <th className="pb-3 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-dark-border">
+                <tbody className="divide-y divide-dark-border">
                   {documents.slice(0, 5).map((doc) => (
-                    <tr key={doc.id} className="hover:bg-slate-50 dark:hover:bg-dark-hover transition-colors">
-                      <td className="py-3.5 font-semibold text-slate-900 dark:text-white max-w-xs truncate">
+                    <tr key={doc.id} className="hover:bg-dark-hover/80 transition-colors">
+                      <td className="py-3.5 font-bold text-white max-w-xs truncate">
                         {doc.title}
                       </td>
                       <td className="py-3.5">
                         <span
-                          className={`inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                          className={`inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
                             doc.status === 'COMPLETE'
-                              ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40'
-                              : 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800/40'
+                              ? 'bg-emerald-950 text-emerald-400 border border-emerald-800'
+                              : 'bg-amber-950 text-amber-400 border border-amber-800'
                           }`}
                         >
                           <CheckCircle2 className="w-3 h-3" />
                           <span>{doc.status}</span>
                         </span>
                       </td>
-                      <td className="py-3.5 text-xs text-slate-500 dark:text-slate-400 font-mono">
+                      <td className="py-3.5 text-xs text-slate-400 font-mono">
                         {new Date(doc.createdAt).toLocaleDateString()}
                       </td>
                       <td className="py-3.5 text-right">
                         <button
                           onClick={() => handleExportPdf(doc.id, doc.title)}
                           disabled={downloadingId === doc.id}
-                          className="inline-flex items-center space-x-1 text-xs font-semibold text-brand-crimson dark:text-brand-peach hover:bg-rose-50 dark:hover:bg-brand-maroon/40 px-3 py-1.5 rounded-lg border border-rose-200 dark:border-dark-border transition-colors disabled:opacity-50"
+                          className="inline-flex items-center space-x-1 text-xs font-bold text-brand-peach hover:bg-brand-maroon/60 px-3 py-1.5 rounded-lg border border-brand-peach/30 transition-colors disabled:opacity-50"
                         >
                           {downloadingId === doc.id ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
                           ) : (
-                            <Download className="w-3.5 h-3.5" />
+                            <Download className="w-3.5 h-3.5 text-brand-peach" />
                           )}
                           <span>Export PDF</span>
                         </button>
@@ -335,10 +347,10 @@ export default function UserDashboard() {
         {/* Popular Templates Column (1 Col) */}
         <div className="glass-panel rounded-2xl p-6 shadow-card space-y-6">
           <div className="flex items-center justify-between">
-            <h3 className="font-display font-bold text-lg text-slate-900 dark:text-white">Featured Blueprints</h3>
+            <h3 className="font-display font-bold text-lg text-white">Featured Blueprints</h3>
             <Link
               href="/templates"
-              className="text-xs font-semibold text-brand-crimson dark:text-brand-peach hover:underline"
+              className="text-xs font-bold text-brand-peach hover:underline"
             >
               Browse 100+
             </Link>
@@ -348,23 +360,23 @@ export default function UserDashboard() {
             {templates.slice(0, 4).map((tmpl) => (
               <div
                 key={tmpl.id}
-                className="p-4 rounded-xl border border-slate-200 dark:border-dark-border hover:border-brand-crimson bg-white/50 dark:bg-dark-surface/50 transition-all hover:shadow-md group"
+                className="p-4 rounded-xl border border-dark-border hover:border-brand-peach bg-dark-surface/60 transition-all hover:shadow-md group"
               >
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-brand-crimson dark:text-brand-peach bg-rose-50 dark:bg-brand-maroon/40 px-2 py-0.5 rounded">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-brand-peach bg-brand-maroon/60 px-2 py-0.5 rounded border border-brand-peach/30">
                     {tmpl.category}
                   </span>
                   <span className="text-[10px] font-mono text-slate-400">~30s</span>
                 </div>
-                <h4 className="font-display font-bold text-sm text-slate-900 dark:text-white mb-1 group-hover:text-brand-crimson dark:group-hover:text-brand-peach transition-colors">
+                <h4 className="font-display font-bold text-sm text-white mb-1 group-hover:text-brand-peach transition-colors">
                   {tmpl.name}
                 </h4>
-                <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 mb-3 leading-relaxed">
+                <p className="text-xs text-slate-300 line-clamp-2 mb-3 leading-relaxed">
                   {tmpl.description}
                 </p>
                 <Link
                   href={`/generate?templateId=${tmpl.id}&templateName=${encodeURIComponent(tmpl.name)}`}
-                  className="text-xs font-bold text-brand-crimson dark:text-brand-peach hover:text-rose-700 inline-flex items-center space-x-1"
+                  className="text-xs font-bold text-brand-peach hover:text-white inline-flex items-center space-x-1"
                 >
                   <span>Use Template</span>
                   <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
@@ -375,26 +387,26 @@ export default function UserDashboard() {
         </div>
       </div>
 
-      {/* WALLPAPER SELECTOR MODAL */}
+      {/* WALLPAPER SELECTOR MODAL WITH 10 UNIQUE DARK WALLPAPERS */}
       {showWallpaperModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-3xl shadow-2xl max-w-xl w-full p-6 space-y-6 animate-scale-in">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-dark-border">
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-dark-surface border border-dark-border rounded-3xl shadow-2xl max-w-2xl w-full p-6 space-y-6 animate-scale-in">
+            <div className="flex items-center justify-between pb-4 border-b border-dark-border">
               <div className="flex items-center space-x-2.5">
-                <Palette className="w-5 h-5 text-brand-crimson dark:text-brand-peach" />
-                <h3 className="font-display font-bold text-lg text-slate-900 dark:text-white">
-                  Customize Dashboard Wallpaper
+                <Palette className="w-5 h-5 text-brand-peach" />
+                <h3 className="font-display font-bold text-lg text-white">
+                  Select Dashboard Dark Wallpaper
                 </h3>
               </div>
               <button
                 onClick={() => setShowWallpaperModal(false)}
-                className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-white rounded-lg"
+                className="p-2 text-slate-400 hover:text-white rounded-lg"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 max-h-96 overflow-y-auto pr-1">
               {WALLPAPER_OPTIONS.map((item) => {
                 const isSelected = wallpaper === item.id;
                 return (
@@ -403,28 +415,28 @@ export default function UserDashboard() {
                     onClick={() => changeWallpaper(item.id)}
                     className={`relative p-3 rounded-2xl border text-left transition-all overflow-hidden flex flex-col justify-between h-24 ${
                       isSelected
-                        ? 'border-brand-crimson ring-2 ring-brand-peach/50 shadow-md'
-                        : 'border-slate-200 dark:border-dark-border hover:border-brand-crimson'
+                        ? 'border-brand-peach ring-2 ring-brand-peach/50 shadow-lg bg-brand-maroon/40'
+                        : 'border-dark-border hover:border-brand-peach/50 bg-dark-bg'
                     }`}
                   >
                     <div className={`w-full h-10 rounded-lg mb-2 ${item.preview}`} />
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-slate-900 dark:text-white truncate">
+                      <span className="text-xs font-bold text-white truncate">
                         {item.name}
                       </span>
-                      {isSelected && <Check className="w-4 h-4 text-brand-crimson dark:text-brand-peach shrink-0" />}
+                      {isSelected && <Check className="w-4 h-4 text-brand-peach shrink-0" />}
                     </div>
                   </button>
                 );
               })}
             </div>
 
-            <div className="pt-4 border-t border-slate-100 dark:border-dark-border flex justify-end">
+            <div className="pt-4 border-t border-dark-border flex justify-end">
               <button
                 onClick={() => setShowWallpaperModal(false)}
-                className="bg-brand-crimson hover:bg-rose-700 text-white font-semibold text-xs px-5 py-2.5 rounded-xl shadow-sm"
+                className="bg-gradient-to-r from-brand-crimson to-brand-maroon text-white font-bold text-xs px-6 py-2.5 rounded-xl shadow-md"
               >
-                Done
+                Apply Wallpaper
               </button>
             </div>
           </div>
