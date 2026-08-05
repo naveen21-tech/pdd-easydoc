@@ -20,7 +20,10 @@ import {
   Activity,
   Compass,
   FileCheck2,
-  ChevronRight,
+  Image as ImageIcon,
+  Palette,
+  X,
+  Check,
 } from 'lucide-react';
 import { downloadDocumentFile } from '@/lib/download';
 
@@ -30,9 +33,37 @@ export default function UserDashboard() {
   const [loading, setLoading] = useState(true);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
+  // Wallpaper state & modal
+  const [wallpaper, setWallpaper] = useState<string>('wallpaper-aurora');
+  const [showWallpaperModal, setShowWallpaperModal] = useState<boolean>(false);
+
+  const WALLPAPER_OPTIONS = [
+    { id: 'wallpaper-aurora', name: 'Aurora Teal & Violet', preview: 'bg-gradient-to-r from-teal-500 to-violet-600' },
+    { id: 'wallpaper-mesh', name: 'Soft Pastel Mesh', preview: 'bg-gradient-to-r from-emerald-400 via-cyan-400 to-indigo-500' },
+    { id: 'wallpaper-grid', name: 'Cyber Matrix Grid', preview: 'bg-slate-900 border border-teal-500/30' },
+    { id: 'wallpaper-obsidian', name: 'Midnight Obsidian', preview: 'bg-gradient-to-r from-slate-950 via-teal-950 to-indigo-950' },
+    { id: 'wallpaper-cyber', name: 'Emerald Cyber Neon', preview: 'bg-gradient-to-r from-emerald-600 to-purple-600' },
+    { id: 'none', name: 'Minimalist Clean', preview: 'bg-slate-100 dark:bg-slate-900' },
+  ];
+
   useEffect(() => {
     fetchDashboardData();
+    try {
+      const savedWp = localStorage.getItem('easydoc_dashboard_wallpaper');
+      if (savedWp) setWallpaper(savedWp);
+    } catch (e) {
+      console.error(e);
+    }
   }, []);
+
+  const changeWallpaper = (id: string) => {
+    setWallpaper(id);
+    try {
+      localStorage.setItem('easydoc_dashboard_wallpaper', id);
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   const fetchDashboardData = async () => {
     try {
@@ -72,26 +103,42 @@ export default function UserDashboard() {
   const latestDocument = documents[0];
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className={`space-y-8 animate-fade-in p-2 rounded-3xl transition-all duration-500 ${wallpaper !== 'none' ? wallpaper : ''}`}>
+      {/* Top Bar with Customize Wallpaper Button */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="font-display font-bold text-2xl text-slate-900 dark:text-white">Workspace Overview</h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Welcome to your EasyDoc AI Workspace</p>
+        </div>
+
+        <button
+          onClick={() => setShowWallpaperModal(true)}
+          className="inline-flex items-center space-x-2 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md hover:bg-brand-50 dark:hover:bg-slate-800 text-brand-600 dark:text-brand-400 border border-brand-200 dark:border-brand-800 px-3.5 py-2 rounded-xl text-xs font-semibold shadow-sm transition-all"
+        >
+          <Palette className="w-4 h-4 text-brand-500" />
+          <span>Dashboard Wallpaper</span>
+        </button>
+      </div>
+
       {/* 1. FUTURISTIC WELCOME BANNER */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-brand-600 via-brand-700 to-brand-900 dark:from-slate-900 dark:via-brand-900 dark:to-slate-950 rounded-3xl p-8 text-white shadow-2xl border border-white/10">
+      <div className="relative overflow-hidden bg-gradient-to-r from-brand-600 via-brand-700 to-brand-900 dark:from-slate-950 dark:via-brand-900 dark:to-slate-900 rounded-3xl p-8 text-white shadow-2xl border border-white/10">
         <div className="relative z-10 max-w-2xl space-y-4">
-          <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider text-blue-200 border border-white/20">
-            <Sparkles className="w-3.5 h-3.5 text-brand-accent animate-pulse" />
+          <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider text-teal-200 border border-white/20">
+            <Sparkles className="w-3.5 h-3.5 text-brand-300 animate-pulse" />
             <span>AI Document Engine v2.0 Active</span>
           </div>
 
           <h2 className="font-display text-3xl sm:text-4xl font-extrabold tracking-tight leading-tight">
-            Transform Ideas into Professional Documents
+            Transform Ideas into Executive Documents
           </h2>
-          <p className="text-blue-100 dark:text-slate-300 text-sm leading-relaxed">
-            Create executive proposals, academic papers, SRS technical specs, and ATS-optimized resumes in seconds with Groq, Gemini, and Claude AI.
+          <p className="text-teal-100 dark:text-slate-300 text-sm leading-relaxed">
+            Create proposals, SRS technical specs, academic papers, and ATS resumes in seconds with Groq & Gemini AI.
           </p>
 
           <div className="flex flex-wrap items-center gap-3 pt-2">
             <Link
               href="/generate"
-              className="inline-flex items-center space-x-2 bg-white text-brand-700 hover:bg-blue-50 font-bold px-6 py-3 rounded-xl text-xs transition-all shadow-lg hover:scale-[1.02]"
+              className="inline-flex items-center space-x-2 bg-white text-brand-800 hover:bg-teal-50 font-bold px-6 py-3 rounded-xl text-xs transition-all shadow-lg hover:scale-[1.02]"
             >
               <Plus className="w-4 h-4 text-brand-600" />
               <span>Generate New Document</span>
@@ -101,7 +148,7 @@ export default function UserDashboard() {
               href="/resume-builder"
               className="inline-flex items-center space-x-2 bg-white/10 hover:bg-white/20 text-white font-semibold px-5 py-3 rounded-xl text-xs backdrop-blur-md border border-white/20 transition-all"
             >
-              <FileCheck2 className="w-4 h-4 text-brand-accent" />
+              <FileCheck2 className="w-4 h-4 text-teal-300" />
               <span>ATS Resume Builder</span>
             </Link>
           </div>
@@ -120,7 +167,7 @@ export default function UserDashboard() {
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
               Total Documents
             </span>
-            <div className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-950/50 text-brand-600 dark:text-brand-400 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-2xl bg-teal-50 dark:bg-teal-950/50 text-brand-600 dark:text-brand-400 flex items-center justify-center">
               <FileText className="w-5 h-5" />
             </div>
           </div>
@@ -149,7 +196,7 @@ export default function UserDashboard() {
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
               Active Templates
             </span>
-            <div className="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-2xl bg-purple-50 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400 flex items-center justify-center">
               <FileCode className="w-5 h-5" />
             </div>
           </div>
@@ -188,9 +235,9 @@ export default function UserDashboard() {
 
           <Link
             href={`/editor/${latestDocument.id}`}
-            className="inline-flex items-center space-x-2 bg-brand-600 hover:bg-blue-700 text-white font-semibold px-4 py-2.5 rounded-xl text-xs shadow-sm shrink-0"
+            className="inline-flex items-center space-x-2 bg-brand-600 hover:bg-teal-700 text-white font-semibold px-4 py-2.5 rounded-xl text-xs shadow-sm shrink-0"
           >
-            <span>Open in Word Editor</span>
+            <span>Open Word Editor</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
@@ -318,7 +365,7 @@ export default function UserDashboard() {
                 </p>
                 <Link
                   href={`/generate?templateId=${tmpl.id}&templateName=${encodeURIComponent(tmpl.name)}`}
-                  className="text-xs font-bold text-brand-600 dark:text-brand-400 hover:text-blue-700 inline-flex items-center space-x-1"
+                  className="text-xs font-bold text-brand-600 dark:text-brand-400 hover:text-teal-700 inline-flex items-center space-x-1"
                 >
                   <span>Use Template</span>
                   <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
@@ -329,36 +376,61 @@ export default function UserDashboard() {
         </div>
       </div>
 
-      {/* 5. AI SUGGESTIONS & TIPS SECTION */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="glass-card p-6 flex items-start space-x-4 border-l-4 border-l-amber-500">
-          <div className="w-10 h-10 rounded-2xl bg-amber-50 dark:bg-amber-950/50 text-amber-500 flex items-center justify-center shrink-0">
-            <Lightbulb className="w-5 h-5" />
-          </div>
-          <div>
-            <h4 className="font-display font-bold text-sm text-slate-900 dark:text-white mb-1">
-              AI Generation Tip
-            </h4>
-            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-              Include specific metrics, section headings, and target audience guidelines in your prompt instructions for maximum precision.
-            </p>
-          </div>
-        </div>
+      {/* WALLPAPER SELECTOR MODAL */}
+      {showWallpaperModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl max-w-xl w-full p-6 space-y-6 animate-scale-in">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center space-x-2.5">
+                <Palette className="w-5 h-5 text-brand-500" />
+                <h3 className="font-display font-bold text-lg text-slate-900 dark:text-white">
+                  Customize Dashboard Wallpaper
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowWallpaperModal(false)}
+                className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-white rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
-        <div className="glass-card p-6 flex items-start space-x-4 border-l-4 border-l-brand-600">
-          <div className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-950/50 text-brand-600 dark:text-brand-400 flex items-center justify-center shrink-0">
-            <Compass className="w-5 h-5" />
-          </div>
-          <div>
-            <h4 className="font-display font-bold text-sm text-slate-900 dark:text-white mb-1">
-              ATS Resume Scanner Ready
-            </h4>
-            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-              Use our dedicated ATS Resume Builder to generate keyword-optimized resumes guaranteed to pass corporate recruitment software.
-            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              {WALLPAPER_OPTIONS.map((item) => {
+                const isSelected = wallpaper === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => changeWallpaper(item.id)}
+                    className={`relative p-3 rounded-2xl border text-left transition-all overflow-hidden flex flex-col justify-between h-24 ${
+                      isSelected
+                        ? 'border-brand-600 ring-2 ring-brand-500/50 shadow-md'
+                        : 'border-slate-200 dark:border-slate-800 hover:border-brand-400'
+                    }`}
+                  >
+                    <div className={`w-full h-10 rounded-lg mb-2 ${item.preview}`} />
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-slate-900 dark:text-white truncate">
+                        {item.name}
+                      </span>
+                      {isSelected && <Check className="w-4 h-4 text-brand-600 shrink-0" />}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end">
+              <button
+                onClick={() => setShowWallpaperModal(false)}
+                className="bg-brand-600 hover:bg-teal-700 text-white font-semibold text-xs px-5 py-2.5 rounded-xl shadow-sm"
+              >
+                Done
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

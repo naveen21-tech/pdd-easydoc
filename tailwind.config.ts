@@ -11,25 +11,26 @@ const config: Config = {
     extend: {
       colors: {
         brand: {
-          50: '#f0f6ff',
-          100: '#e0edff',
-          200: '#bae0ff',
-          300: '#7cc2ff',
-          400: '#38a0ff',
-          500: '#2563eb', // Primary Sapphire
-          600: '#1d4ed8',
-          700: '#1e40af',
-          800: '#1e3a8a',
-          900: '#172554',
-          accent: '#06b6d4', // Cyan accent
-          violet: '#6366f1', // Secondary violet
+          50: '#f0fdfa',
+          100: '#ccfbf1',
+          200: '#99f6e4',
+          300: '#5eead4',
+          400: '#2dd4bf',
+          500: '#0d9488', // Vibrant Teal Emerald
+          600: '#0f766e', // Deep Emerald Primary
+          700: '#115e59',
+          800: '#134e4a',
+          900: '#042f2e',
+          accent: '#8b5cf6', // Electric Violet Accent
+          violet: '#7c3aed',
+          amber: '#f59e0b',
         },
         dark: {
-          bg: '#090d16',
-          surface: '#111827',
-          card: '#1f2937',
-          border: '#374151',
-          hover: '#1f2937',
+          bg: '#080c14',
+          surface: '#0f172a',
+          card: '#1e293b',
+          border: '#334155',
+          hover: '#1e293b',
         },
         light: {
           bg: '#f8fafc',
@@ -48,8 +49,8 @@ const config: Config = {
         '3xl': '1.5rem',
       },
       boxShadow: {
-        'glow': '0 0 25px -5px rgba(37, 99, 235, 0.25)',
-        'glow-accent': '0 0 25px -5px rgba(6, 182, 212, 0.3)',
+        'glow': '0 0 25px -5px rgba(13, 148, 136, 0.35)',
+        'glow-accent': '0 0 25px -5px rgba(139, 92, 246, 0.35)',
         'card-hover': '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
         'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.12)',
       },
