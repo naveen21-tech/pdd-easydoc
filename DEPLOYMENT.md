@@ -65,7 +65,7 @@ After Vercel assigns your production domain (e.g. `https://easydoc-app.vercel.ap
 1. Open your **Supabase Dashboard → Authentication → URL Configuration**.
 2. Update **Site URL** to `https://<your-vercel-domain>.vercel.app`.
 3. Add `https://<your-vercel-domain>.vercel.app/auth/callback` to the **Redirect URLs** list.
-
+deff
 ---
 
 ## 4. Database & Storage Verification (Already Applied via Supabase MCP)
