@@ -122,18 +122,15 @@ export default function TemplatesPage() {
     }
   };
 
-  const extraFilters = ['Popular', 'Newest', 'Favorites', 'Recently Used'];
+  const extraFilters = ['Popular', 'Favorites', 'Recently Used'];
   const allFilterPills = [...TEMPLATE_CATEGORIES, ...extraFilters];
 
   const filteredTemplates = TEMPLATE_CATALOG.filter((t) => {
-    // Category or Special Filter match
     let matchesCategory = true;
     if (selectedCategory === 'All') {
       matchesCategory = true;
     } else if (selectedCategory === 'Popular') {
       matchesCategory = !!t.isPopular;
-    } else if (selectedCategory === 'Newest') {
-      matchesCategory = !!t.isNew;
     } else if (selectedCategory === 'Favorites') {
       matchesCategory = favorites.includes(t.id);
     } else if (selectedCategory === 'Recently Used') {
@@ -142,7 +139,6 @@ export default function TemplatesPage() {
       matchesCategory = t.category.toLowerCase() === selectedCategory.toLowerCase();
     }
 
-    // Search query match across title, category, description, and tags
     const q = search.toLowerCase().trim();
     const matchesSearch =
       !q ||
@@ -155,23 +151,23 @@ export default function TemplatesPage() {
   });
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto">
+    <div className="space-y-8 max-w-7xl mx-auto animate-fade-in">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="inline-flex items-center space-x-2 bg-blue-50 text-brand-700 border border-blue-200 px-3 py-1 rounded-full text-xs font-semibold mb-2">
-            <Sparkles className="w-3.5 h-3.5 text-brand-600" />
-            <span>Over 100+ Professional AI Templates</span>
+          <div className="inline-flex items-center space-x-2 bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400 border border-brand-200 dark:border-brand-800/40 px-3 py-1 rounded-full text-xs font-semibold mb-2">
+            <Sparkles className="w-3.5 h-3.5 text-brand-500" />
+            <span>Over 100+ Professional AI Blueprints</span>
           </div>
-          <h2 className="font-display text-2xl font-bold text-ink">Template Catalog</h2>
-          <p className="text-sm text-slate-500">
-            Explore curated document blueprints for college, faculty, business, legal, and government needs
+          <h2 className="font-display text-2xl font-bold text-slate-900 dark:text-white">Template Library</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Curated document blueprints for students, faculty, executives, HR, and software engineers.
           </p>
         </div>
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-white p-4 rounded-2xl border border-border shadow-card space-y-4">
+      <div className="glass-panel p-4 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm">
         {/* Category Pills Slider */}
         <div className="flex items-center space-x-2 overflow-x-auto pb-1 scrollbar-none">
           {allFilterPills.map((cat) => {
@@ -182,8 +178,8 @@ export default function TemplatesPage() {
                 onClick={() => setSelectedCategory(cat)}
                 className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center space-x-1.5 ${
                   selected
-                    ? 'bg-brand-600 text-white shadow-sm'
-                    : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+                    ? 'bg-brand-600 text-white shadow-md shadow-brand-500/20'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
                 }`}
               >
                 {cat === 'Favorites' && <Heart className="w-3.5 h-3.5 text-red-400 fill-red-400" />}
@@ -201,16 +197,16 @@ export default function TemplatesPage() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search 100+ templates by title, category, keywords (e.g. 'SRS', 'IEEE', 'Lesson Plan', 'Resignation')..."
-            className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-600 focus:bg-white text-ink transition-all"
+            placeholder="Search templates by title, category, keywords (e.g. 'SRS', 'IEEE', 'Lesson Plan', 'Resignation')..."
+            className="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-600 text-slate-900 dark:text-white transition-all"
           />
         </div>
       </div>
 
       {/* Template Grid */}
       {filteredTemplates.length === 0 ? (
-        <div className="py-20 text-center text-slate-500 bg-white rounded-2xl border border-border">
-          <FileText className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+        <div className="py-20 text-center text-slate-500 dark:text-slate-400 glass-card">
+          <FileText className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
           <p className="font-semibold text-sm">No matching templates found</p>
           <p className="text-xs text-slate-400 mt-1">Try resetting your filter or search query.</p>
         </div>
@@ -223,18 +219,18 @@ export default function TemplatesPage() {
             return (
               <div
                 key={tmpl.id}
-                className="group relative bg-white/90 backdrop-blur-md rounded-2xl border border-border p-6 shadow-card hover:shadow-xl hover:border-brand-500/50 transition-all duration-300 flex flex-col justify-between"
+                className="group glass-card p-6 flex flex-col justify-between hover:border-brand-500/50"
               >
                 <div>
                   {/* Top Bar: Icon, Category Badge & Favorite */}
                   <div className="flex items-center justify-between mb-4">
-                    <div className="w-11 h-11 rounded-xl bg-blue-50 text-brand-600 flex items-center justify-center border border-blue-100 group-hover:scale-105 transition-transform">
+                    <div className="w-11 h-11 rounded-2xl bg-blue-50 dark:bg-blue-950/50 text-brand-600 dark:text-brand-400 flex items-center justify-center border border-blue-100 dark:border-blue-800/40 group-hover:scale-105 transition-transform">
                       <IconComponent className="w-5.5 h-5.5" />
                     </div>
 
                     <div className="flex items-center space-x-2">
                       {tmpl.isPopular && (
-                        <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 flex items-center space-x-1">
+                        <span className="text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800/40 flex items-center space-x-1">
                           <Zap className="w-3 h-3 text-amber-500 fill-amber-500" />
                           <span>Popular</span>
                         </span>
@@ -242,7 +238,7 @@ export default function TemplatesPage() {
 
                       <button
                         onClick={(e) => toggleFavorite(tmpl.id, e)}
-                        className="p-2 rounded-xl text-slate-400 hover:text-red-500 hover:bg-slate-100 transition-colors"
+                        className="p-2 rounded-xl text-slate-400 hover:text-red-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                         title={isFav ? 'Remove Favorite' : 'Save Favorite'}
                       >
                         <Heart
@@ -256,21 +252,21 @@ export default function TemplatesPage() {
 
                   {/* Title & Category */}
                   <div className="mb-2">
-                    <span className="text-[11px] font-semibold uppercase tracking-wider text-brand-600 bg-blue-50 px-2.5 py-0.5 rounded-md inline-block mb-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-900/40 px-2.5 py-0.5 rounded inline-block mb-1">
                       {tmpl.category}
                     </span>
-                    <h3 className="font-display font-bold text-base text-ink group-hover:text-brand-600 transition-colors">
+                    <h3 className="font-display font-bold text-base text-slate-900 dark:text-white group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
                       {tmpl.name}
                     </h3>
                   </div>
 
-                  <p className="text-xs text-slate-600 leading-relaxed line-clamp-3 mb-6">
+                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed line-clamp-3 mb-6">
                     {tmpl.description}
                   </p>
                 </div>
 
                 {/* Footer Buttons */}
-                <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-2">
+                <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
                   <div className="flex items-center space-x-1 text-[11px] font-mono text-slate-400">
                     <Clock className="w-3.5 h-3.5" />
                     <span>~{tmpl.estimatedTime || '30s'}</span>
@@ -279,7 +275,7 @@ export default function TemplatesPage() {
                   <div className="flex items-center space-x-2">
                     <button
                       onClick={() => setPreviewTemplate(tmpl)}
-                      className="p-2 text-slate-600 hover:text-brand-600 hover:bg-slate-100 rounded-xl transition-colors border border-slate-200"
+                      className="p-2 text-slate-600 dark:text-slate-300 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors border border-slate-200 dark:border-slate-800"
                       title="Quick Preview"
                     >
                       <Eye className="w-4 h-4" />
@@ -290,7 +286,7 @@ export default function TemplatesPage() {
                         tmpl.name
                       )}`}
                       onClick={() => markRecentlyUsed(tmpl.id)}
-                      className="inline-flex items-center space-x-1.5 bg-brand-600 hover:bg-blue-700 text-white font-semibold px-3.5 py-2 rounded-xl text-xs transition-all shadow-sm group-hover:shadow-md"
+                      className="inline-flex items-center space-x-1.5 bg-brand-600 hover:bg-blue-700 text-white font-semibold px-3.5 py-2 rounded-xl text-xs transition-all shadow-sm"
                     >
                       <Sparkles className="w-3.5 h-3.5" />
                       <span>Use</span>
@@ -305,58 +301,58 @@ export default function TemplatesPage() {
 
       {/* Quick Preview Modal */}
       {previewTemplate && (
-        <div className="fixed inset-0 z-50 bg-ink/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl border border-border shadow-float max-w-2xl w-full p-6 space-y-6 animate-in fade-in zoom-in-95">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-2xl w-full p-6 space-y-6 animate-scale-in">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-xl bg-blue-50 text-brand-600 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950 text-brand-600 dark:text-brand-400 flex items-center justify-center">
                   <FileText className="w-5 h-5" />
                 </div>
                 <div>
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-brand-600 bg-blue-50 px-2 py-0.5 rounded">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-900/40 px-2 py-0.5 rounded">
                     {previewTemplate.category}
                   </span>
-                  <h3 className="font-display font-bold text-lg text-ink">
+                  <h3 className="font-display font-bold text-lg text-slate-900 dark:text-white">
                     {previewTemplate.name}
                   </h3>
                 </div>
               </div>
               <button
                 onClick={() => setPreviewTemplate(null)}
-                className="p-2 text-slate-400 hover:text-ink rounded-lg"
+                className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-white rounded-lg"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="space-y-4 text-xs text-slate-600 leading-relaxed">
+            <div className="space-y-4 text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
               <p>{previewTemplate.description}</p>
 
-              <div className="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
+              <div className="grid grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
                 <div>
-                  <span className="font-semibold text-slate-500 uppercase tracking-wider text-[10px] block mb-1">
+                  <span className="font-semibold text-slate-400 uppercase tracking-wider text-[10px] block mb-1">
                     Suggested Tone
                   </span>
-                  <span className="font-medium text-ink">{previewTemplate.suggestedTone}</span>
+                  <span className="font-medium text-slate-900 dark:text-white">{previewTemplate.suggestedTone}</span>
                 </div>
 
                 <div>
-                  <span className="font-semibold text-slate-500 uppercase tracking-wider text-[10px] block mb-1">
+                  <span className="font-semibold text-slate-400 uppercase tracking-wider text-[10px] block mb-1">
                     Suggested Length
                   </span>
-                  <span className="font-medium text-ink">{previewTemplate.suggestedLength}</span>
+                  <span className="font-medium text-slate-900 dark:text-white">{previewTemplate.suggestedLength}</span>
                 </div>
               </div>
 
               <div>
-                <span className="font-semibold text-slate-700 block mb-1.5">
+                <span className="font-semibold text-slate-900 dark:text-white block mb-1.5">
                   Input Parameters Supported:
                 </span>
                 <div className="flex flex-wrap gap-1.5">
                   {previewTemplate.placeholderInputs.map((input) => (
                     <span
                       key={input}
-                      className="bg-slate-100 text-slate-700 px-2.5 py-1 rounded-md text-[11px] font-medium"
+                      className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2.5 py-1 rounded-md text-[11px] font-medium"
                     >
                       {input}
                     </span>
@@ -365,10 +361,10 @@ export default function TemplatesPage() {
               </div>
             </div>
 
-            <div className="pt-4 border-t border-slate-100 flex justify-end space-x-3">
+            <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end space-x-3">
               <button
                 onClick={() => setPreviewTemplate(null)}
-                className="px-4 py-2 bg-slate-100 text-slate-700 font-semibold rounded-xl text-xs"
+                className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold rounded-xl text-xs"
               >
                 Close
               </button>

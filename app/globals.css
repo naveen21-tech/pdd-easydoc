@@ -3,71 +3,136 @@
 @import 'tailwindcss/utilities';
 
 :root {
-  --primary: #1D4ED8;
-  --ink: #0B1B33;
-  --surface: #F5F8FC;
-  --border: #DCE6F5;
+  --bg-color: #F8FAFC;
+  --surface-color: #FFFFFF;
+  --text-primary: #0F172A;
+  --text-secondary: #64748B;
+  --border-color: #E2E8F0;
+  --card-bg: #FFFFFF;
+}
+
+.dark {
+  --bg-color: #090D16;
+  --surface-color: #111827;
+  --text-primary: #F9FAFB;
+  --text-secondary: #9CA3AF;
+  --border-color: #1F2937;
+  --card-bg: #111827;
 }
 
 body {
-  color: #0B1B33;
-  background-color: #F5F8FC;
-  font-family: var(--font-inter), sans-serif;
+  color: var(--text-primary);
+  background-color: var(--bg-color);
+  font-family: var(--font-inter), 'Inter', sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  overflow-x: hidden;
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-sora), sans-serif;
+  font-family: var(--font-sora), 'Plus Jakarta Sans', sans-serif;
 }
 
 code, pre {
-  font-family: var(--font-ibm-plex-mono), monospace;
+  font-family: var(--font-ibm-plex-mono), 'JetBrains Mono', monospace;
 }
 
-/* Custom Paper Stack Motif for EasyDoc Cards */
-.paper-stack {
+/* Glassmorphism Panels */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.dark .glass-panel {
+  background: rgba(17, 24, 39, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(31, 41, 55, 0.8);
+}
+
+/* Glass Card */
+.glass-card {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 1rem;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dark .glass-card {
+  background: rgba(17, 24, 39, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(31, 41, 55, 0.9);
+}
+
+.glass-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px -5px rgba(37, 99, 235, 0.15);
+  border-color: rgba(37, 99, 235, 0.4);
+}
+
+/* Glowing Border Accent */
+.glow-border {
   position: relative;
-  background: #ffffff;
-  border: 1px solid #DCE6F5;
-  border-radius: 0.75rem;
-  box-shadow: 0 4px 12px rgba(11, 27, 51, 0.04);
-  transition: all 0.2s ease-in-out;
 }
 
-.paper-stack::before {
+.glow-border::after {
   content: '';
   position: absolute;
-  top: 4px;
-  right: -4px;
-  bottom: -4px;
-  left: 4px;
-  background: #ffffff;
-  border: 1px solid #E2E8F0;
-  border-radius: 0.75rem;
+  inset: -1px;
+  background: linear-gradient(135deg, #2563eb, #06b6d4, #6366f1);
+  border-radius: inherit;
   z-index: -1;
-  opacity: 0.7;
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
-.paper-stack:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 25px -5px rgba(29, 78, 216, 0.1);
-  border-color: #1D4ED8;
+.glow-border:hover::after {
+  opacity: 1;
 }
 
-/* Custom scrollbars */
+/* Smooth custom scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #F5F8FC;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #CBD5E1;
-  border-radius: 4px;
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #374151;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94A3B8;
+  background: #94a3b8;
+}
+
+/* Skeleton Loading Animation */
+.skeleton {
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background-size: 200% 100%;
+  animation: skeletonLoading 1.5s infinite ease-in-out;
+  border-radius: 0.5rem;
+}
+
+.dark .skeleton {
+  background: linear-gradient(90deg, #1f2937 25%, #374151 50%, #1f2937 75%);
+  background-size: 200% 100%;
+}
+
+@keyframes skeletonLoading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }

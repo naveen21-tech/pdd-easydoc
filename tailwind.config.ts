@@ -1,6 +1,7 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
+  darkMode: 'class',
   content: [
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -10,40 +11,77 @@ const config: Config = {
     extend: {
       colors: {
         brand: {
-          50: '#eff6ff',
-          100: '#dbeafe',
-          500: '#3b82f6',
-          600: '#1D4ED8', // Primary
-          700: '#1d4ed8',
-          800: '#1e40af',
-          900: '#1e3a8a',
+          50: '#f0f6ff',
+          100: '#e0edff',
+          200: '#bae0ff',
+          300: '#7cc2ff',
+          400: '#38a0ff',
+          500: '#2563eb', // Primary Sapphire
+          600: '#1d4ed8',
+          700: '#1e40af',
+          800: '#1e3a8a',
+          900: '#172554',
+          accent: '#06b6d4', // Cyan accent
+          violet: '#6366f1', // Secondary violet
         },
-        ink: {
-          DEFAULT: '#0B1B33',
-          muted: '#475569',
-          light: '#64748B',
+        dark: {
+          bg: '#090d16',
+          surface: '#111827',
+          card: '#1f2937',
+          border: '#374151',
+          hover: '#1f2937',
         },
-        surface: {
-          DEFAULT: '#F5F8FC',
-          card: '#FFFFFF',
-          sidebar: '#0B1B33',
-          hover: '#EBF2FA',
+        light: {
+          bg: '#f8fafc',
+          surface: '#ffffff',
+          border: '#e2e8f0',
+          hover: '#f1f5f9',
         },
-        border: {
-          DEFAULT: '#DCE6F5',
-          subtle: '#E2E8F0',
-        }
       },
       fontFamily: {
-        display: ['var(--font-sora)', 'sans-serif'],
-        sans: ['var(--font-inter)', 'sans-serif'],
-        mono: ['var(--font-ibm-plex-mono)', 'monospace'],
+        display: ['var(--font-sora)', 'Plus Jakarta Sans', 'sans-serif'],
+        sans: ['var(--font-inter)', 'Inter', 'sans-serif'],
+        mono: ['var(--font-ibm-plex-mono)', 'JetBrains Mono', 'monospace'],
+      },
+      borderRadius: {
+        '2xl': '1rem',
+        '3xl': '1.5rem',
       },
       boxShadow: {
-        'card': '0 4px 20px -2px rgba(11, 27, 51, 0.05)',
-        'float': '0 12px 32px -4px rgba(11, 27, 51, 0.12)',
-        'paper': '0 2px 8px 0 rgba(11, 27, 51, 0.08), 0 0 0 1px rgba(220, 230, 245, 0.6)',
-      }
+        'glow': '0 0 25px -5px rgba(37, 99, 235, 0.25)',
+        'glow-accent': '0 0 25px -5px rgba(6, 182, 212, 0.3)',
+        'card-hover': '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+        'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.12)',
+      },
+      animation: {
+        'fade-in': 'fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+        'slide-up': 'slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+        'slide-down': 'slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+        'scale-in': 'scaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+        'pulse-subtle': 'pulseSubtle 3s infinite ease-in-out',
+      },
+      keyframes: {
+        fadeIn: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        slideUp: {
+          '0%': { opacity: '0', transform: 'translateY(12px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        slideDown: {
+          '0%': { opacity: '0', transform: 'translateY(-12px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        scaleIn: {
+          '0%': { opacity: '0', transform: 'scale(0.95)' },
+          '100%': { opacity: '1', transform: 'scale(1)' },
+        },
+        pulseSubtle: {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.6' },
+        },
+      },
     },
   },
   plugins: [],

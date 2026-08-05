@@ -14,6 +14,13 @@ import {
   Download,
   Plus,
   Loader2,
+  Bookmark,
+  Pin,
+  Lightbulb,
+  Activity,
+  Compass,
+  FileCheck2,
+  ChevronRight,
 } from 'lucide-react';
 import { downloadDocumentFile } from '@/lib/download';
 
@@ -62,109 +69,145 @@ export default function UserDashboard() {
 
   const totalDocs = documents.length;
   const completedDocs = documents.filter((d) => d.status === 'COMPLETE').length;
+  const latestDocument = documents[0];
 
   return (
-    <div className="space-y-8">
-      {/* Welcome Banner */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-brand-600 via-blue-700 to-ink rounded-3xl p-8 text-white shadow-xl">
-        <div className="relative z-10 max-w-2xl">
-          <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-md px-3.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wider text-blue-200 mb-4 border border-white/20">
-            <Sparkles className="w-3.5 h-3.5 text-blue-300" />
-            <span>AI Document Engine Active</span>
+    <div className="space-y-8 animate-fade-in">
+      {/* 1. FUTURISTIC WELCOME BANNER */}
+      <div className="relative overflow-hidden bg-gradient-to-r from-brand-600 via-brand-700 to-brand-900 dark:from-slate-900 dark:via-brand-900 dark:to-slate-950 rounded-3xl p-8 text-white shadow-2xl border border-white/10">
+        <div className="relative z-10 max-w-2xl space-y-4">
+          <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider text-blue-200 border border-white/20">
+            <Sparkles className="w-3.5 h-3.5 text-brand-accent animate-pulse" />
+            <span>AI Document Engine v2.0 Active</span>
           </div>
 
-          <h2 className="font-display text-3xl font-extrabold tracking-tight mb-3">
-            Create AI Reports & Docs Effortlessly
+          <h2 className="font-display text-3xl sm:text-4xl font-extrabold tracking-tight leading-tight">
+            Transform Ideas into Professional Documents
           </h2>
-          <p className="text-blue-100 text-sm leading-relaxed mb-6">
-            Leverage OpenAI, Claude, and Gemini to generate polished, executive-ready proposals, specifications, and reports in seconds.
+          <p className="text-blue-100 dark:text-slate-300 text-sm leading-relaxed">
+            Create executive proposals, academic papers, SRS technical specs, and ATS-optimized resumes in seconds with Groq, Gemini, and Claude AI.
           </p>
 
-          <Link
-            href="/generate"
-            className="inline-flex items-center space-x-2 bg-white text-brand-700 hover:bg-blue-50 font-semibold px-6 py-3 rounded-xl text-sm transition-all shadow-md hover:scale-[1.02]"
-          >
-            <Plus className="w-4 h-4 text-brand-600" />
-            <span>Generate New Document</span>
-          </Link>
+          <div className="flex flex-wrap items-center gap-3 pt-2">
+            <Link
+              href="/generate"
+              className="inline-flex items-center space-x-2 bg-white text-brand-700 hover:bg-blue-50 font-bold px-6 py-3 rounded-xl text-xs transition-all shadow-lg hover:scale-[1.02]"
+            >
+              <Plus className="w-4 h-4 text-brand-600" />
+              <span>Generate New Document</span>
+            </Link>
+
+            <Link
+              href="/resume-builder"
+              className="inline-flex items-center space-x-2 bg-white/10 hover:bg-white/20 text-white font-semibold px-5 py-3 rounded-xl text-xs backdrop-blur-md border border-white/20 transition-all"
+            >
+              <FileCheck2 className="w-4 h-4 text-brand-accent" />
+              <span>ATS Resume Builder</span>
+            </Link>
+          </div>
         </div>
 
-        {/* Decorative elements */}
-        <div className="absolute right-[-40px] bottom-[-40px] opacity-15 pointer-events-none hidden lg:block">
+        {/* Decorative Watermark */}
+        <div className="absolute right-[-20px] bottom-[-30px] opacity-10 pointer-events-none hidden lg:block">
           <FileText className="w-96 h-96 text-white" />
         </div>
       </div>
 
-      {/* Metrics Row */}
+      {/* 2. STATISTICS METRIC CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="paper-stack p-6 bg-white rounded-2xl border border-border">
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+        <div className="glass-card p-6 flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
               Total Documents
             </span>
-            <div className="w-10 h-10 rounded-xl bg-blue-50 text-brand-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-950/50 text-brand-600 dark:text-brand-400 flex items-center justify-center">
               <FileText className="w-5 h-5" />
             </div>
           </div>
-          <p className="font-display text-3xl font-bold text-ink">{totalDocs}</p>
-          <span className="text-xs text-slate-500 mt-2 block">All created docs</span>
+          <p className="font-display text-3xl font-extrabold text-slate-900 dark:text-white">{totalDocs}</p>
+          <span className="text-xs text-slate-400 mt-2 block">Saved across all workspaces</span>
         </div>
 
-        <div className="paper-stack p-6 bg-white rounded-2xl border border-border">
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+        <div className="glass-card p-6 flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
               AI Generations
             </span>
-            <div className="w-10 h-10 rounded-xl bg-blue-50 text-brand-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
               <Sparkles className="w-5 h-5" />
             </div>
           </div>
-          <p className="font-display text-3xl font-bold text-ink">{completedDocs}</p>
-          <span className="text-xs text-green-600 font-semibold mt-2 inline-flex items-center space-x-1">
+          <p className="font-display text-3xl font-extrabold text-slate-900 dark:text-white">{completedDocs}</p>
+          <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold mt-2 inline-flex items-center space-x-1">
             <TrendingUp className="w-3.5 h-3.5" />
-            <span>100% Success Rate</span>
+            <span>100% High Precision</span>
           </span>
         </div>
 
-        <div className="paper-stack p-6 bg-white rounded-2xl border border-border">
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-              Templates Available
+        <div className="glass-card p-6 flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              Active Templates
             </span>
-            <div className="w-10 h-10 rounded-xl bg-blue-50 text-brand-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
               <FileCode className="w-5 h-5" />
             </div>
           </div>
-          <p className="font-display text-3xl font-bold text-ink">{templates.length}</p>
-          <span className="text-xs text-slate-500 mt-2 block">Curated structures</span>
+          <p className="font-display text-3xl font-extrabold text-slate-900 dark:text-white">{templates.length}</p>
+          <span className="text-xs text-slate-400 mt-2 block">Curated categories</span>
         </div>
 
-        <div className="paper-stack p-6 bg-white rounded-2xl border border-border">
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-              Active Plan
+        <div className="glass-card p-6 flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              Inference Speed
             </span>
-            <div className="w-10 h-10 rounded-xl bg-blue-50 text-brand-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-2xl bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 flex items-center justify-center">
               <Zap className="w-5 h-5" />
             </div>
           </div>
-          <p className="font-display text-3xl font-bold text-ink">Free Tier</p>
-          <span className="text-xs text-brand-600 font-semibold mt-2 block">Unlimited Exports</span>
+          <p className="font-display text-3xl font-extrabold text-slate-900 dark:text-white">Groq 70B</p>
+          <span className="text-xs text-brand-600 dark:text-brand-400 font-semibold mt-2 block">Sub-Second Processing</span>
         </div>
       </div>
 
-      {/* Quick Generator & Templates split */}
+      {/* 3. CONTINUE EDITING BANNER */}
+      {latestDocument && (
+        <div className="glass-card p-6 border-l-4 border-l-brand-600 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-900/40 px-2.5 py-0.5 rounded">
+              Continue Editing
+            </span>
+            <h3 className="font-display font-bold text-base text-slate-900 dark:text-white">
+              {latestDocument.title}
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1 max-w-xl">
+              {latestDocument.content}
+            </p>
+          </div>
+
+          <Link
+            href={`/editor/${latestDocument.id}`}
+            className="inline-flex items-center space-x-2 bg-brand-600 hover:bg-blue-700 text-white font-semibold px-4 py-2.5 rounded-xl text-xs shadow-sm shrink-0"
+          >
+            <span>Open in Word Editor</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+      )}
+
+      {/* 4. RECENT DOCUMENTS & POPULAR TEMPLATES */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Recent Documents Table (2 Cols) */}
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-border p-6 shadow-card">
-          <div className="flex items-center justify-between mb-6">
+        <div className="lg:col-span-2 glass-panel rounded-2xl p-6 shadow-card space-y-6">
+          <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-display font-bold text-lg text-ink">Recent Documents</h3>
-              <p className="text-xs text-slate-500">Manage and export your generated documents</p>
+              <h3 className="font-display font-bold text-lg text-slate-900 dark:text-white">Recent Documents</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Manage, edit, and export your recent files</p>
             </div>
             <Link
               href="/history"
-              className="text-xs font-semibold text-brand-600 hover:text-blue-700 flex items-center space-x-1"
+              className="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline flex items-center space-x-1"
             >
               <span>View All</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -172,15 +215,18 @@ export default function UserDashboard() {
           </div>
 
           {loading ? (
-            <div className="py-12 text-center text-slate-400 text-sm">Loading documents...</div>
+            <div className="py-12 text-center text-slate-400 text-sm flex items-center justify-center space-x-2">
+              <Loader2 className="w-4 h-4 animate-spin text-brand-600" />
+              <span>Loading documents...</span>
+            </div>
           ) : documents.length === 0 ? (
-            <div className="py-12 text-center text-slate-500 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-              <FileText className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-              <p className="font-semibold text-sm">No documents generated yet</p>
-              <p className="text-xs text-slate-400 mt-1 mb-4">Start by generating your first document with AI.</p>
+            <div className="py-12 text-center text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
+              <FileText className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
+              <p className="font-semibold text-sm">No documents created yet</p>
+              <p className="text-xs text-slate-400 mt-1 mb-4">Jumpstart your first report using EasyDoc AI.</p>
               <Link
                 href="/generate"
-                className="inline-flex items-center space-x-2 bg-brand-600 text-white text-xs font-semibold px-4 py-2 rounded-lg"
+                className="inline-flex items-center space-x-2 bg-brand-600 text-white text-xs font-semibold px-4 py-2 rounded-xl"
               >
                 <Sparkles className="w-3.5 h-3.5" />
                 <span>Generate Document</span>
@@ -190,39 +236,39 @@ export default function UserDashboard() {
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead>
-                  <tr className="border-b border-slate-100 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                  <tr className="border-b border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-400 uppercase tracking-wider">
                     <th className="pb-3">Title</th>
                     <th className="pb-3">Status</th>
                     <th className="pb-3">Date</th>
                     <th className="pb-3 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {documents.slice(0, 5).map((doc) => (
-                    <tr key={doc.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="py-3.5 font-medium text-ink max-w-xs truncate">
+                    <tr key={doc.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                      <td className="py-3.5 font-semibold text-slate-900 dark:text-white max-w-xs truncate">
                         {doc.title}
                       </td>
                       <td className="py-3.5">
                         <span
                           className={`inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
                             doc.status === 'COMPLETE'
-                              ? 'bg-green-50 text-green-700 border border-green-200'
-                              : 'bg-amber-50 text-amber-700 border border-amber-200'
+                              ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40'
+                              : 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800/40'
                           }`}
                         >
                           <CheckCircle2 className="w-3 h-3" />
                           <span>{doc.status}</span>
                         </span>
                       </td>
-                      <td className="py-3.5 text-xs text-slate-500">
+                      <td className="py-3.5 text-xs text-slate-500 dark:text-slate-400 font-mono">
                         {new Date(doc.createdAt).toLocaleDateString()}
                       </td>
                       <td className="py-3.5 text-right">
                         <button
                           onClick={() => handleExportPdf(doc.id, doc.title)}
                           disabled={downloadingId === doc.id}
-                          className="inline-flex items-center space-x-1 text-xs font-semibold text-brand-600 hover:text-blue-700 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100 transition-colors disabled:opacity-50"
+                          className="inline-flex items-center space-x-1 text-xs font-semibold text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/30 px-3 py-1.5 rounded-lg border border-brand-200 dark:border-brand-800/40 transition-colors disabled:opacity-50"
                         >
                           {downloadingId === doc.id ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -240,45 +286,76 @@ export default function UserDashboard() {
           )}
         </div>
 
-        {/* Featured Templates (1 Col) */}
-        <div className="bg-white rounded-2xl border border-border p-6 shadow-card space-y-6">
+        {/* Popular Templates Column (1 Col) */}
+        <div className="glass-panel rounded-2xl p-6 shadow-card space-y-6">
           <div className="flex items-center justify-between">
-            <h3 className="font-display font-bold text-lg text-ink">Popular Templates</h3>
+            <h3 className="font-display font-bold text-lg text-slate-900 dark:text-white">Featured Blueprints</h3>
             <Link
               href="/templates"
-              className="text-xs font-semibold text-brand-600 hover:text-blue-700"
+              className="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline"
             >
-              Browse All
+              Browse 100+
             </Link>
           </div>
 
           <div className="space-y-4">
-            {templates.slice(0, 3).map((tmpl) => (
+            {templates.slice(0, 4).map((tmpl) => (
               <div
                 key={tmpl.id}
-                className="p-4 rounded-xl border border-slate-200 hover:border-brand-500 bg-slate-50/50 transition-all hover:shadow-sm group"
+                className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-brand-500 bg-white/50 dark:bg-slate-900/50 transition-all hover:shadow-md group"
               >
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-brand-600 bg-blue-50 px-2 py-0.5 rounded">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-900/40 px-2 py-0.5 rounded">
                     {tmpl.category}
                   </span>
-                  <span className="text-[11px] text-slate-400">{tmpl.usageCount} uses</span>
+                  <span className="text-[10px] font-mono text-slate-400">~30s</span>
                 </div>
-                <h4 className="font-display font-bold text-sm text-ink mb-1 group-hover:text-brand-600 transition-colors">
+                <h4 className="font-display font-bold text-sm text-slate-900 dark:text-white mb-1 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
                   {tmpl.name}
                 </h4>
-                <p className="text-xs text-slate-500 line-clamp-2 mb-3">{tmpl.description}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 mb-3 leading-relaxed">
+                  {tmpl.description}
+                </p>
                 <Link
-                  href={`/generate?templateId=${tmpl.id}&templateName=${encodeURIComponent(
-                    tmpl.name
-                  )}`}
-                  className="text-xs font-semibold text-brand-600 hover:text-blue-700 inline-flex items-center space-x-1"
+                  href={`/generate?templateId=${tmpl.id}&templateName=${encodeURIComponent(tmpl.name)}`}
+                  className="text-xs font-bold text-brand-600 dark:text-brand-400 hover:text-blue-700 inline-flex items-center space-x-1"
                 >
                   <span>Use Template</span>
-                  <ArrowRight className="w-3 h-3" />
+                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                 </Link>
               </div>
             ))}
+          </div>
+        </div>
+      </div>
+
+      {/* 5. AI SUGGESTIONS & TIPS SECTION */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="glass-card p-6 flex items-start space-x-4 border-l-4 border-l-amber-500">
+          <div className="w-10 h-10 rounded-2xl bg-amber-50 dark:bg-amber-950/50 text-amber-500 flex items-center justify-center shrink-0">
+            <Lightbulb className="w-5 h-5" />
+          </div>
+          <div>
+            <h4 className="font-display font-bold text-sm text-slate-900 dark:text-white mb-1">
+              AI Generation Tip
+            </h4>
+            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+              Include specific metrics, section headings, and target audience guidelines in your prompt instructions for maximum precision.
+            </p>
+          </div>
+        </div>
+
+        <div className="glass-card p-6 flex items-start space-x-4 border-l-4 border-l-brand-600">
+          <div className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-950/50 text-brand-600 dark:text-brand-400 flex items-center justify-center shrink-0">
+            <Compass className="w-5 h-5" />
+          </div>
+          <div>
+            <h4 className="font-display font-bold text-sm text-slate-900 dark:text-white mb-1">
+              ATS Resume Scanner Ready
+            </h4>
+            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+              Use our dedicated ATS Resume Builder to generate keyword-optimized resumes guaranteed to pass corporate recruitment software.
+            </p>
           </div>
         </div>
       </div>
