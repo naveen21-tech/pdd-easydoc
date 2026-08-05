@@ -10,27 +10,28 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        // Palette values matching exact user image swatch
         brand: {
-          50: '#f0fdfa',
-          100: '#ccfbf1',
-          200: '#99f6e4',
-          300: '#5eead4',
-          400: '#2dd4bf',
-          500: '#0d9488', // Vibrant Teal Emerald
-          600: '#0f766e', // Deep Emerald Primary
-          700: '#115e59',
-          800: '#134e4a',
-          900: '#042f2e',
-          accent: '#8b5cf6', // Electric Violet Accent
-          violet: '#7c3aed',
-          amber: '#f59e0b',
+          50: '#fff5f5',
+          100: '#ffe3e3',
+          200: '#ffc9c9',
+          300: '#ffa88b', // Warm Peach Sunset Coral (#FFA88B)
+          400: '#f87171',
+          500: '#e63946',
+          600: '#d62828', // Primary Crimson Red (#D62828)
+          700: '#b91c1c',
+          800: '#991b1b',
+          900: '#5c1d24', // Velvet Wine Maroon (#5C1D24)
+          peach: '#ffa88b',
+          maroon: '#5c1d24',
+          crimson: '#d62828',
         },
         dark: {
-          bg: '#080c14',
-          surface: '#0f172a',
-          card: '#1e293b',
-          border: '#334155',
-          hover: '#1e293b',
+          bg: '#141a29',      // Deep Midnight Navy (#141A29)
+          surface: '#222d42', // Dark Slate Navy Surface (#222D42)
+          card: '#222d42',    // Card Background (#222D42)
+          border: '#3e4a5e',  // Steel Slate Navy Border (#3E4A5E)
+          hover: '#2a3750',   // Hover state
         },
         light: {
           bg: '#f8fafc',
@@ -49,10 +50,10 @@ const config: Config = {
         '3xl': '1.5rem',
       },
       boxShadow: {
-        'glow': '0 0 25px -5px rgba(13, 148, 136, 0.35)',
-        'glow-accent': '0 0 25px -5px rgba(139, 92, 246, 0.35)',
-        'card-hover': '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
-        'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.12)',
+        'glow': '0 0 25px -5px rgba(214, 40, 40, 0.35)',
+        'glow-peach': '0 0 25px -5px rgba(255, 168, 139, 0.4)',
+        'card-hover': '0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.2)',
+        'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.25)',
       },
       animation: {
         'fade-in': 'fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards',
