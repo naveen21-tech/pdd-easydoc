@@ -8,7 +8,12 @@
     "start": "next start",
     "lint": "next lint",
     "postinstall": "prisma generate",
-    "test:load": "node tests/load/run-load-tests.js"
+    "test:load": "node tests/load/run-load-tests.js",
+    "test:all": "node tests/run-all-tests.js",
+    "test:selenium": "node tests/run-all-tests.js --suite=selenium",
+    "test:appium": "node tests/run-all-tests.js --suite=appium",
+    "test:vulnerability": "node tests/run-all-tests.js --suite=vulnerability",
+    "test:load-suite": "node tests/run-all-tests.js --suite=load"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.26.0",
@@ -16,14 +21,21 @@
     "@prisma/client": "^5.18.0",
     "@supabase/ssr": "^0.4.0",
     "@supabase/supabase-js": "^2.45.1",
+    "axios": "^1.7.4",
+    "chai": "^4.3.10",
     "clsx": "^2.1.1",
     "docx": "^8.5.0",
+    "exceljs": "^4.4.0",
     "lucide-react": "^0.427.0",
+    "mocha": "^10.7.3",
+    "mochawesome": "^7.1.3",
     "next": "^14.2.5",
     "openai": "^4.56.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "selenium-webdriver": "^4.23.0",
     "tailwind-merge": "^2.5.2",
+    "winston": "^3.14.2",
     "zod": "^3.23.8"
   },
   "devDependencies": {
@@ -33,7 +45,6 @@
     "autoprefixer": "^10.4.20",
     "eslint": "^8.57.0",
     "eslint-config-next": "14.2.5",
-    "exceljs": "^4.4.0",
     "postcss": "^8.4.41",
     "prisma": "^5.18.0",
     "tailwindcss": "^3.4.10",

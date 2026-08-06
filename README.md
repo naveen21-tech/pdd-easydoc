@@ -98,6 +98,42 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
+## Enterprise E2E Test Automation Framework (1200 Test Cases)
+
+EasyDoc includes a production-ready, enterprise-grade test automation suite with **1200 total test cases** across 4 core domains:
+
+1. **Selenium Web E2E (300 Test Cases):** Route discovery, POM, form validations, UI controls, navigation, and document workflows.
+2. **Appium Mobile E2E (300 Test Cases):** Mobile POM, Flutter widget finders, gesture utilities (tap, swipe, scroll), and screen navigation.
+3. **Vulnerability & Security (300 Test Cases):** OWASP Top 10 injection, XSS, auth security, CORS/CSP headers, sensitive data exposure, rate limiting.
+4. **Load & Performance (300 Test Cases):** Latency (p50/p95/p99), RPS throughput, API route benchmarks, heavy document processing, spike testing.
+
+### Running Test Automation Locally
+
+- **Execute All 1200 Test Cases:**
+  ```bash
+  npm run test:all
+  ```
+- **Execute Individual Suites:**
+  ```bash
+  npm run test:selenium
+  npm run test:appium
+  npm run test:vulnerability
+  npm run test:load-suite
+  ```
+
+### Enterprise Reports Generated
+
+- **Excel Reports (`reports/excel/`):**
+  - `E2E_Comprehensive_Report.xlsx` (Master consolidated report with 4 detailed sheets: `Summary`, `Test Cases`, `Failed Tests`, `Execution Logs`)
+  - `E2E_Report.xlsx` (Selenium Web)
+  - `Mobile_E2E_Report.xlsx` (Appium Mobile)
+  - `Vulnerability_Report.xlsx` (OWASP Security)
+  - `Load_Report.xlsx` (Performance Benchmarks)
+- **HTML Dashboard (`reports/index.html`):** Executive summary dashboard with execution statistics and pass rates.
+- **Winston Execution Logs (`logs/app.log`):** Detailed structured logs with timestamps.
+
+---
+
 ## Vercel Deployment Guide
 
 1. Push this repository to GitHub.
@@ -105,3 +141,4 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 3. Configure all variables listed in `.env.example` under **Project Settings → Environment Variables**.
 4. In Supabase Dashboard under **Authentication → URL Configuration**, add `https://<your-vercel-domain>.vercel.app/auth/callback` to the Redirect URLs allowlist.
 5. Deploy! Vercel automatically builds and deploys Next.js App Router serverless functions for all `app/api/*` routes.
+
