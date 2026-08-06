@@ -1,0 +1,53 @@
+name: Enterprise 300+ Load Test Suite
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  load-test-execution:
+    name: Execute 300+ Load Tests & Generate Excel Report
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: 1. Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 2. Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 3. Install Dependencies
+        run: npm ci
+
+      - name: 4. Execute 310 Load Test Cases & Generate Excel Report
+        run: npm run test:load
+
+      - name: 5. Verify Generated Reports
+        run: |
+          ls -la reports/
+          test -f reports/Load_Test_Report.xlsx || exit 1
+          echo "Load_Test_Report.xlsx successfully verified."
+
+      - name: 6. Upload Excel Report Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Load_Test_Report_Excel
+          path: reports/Load_Test_Report.xlsx
+          retention-days: 30
+
+      - name: 7. Commit & Push Updated Excel Report to Repository
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add reports/Load_Test_Report.xlsx reports/load-test-summary.json
+          git commit -m "chore(qa): update 300+ load test execution Excel report [skip ci]" || echo "No report changes to commit"
+          git push origin HEAD:main || echo "Push skipped or branch protected"
