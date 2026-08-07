@@ -134,46 +134,46 @@ export default function HistoryPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="font-display text-2xl font-bold text-ink">Document History</h2>
-          <p className="text-sm text-slate-500">
+          <h2 className="font-display text-2xl font-bold text-slate-900 dark:text-white">Document History</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             View, edit, and export all your generated AI documents
           </p>
         </div>
 
         <div className="relative w-full sm:w-72">
-          <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
+          <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400 dark:text-slate-500" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search documents..."
-            className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-brand-600 text-ink shadow-sm"
+            className="w-full pl-10 pr-4 py-2 bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-purple-600 dark:focus:ring-brand-lavender text-slate-900 dark:text-white shadow-sm placeholder-slate-400 dark:placeholder-slate-500"
           />
         </div>
       </div>
 
       {toastMessage && (
-        <div className="p-4 rounded-xl bg-green-50 border border-green-200 flex items-center space-x-3 text-green-700 text-xs">
-          <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
+        <div className="p-4 rounded-xl bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800/50 flex items-center space-x-3 text-green-700 dark:text-green-300 text-xs">
+          <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400 shrink-0" />
           <span>{toastMessage}</span>
         </div>
       )}
 
       {errorMessage && (
-        <div className="p-4 rounded-xl bg-red-50 border border-red-200 flex items-center space-x-3 text-red-700 text-xs">
-          <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
+        <div className="p-4 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/50 flex items-center space-x-3 text-red-700 dark:text-red-300 text-xs">
+          <AlertCircle className="w-4 h-4 text-red-500 dark:text-red-400 shrink-0" />
           <span>{errorMessage}</span>
         </div>
       )}
 
       {/* Document List */}
       {loading ? (
-        <div className="py-20 text-center text-slate-400 text-sm">Loading document history...</div>
+        <div className="py-20 text-center text-slate-400 dark:text-slate-500 text-sm">Loading document history...</div>
       ) : filteredDocs.length === 0 ? (
-        <div className="py-20 text-center text-slate-500 bg-white rounded-2xl border border-border">
-          <FileText className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-          <p className="font-semibold text-sm">No documents found</p>
-          <p className="text-xs text-slate-400 mt-1">Generated documents will appear here.</p>
+        <div className="py-20 text-center text-slate-500 dark:text-slate-400 bg-white dark:bg-dark-surface rounded-2xl border border-slate-200 dark:border-dark-border">
+          <FileText className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+          <p className="font-semibold text-sm text-slate-700 dark:text-slate-200">No documents found</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Generated documents will appear here.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -182,38 +182,38 @@ export default function HistoryPage() {
             return (
               <div
                 key={doc.id}
-                className="paper-stack p-6 bg-white rounded-2xl border border-border flex flex-col justify-between"
+                className="p-6 bg-white dark:bg-dark-surface rounded-2xl border border-slate-200 dark:border-dark-border flex flex-col justify-between shadow-card hover:border-purple-300 dark:hover:border-brand-lavender/40 transition-all"
               >
                 <div>
                   <div className="flex items-center justify-between mb-3">
                     <span
                       className={`inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
                         doc.status === 'COMPLETE'
-                          ? 'bg-green-50 text-green-700 border border-green-200'
-                          : 'bg-amber-50 text-amber-700 border border-amber-200'
+                          ? 'bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800/50'
+                          : 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50'
                       }`}
                     >
                       <CheckCircle2 className="w-3 h-3" />
                       <span>{doc.status}</span>
                     </span>
-                    <span className="text-[11px] text-slate-400">
+                    <span className="text-[11px] text-slate-400 dark:text-slate-500">
                       {new Date(doc.createdAt).toLocaleDateString()}
                     </span>
                   </div>
 
-                  <h3 className="font-display font-bold text-base text-ink mb-2 line-clamp-1">
+                  <h3 className="font-display font-bold text-base text-slate-900 dark:text-white mb-2 line-clamp-1">
                     {doc.title}
                   </h3>
-                  <p className="text-xs text-slate-500 line-clamp-3 leading-relaxed mb-6 font-mono bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                  <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-3 leading-relaxed mb-6 font-mono bg-slate-50 dark:bg-dark-bg/80 p-2.5 rounded-lg border border-slate-100 dark:border-dark-border">
                     {doc.content}
                   </p>
                 </div>
 
-                <div className="pt-4 border-t border-slate-100 space-y-3">
+                <div className="pt-4 border-t border-slate-100 dark:border-dark-border space-y-3">
                   <div className="flex items-center justify-between gap-2">
                     <Link
                       href={`/editor/${doc.id}`}
-                      className="inline-flex items-center space-x-1 text-xs font-semibold text-brand-600 hover:text-blue-700 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100 transition-all hover:shadow-sm"
+                      className="inline-flex items-center space-x-1 text-xs font-semibold text-purple-700 dark:text-brand-lavender hover:text-purple-800 bg-purple-50 dark:bg-brand-amethyst/60 px-3 py-1.5 rounded-lg border border-purple-200 dark:border-brand-lavender/30 transition-all hover:shadow-sm"
                     >
                       <Edit3 className="w-3.5 h-3.5" />
                       <span>Edit in Word Editor</span>
@@ -221,7 +221,7 @@ export default function HistoryPage() {
 
                     <button
                       onClick={() => handleDeleteDoc(doc.id)}
-                      className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      className="p-1.5 text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors"
                       title="Delete Document"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -233,7 +233,7 @@ export default function HistoryPage() {
                     <button
                       onClick={() => triggerDownload(doc.id, doc.title, 'pdf')}
                       disabled={isDownloading}
-                      className="px-2 py-1.5 bg-brand-600 hover:bg-blue-700 text-white rounded-lg text-[11px] font-semibold flex items-center justify-center space-x-1 disabled:opacity-50"
+                      className="px-2 py-1.5 bg-purple-600 dark:bg-brand-purple hover:bg-purple-700 dark:hover:bg-purple-600 text-white rounded-lg text-[11px] font-semibold flex items-center justify-center space-x-1 disabled:opacity-50"
                       title="Download PDF"
                     >
                       {isDownloading && downloadingFormat === 'pdf' ? (
@@ -246,7 +246,7 @@ export default function HistoryPage() {
                     <button
                       onClick={() => triggerDownload(doc.id, doc.title, 'docx')}
                       disabled={isDownloading}
-                      className="px-2 py-1.5 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-[11px] font-semibold flex items-center justify-center space-x-1 disabled:opacity-50"
+                      className="px-2 py-1.5 bg-slate-800 dark:bg-purple-950 dark:hover:bg-purple-900 text-white rounded-lg text-[11px] font-semibold flex items-center justify-center space-x-1 border dark:border-purple-800/50 disabled:opacity-50"
                       title="Download DOCX"
                     >
                       {isDownloading && downloadingFormat === 'docx' ? (
@@ -259,7 +259,7 @@ export default function HistoryPage() {
                     <button
                       onClick={() => triggerDownload(doc.id, doc.title, 'txt')}
                       disabled={isDownloading}
-                      className="px-2 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[11px] font-semibold flex items-center justify-center space-x-1 disabled:opacity-50 border border-slate-200"
+                      className="px-2 py-1.5 bg-slate-100 dark:bg-dark-bg hover:bg-slate-200 dark:hover:bg-dark-hover text-slate-700 dark:text-slate-200 rounded-lg text-[11px] font-semibold flex items-center justify-center space-x-1 disabled:opacity-50 border border-slate-200 dark:border-dark-border"
                       title="Download TXT"
                     >
                       {isDownloading && downloadingFormat === 'txt' ? (
@@ -272,7 +272,7 @@ export default function HistoryPage() {
                     <button
                       onClick={() => triggerDownload(doc.id, doc.title, 'md')}
                       disabled={isDownloading}
-                      className="px-2 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[11px] font-semibold flex items-center justify-center space-x-1 disabled:opacity-50 border border-slate-200"
+                      className="px-2 py-1.5 bg-slate-100 dark:bg-dark-bg hover:bg-slate-200 dark:hover:bg-dark-hover text-slate-700 dark:text-slate-200 rounded-lg text-[11px] font-semibold flex items-center justify-center space-x-1 disabled:opacity-50 border border-slate-200 dark:border-dark-border"
                       title="Download Markdown"
                     >
                       {isDownloading && downloadingFormat === 'md' ? (
@@ -291,19 +291,19 @@ export default function HistoryPage() {
 
       {/* Editor Modal */}
       {selectedDoc && (
-        <div className="fixed inset-0 z-50 bg-ink/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl border border-border shadow-float max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-dark-surface rounded-2xl border border-slate-200 dark:border-dark-border shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95">
             {/* Modal Header */}
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+            <div className="p-6 border-b border-slate-100 dark:border-dark-border flex items-center justify-between">
               <input
                 type="text"
                 value={editTitle}
                 onChange={(e) => setEditTitle(e.target.value)}
-                className="font-display text-lg font-bold text-ink bg-transparent focus:outline-none focus:bg-slate-50 px-2 py-1 rounded border border-transparent focus:border-slate-200 w-full mr-4"
+                className="font-display text-lg font-bold text-slate-900 dark:text-white bg-transparent focus:outline-none focus:bg-slate-50 dark:focus:bg-dark-bg px-2 py-1 rounded border border-transparent focus:border-slate-200 dark:focus:border-dark-border w-full mr-4"
               />
               <button
                 onClick={() => setSelectedDoc(null)}
-                className="p-2 text-slate-400 hover:text-ink rounded-lg"
+                className="p-2 text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-lg"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -311,23 +311,23 @@ export default function HistoryPage() {
 
             {/* Modal Body */}
             <div className="p-6 flex-1 overflow-y-auto">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
                 Document Content (Markdown / HTML)
               </label>
               <textarea
                 rows={14}
                 value={editContent}
                 onChange={(e) => setEditContent(e.target.value)}
-                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono leading-relaxed text-ink focus:outline-none focus:ring-2 focus:ring-brand-600 focus:bg-white"
+                className="w-full p-4 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl text-xs font-mono leading-relaxed text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-600 dark:focus:ring-brand-lavender focus:bg-white dark:focus:bg-dark-bg"
               />
             </div>
 
             {/* Modal Footer */}
-            <div className="p-4 bg-slate-50 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
+            <div className="p-4 bg-slate-50 dark:bg-dark-bg/80 border-t border-slate-100 dark:border-dark-border flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center space-x-2">
                 <button
                   onClick={() => triggerDownload(selectedDoc.id, editTitle, 'pdf')}
-                  className="inline-flex items-center space-x-1.5 text-xs font-semibold bg-brand-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700"
+                  className="inline-flex items-center space-x-1.5 text-xs font-semibold bg-purple-600 dark:bg-brand-purple text-white px-3 py-2 rounded-lg hover:bg-purple-700"
                 >
                   <Download className="w-3.5 h-3.5" />
                   <span>PDF</span>
@@ -335,7 +335,7 @@ export default function HistoryPage() {
 
                 <button
                   onClick={() => triggerDownload(selectedDoc.id, editTitle, 'docx')}
-                  className="inline-flex items-center space-x-1.5 text-xs font-semibold bg-slate-800 text-white px-3 py-2 rounded-lg hover:bg-slate-900"
+                  className="inline-flex items-center space-x-1.5 text-xs font-semibold bg-slate-800 dark:bg-purple-950 text-white px-3 py-2 rounded-lg hover:bg-slate-900 border dark:border-purple-800/50"
                 >
                   <Download className="w-3.5 h-3.5" />
                   <span>DOCX</span>
@@ -343,17 +343,17 @@ export default function HistoryPage() {
 
                 <button
                   onClick={() => triggerDownload(selectedDoc.id, editTitle, 'txt')}
-                  className="inline-flex items-center space-x-1.5 text-xs font-semibold bg-white border border-slate-200 text-slate-700 px-3 py-2 rounded-lg hover:bg-slate-50"
+                  className="inline-flex items-center space-x-1.5 text-xs font-semibold bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border text-slate-700 dark:text-slate-200 px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-dark-hover"
                 >
-                  <FileType className="w-3.5 h-3.5 text-slate-500" />
+                  <FileType className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
                   <span>TXT</span>
                 </button>
 
                 <button
                   onClick={() => triggerDownload(selectedDoc.id, editTitle, 'md')}
-                  className="inline-flex items-center space-x-1.5 text-xs font-semibold bg-white border border-slate-200 text-slate-700 px-3 py-2 rounded-lg hover:bg-slate-50"
+                  className="inline-flex items-center space-x-1.5 text-xs font-semibold bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border text-slate-700 dark:text-slate-200 px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-dark-hover"
                 >
-                  <FileText className="w-3.5 h-3.5 text-slate-500" />
+                  <FileText className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
                   <span>MD</span>
                 </button>
               </div>
@@ -361,7 +361,7 @@ export default function HistoryPage() {
               <button
                 onClick={handleSaveDoc}
                 disabled={saving}
-                className="inline-flex items-center space-x-2 bg-brand-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow-sm"
+                className="inline-flex items-center space-x-2 bg-purple-600 dark:bg-brand-purple hover:bg-purple-700 dark:hover:bg-purple-600 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow-sm"
               >
                 {saving ? (
                   <Loader2 className="w-4 h-4 animate-spin" />

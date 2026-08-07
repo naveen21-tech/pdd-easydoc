@@ -79,22 +79,22 @@ export default function ProfilePage() {
   return (
     <div className="space-y-8 max-w-4xl mx-auto">
       <div>
-        <h2 className="font-display text-2xl font-bold text-ink">Account & Settings</h2>
-        <p className="text-sm text-slate-500">
+        <h2 className="font-display text-2xl font-bold text-slate-900 dark:text-white">Account & Settings</h2>
+        <p className="text-sm text-slate-500 dark:text-slate-400">
           Manage your personal details, subscription plan, and security settings
         </p>
       </div>
 
       {message && (
-        <div className="p-4 rounded-xl bg-green-50 border border-green-200 flex items-center space-x-3 text-green-700 text-sm">
-          <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
+        <div className="p-4 rounded-xl bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800/50 flex items-center space-x-3 text-green-700 dark:text-green-300 text-sm">
+          <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400 shrink-0" />
           <span>{message}</span>
         </div>
       )}
 
       {error && (
-        <div className="p-4 rounded-xl bg-red-50 border border-red-200 flex items-center space-x-3 text-red-700 text-sm">
-          <AlertCircle className="w-5 h-5 text-red-500 shrink-0" />
+        <div className="p-4 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/50 flex items-center space-x-3 text-red-700 dark:text-red-300 text-sm">
+          <AlertCircle className="w-5 h-5 text-red-500 dark:text-red-400 shrink-0" />
           <span>{error}</span>
         </div>
       )}
@@ -103,15 +103,15 @@ export default function ProfilePage() {
         {/* Profile Info (2 Cols) */}
         <div className="md:col-span-2 space-y-6">
           {/* General Profile Card */}
-          <div className="bg-white rounded-2xl border border-border p-6 shadow-card space-y-6">
-            <h3 className="font-display font-bold text-base text-ink pb-3 border-b border-slate-100 flex items-center space-x-2">
-              <User className="w-5 h-5 text-brand-600" />
+          <div className="bg-white dark:bg-dark-surface rounded-2xl border border-slate-200 dark:border-dark-border p-6 shadow-card space-y-6">
+            <h3 className="font-display font-bold text-base text-slate-900 dark:text-white pb-3 border-b border-slate-100 dark:border-dark-border flex items-center space-x-2">
+              <User className="w-5 h-5 text-purple-600 dark:text-brand-lavender" />
               <span>Personal Information</span>
             </h3>
 
             <form onSubmit={handleUpdateProfile} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-2">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-200 mb-2">
                   Full Name
                 </label>
                 <input
@@ -119,19 +119,19 @@ export default function ProfilePage() {
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:bg-white text-ink font-medium"
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-dark-bg/80 border border-slate-200 dark:border-dark-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-600 dark:focus:ring-brand-lavender focus:bg-white dark:focus:bg-dark-bg text-slate-900 dark:text-white font-medium placeholder-slate-400 dark:placeholder-slate-500"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-2">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-200 mb-2">
                   Email Address (Read-only)
                 </label>
                 <input
                   type="email"
                   disabled
                   value={profile?.email || ''}
-                  className="w-full px-4 py-3 bg-slate-100 border border-slate-200 rounded-xl text-sm text-slate-500 font-medium"
+                  className="w-full px-4 py-3 bg-slate-100 dark:bg-dark-hover/60 border border-slate-200 dark:border-dark-border rounded-xl text-sm text-slate-500 dark:text-slate-400 font-medium cursor-not-allowed"
                 />
               </div>
 
@@ -139,7 +139,7 @@ export default function ProfilePage() {
                 <button
                   type="submit"
                   disabled={savingProfile}
-                  className="inline-flex items-center space-x-2 bg-brand-600 hover:bg-blue-700 text-white font-semibold px-5 py-2.5 rounded-xl text-xs shadow-sm"
+                  className="inline-flex items-center space-x-2 bg-purple-600 dark:bg-brand-purple hover:bg-purple-700 dark:hover:bg-purple-600 text-white font-semibold px-5 py-2.5 rounded-xl text-xs shadow-sm transition-colors"
                 >
                   {savingProfile ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -152,15 +152,15 @@ export default function ProfilePage() {
           </div>
 
           {/* Change Password Card */}
-          <div className="bg-white rounded-2xl border border-border p-6 shadow-card space-y-6">
-            <h3 className="font-display font-bold text-base text-ink pb-3 border-b border-slate-100 flex items-center space-x-2">
-              <Lock className="w-5 h-5 text-brand-600" />
+          <div className="bg-white dark:bg-dark-surface rounded-2xl border border-slate-200 dark:border-dark-border p-6 shadow-card space-y-6">
+            <h3 className="font-display font-bold text-base text-slate-900 dark:text-white pb-3 border-b border-slate-100 dark:border-dark-border flex items-center space-x-2">
+              <Lock className="w-5 h-5 text-purple-600 dark:text-brand-lavender" />
               <span>Security & Password</span>
             </h3>
 
             <form onSubmit={handleChangePassword} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-2">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-200 mb-2">
                   New Password
                 </label>
                 <input
@@ -169,7 +169,7 @@ export default function ProfilePage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter new password (min 6 chars)"
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:bg-white text-ink"
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-dark-bg/80 border border-slate-200 dark:border-dark-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-600 dark:focus:ring-brand-lavender focus:bg-white dark:focus:bg-dark-bg text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                 />
               </div>
 
@@ -177,7 +177,7 @@ export default function ProfilePage() {
                 <button
                   type="submit"
                   disabled={updatingPassword}
-                  className="inline-flex items-center space-x-2 bg-slate-800 hover:bg-slate-900 text-white font-semibold px-5 py-2.5 rounded-xl text-xs shadow-sm"
+                  className="inline-flex items-center space-x-2 bg-slate-800 dark:bg-purple-950 dark:hover:bg-purple-900 hover:bg-slate-900 text-white font-semibold px-5 py-2.5 rounded-xl text-xs shadow-sm border dark:border-purple-800/50 transition-colors"
                 >
                   {updatingPassword ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -192,41 +192,41 @@ export default function ProfilePage() {
 
         {/* Plan & Subscription Card (1 Col) */}
         <div className="space-y-6">
-          <div className="paper-stack p-6 bg-white rounded-2xl border border-border space-y-4">
+          <div className="p-6 bg-white dark:bg-dark-surface rounded-2xl border border-slate-200 dark:border-dark-border shadow-card space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                 Subscription Plan
               </span>
-              <span className="text-xs font-bold text-brand-600 bg-blue-50 px-2.5 py-0.5 rounded-full">
+              <span className="text-xs font-bold text-purple-700 dark:text-brand-lavender bg-purple-50 dark:bg-brand-amethyst/60 px-2.5 py-0.5 rounded-full border border-purple-200 dark:border-brand-lavender/30">
                 Active
               </span>
             </div>
 
             <div className="flex items-baseline space-x-2">
-              <span className="font-display text-3xl font-bold text-ink">
+              <span className="font-display text-3xl font-bold text-slate-900 dark:text-white">
                 {profile?.plan || 'Free'}
               </span>
-              <span className="text-xs text-slate-400">/ forever</span>
+              <span className="text-xs text-slate-400 dark:text-slate-500">/ forever</span>
             </div>
 
-            <ul className="space-y-2 text-xs text-slate-600 pt-2 border-t border-slate-100">
+            <ul className="space-y-2 text-xs text-slate-600 dark:text-slate-300 pt-2 border-t border-slate-100 dark:border-dark-border">
               <li className="flex items-center space-x-2">
-                <CheckCircle2 className="w-4 h-4 text-green-600" />
+                <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
                 <span>Unlimited OpenAI / Claude / Gemini calls</span>
               </li>
               <li className="flex items-center space-x-2">
-                <CheckCircle2 className="w-4 h-4 text-green-600" />
+                <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
                 <span>PDF & DOCX document exports</span>
               </li>
               <li className="flex items-center space-x-2">
-                <CheckCircle2 className="w-4 h-4 text-green-600" />
+                <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
                 <span>Supabase Row Level Security</span>
               </li>
             </ul>
 
             <button
               disabled
-              className="w-full py-2.5 bg-slate-100 text-slate-400 font-semibold text-xs rounded-xl cursor-not-allowed text-center"
+              className="w-full py-2.5 bg-slate-100 dark:bg-dark-bg text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-dark-border font-semibold text-xs rounded-xl cursor-not-allowed text-center"
             >
               Current Active Tier
             </button>
