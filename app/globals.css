@@ -237,3 +237,26 @@ code, pre {
 ::-webkit-scrollbar-thumb:hover {
   background: #7c3aed;
 }
+
+/* Document Pagination & Microsoft Word-like Page Break Rules */
+.page-break {
+  page-break-after: always;
+  break-after: page;
+  height: 0;
+  display: block;
+}
+
+.no-page-break {
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
