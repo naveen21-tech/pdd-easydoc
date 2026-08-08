@@ -23,13 +23,22 @@ export async function generateDocument(
   const startTime = Date.now();
   const { provider, title, templateName, tone, instructions } = options;
 
-  const systemPrompt = `You are EasyDoc AI, an expert professional document generator.
-Generate a structured, beautifully formatted, comprehensive document based on the user request.
-Use clean Markdown formatting with clear section headings (# ## ###), bullet points, key takeaways, and formatted sections.
-Do not include meta commentary or introductory chatter like "Here is your document:". Output ONLY the document body content.`;
+  const currentTemplate = templateName || 'Official Report';
+  const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+  const systemPrompt = `You are EasyDoc AI, an expert professional document generator and typesetter.
+Generate a structured, beautifully formatted, comprehensive multi-page document based on the user request.
+Follow these document structure rules:
+1. ALWAYS start with the template badge on line 1: [TEMPLATE_BADGE] ${currentTemplate}
+2. Put the document title on line 2 in bold: # **${title}**
+3. Add a decorated metadata block with Document Type, Date (${currentDate}), Prepared For, and Status.
+4. Add a clean page break on its own line: [PAGE BREAK]
+5. Begin the document body on Page 2 with clear section headings (## 1. Executive Summary, ## 2. Core Analysis, ## 3. Detailed Specifications, ## 4. Implementation Timeline, etc.).
+6. Use rich Markdown formatting: **bold** key terms, *italicize* notes, create tables with | columns |, and use structured bullet points.
+7. Output ONLY the document markdown content without conversational chatter like "Here is your document:".`;
 
   const userPrompt = `Document Title: ${title}
-${templateName ? `Template Format: ${templateName}` : ''}
+Template Format: ${currentTemplate}
 Tone of Voice: ${tone}
 Specific Instructions / Key Points:
 ${instructions}`;
@@ -90,32 +99,9 @@ ${instructions}`;
       }
     }
 
-    // 3. Optional OpenAI Fallback
-    if (!generatedText && provider === 'openai' && process.env.OPENAI_API_KEY) {
-      try {
-        const { default: OpenAI } = await import('openai');
-        const apiKey = process.env.OPENAI_API_KEY;
-        if (apiKey && apiKey !== 'mock-key') {
-          const openai = new OpenAI({ apiKey });
-          const response = await openai.chat.completions.create({
-            model: 'gpt-4o-mini',
-            messages: [
-              { role: 'system', content: systemPrompt },
-              { role: 'user', content: userPrompt },
-            ],
-            temperature: 0.7,
-          });
-          generatedText = response.choices[0]?.message?.content || '';
-          usedProvider = 'openai';
-        }
-      } catch (e) {
-        // Ignored
-      }
-    }
-
-    // 4. Built-in intelligent document synthesis engine (Zero API Key requirement)
+    // 3. Fallback to Structured High-Quality Document Generator if API keys are offline
     if (!generatedText) {
-      generatedText = generateFallbackDocument(title, templateName, tone, instructions, provider);
+      generatedText = generateFallbackDocument(title, currentTemplate, tone, instructions, provider);
     }
 
     const responseTimeMs = Date.now() - startTime;
@@ -129,7 +115,7 @@ ${instructions}`;
     const responseTimeMs = Date.now() - startTime;
     console.error(`AI Generation process:`, err);
 
-    const fallbackText = generateFallbackDocument(title, templateName, tone, instructions, provider);
+    const fallbackText = generateFallbackDocument(title, currentTemplate, tone, instructions, provider);
     return {
       content: fallbackText,
       provider,
@@ -142,34 +128,42 @@ ${instructions}`;
 
 function generateFallbackDocument(
   title: string,
-  templateName: string | undefined,
+  templateName: string,
   tone: string,
   instructions: string,
   provider: AIProvider
 ): string {
-  return `# ${title}
+  const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
-*Generated with EasyDoc Document Engine | Tone: ${tone}*
+  return `[TEMPLATE_BADGE] ${templateName}
+# **${title}**
+
+> **Document Type:** ${templateName}  
+> **Prepared For:** Academic, Corporate & Review Board  
+> **Submission Date:** ${currentDate}  
+> **Security & Compliance:** Verified & Formatted  
 
 ---
 
-## 1. Executive Summary
-This document has been crafted based on your specifications for **${title}** using the **${templateName || 'Standard Report'}** framework.
+[PAGE BREAK]
 
-> **Key Focus:** ${instructions.slice(0, 180)}${instructions.length > 180 ? '...' : ''}
+## 1. Executive Summary
+This document has been crafted based on your specifications for **${title}** using the **${templateName}** framework.
+
+> **Core Focus:** ${instructions.slice(0, 180)}${instructions.length > 180 ? '...' : ''}
 
 ---
 
 ## 2. Strategic Objectives & Scope
-- **Primary Goal:** Establish actionable targets and key deliverables for ${title}.
-- **Target Audience:** Project Stakeholders, Technical Leads, and Reviewers.
-- **Tone & Style:** ${tone} and structured for rapid decision-making.
+- **Primary Goal:** Establish actionable targets, detailed milestones, and key deliverables for **${title}**.
+- **Target Audience:** Project Stakeholders, Technical Evaluators, and Reviewers.
+- **Tone & Style:** **${tone}** and optimized for clear decision-making.
 
 ---
 
 ## 3. Core Insights & Detailed Requirements
 Based on the key instructions provided:
-${instructions.split('\n').map((line) => `- ${line}`).join('\n')}
+${instructions.split('\n').map((line) => `- **${line.trim()}**`).join('\n')}
 
 ### Key Structural Pillars:
 1. **Pillar A - Requirements & Scope Definition:** Define functional, operational, and technical targets.
@@ -189,6 +183,6 @@ ${instructions.split('\n').map((line) => `- ${line}`).join('\n')}
 ---
 
 ## 5. Conclusion & Next Steps
-Next steps involve reviewing the generated content, adjusting fine details in the document editor, and exporting the document to PDF or DOCX format.
+Next steps involve reviewing the generated content, adjusting fine details in the document editor, and exporting the document to **PDF** or **DOCX** format.
 `;
 }

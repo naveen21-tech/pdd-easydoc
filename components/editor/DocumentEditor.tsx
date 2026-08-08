@@ -56,6 +56,7 @@ import {
   RotateCcw,
   FileText,
   FileType,
+  Edit3,
 } from 'lucide-react';
 import { downloadDocumentFile, ExportFormat } from '@/lib/download';
 import { paginateDocument, PaginatedPage } from '@/lib/export/pagination';
@@ -64,6 +65,7 @@ export interface DocumentEditorProps {
   documentId: string;
   initialTitle: string;
   initialContent: string;
+  initialTemplateName?: string;
   onSave?: (title: string, content: string) => Promise<void>;
 }
 
@@ -71,16 +73,27 @@ export function DocumentEditor({
   documentId,
   initialTitle,
   initialContent,
+  initialTemplateName,
   onSave,
 }: DocumentEditorProps) {
   const [title, setTitle] = useState(initialTitle);
   const [content, setContent] = useState(initialContent);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
 
+  // Detect or initialize Template Name
+  const detectedTemplate =
+    initialTemplateName ||
+    (content.includes('[TEMPLATE_BADGE]')
+      ? content.match(/\[TEMPLATE_BADGE\]\s*([^\n\r]+)/)?.[1]
+      : '') ||
+    'Official Report';
+
+  const [templateName, setTemplateName] = useState(detectedTemplate);
+
   // Layout Panels State
   const [showLeftOutline, setShowLeftOutline] = useState(true);
   const [showRightAiPanel, setShowRightAiPanel] = useState(false);
-  const [viewMode, setViewMode] = useState<'word-pages' | 'continuous'>('word-pages');
+  const [viewMode, setViewMode] = useState<'word-pages' | 'split-editor' | 'continuous'>('word-pages');
 
   // Formatting state
   const [fontFamily, setFontFamily] = useState('Inter');
@@ -106,17 +119,11 @@ export function DocumentEditor({
   // View & Zoom state
   const [zoom, setZoom] = useState(100);
   const [isFullScreen, setIsFullScreen] = useState(false);
-  const [activePageIndex, setActivePageIndex] = useState(1);
 
   // AI Assistant Action state
   const [aiProcessing, setAiProcessing] = useState(false);
   const [aiInstruction, setAiInstruction] = useState('');
   const [selectedAiTone, setSelectedAiTone] = useState('Professional');
-
-  // Find & Replace state
-  const [showFindReplace, setShowFindReplace] = useState(false);
-  const [findText, setFindText] = useState('');
-  const [replaceText, setReplaceText] = useState('');
 
   // Download state
   const [downloadingFormat, setDownloadingFormat] = useState<ExportFormat | null>(null);
@@ -127,7 +134,7 @@ export function DocumentEditor({
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Dynamic Pagination Computation (A4 Page Sheets)
+  // Dynamic Pagination Computation (A4 Page Sheets with Decorated Title Page)
   const paginationResult = paginateDocument(content);
   const { pages, totalPages } = paginationResult;
 
@@ -138,6 +145,21 @@ export function DocumentEditor({
     { name: 'Classic Formal', font: 'Times New Roman', size: 16, color: '#0F172A' },
     { name: 'Technical Code', font: 'Courier New', size: 14, color: '#334155' },
     { name: 'Creative Studio', font: 'Sora', size: 15, color: '#1E1B4B' },
+  ];
+
+  // Available EasyDoc Templates for top switcher
+  const TEMPLATE_PRESETS = [
+    'Official Report',
+    'Project Report',
+    'ATS Resume',
+    'Research Paper',
+    'Academic Assignment',
+    'Business Proposal',
+    'Technical Documentation',
+    'Meeting Minutes',
+    'Internship Report',
+    'Lab Record',
+    'Cover Letter',
   ];
 
   // PDF Border Color Palette
@@ -160,12 +182,26 @@ export function DocumentEditor({
     return () => clearTimeout(timer);
   }, [content, title, saveStatus]);
 
-  // Handle Ctrl+Enter for Insert Page Break
+  // Keyboard Shortcuts: Ctrl+B (Bold), Ctrl+I (Italic), Ctrl+U (Underline), Ctrl+Enter (Page Break), Ctrl+S (Save)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-        e.preventDefault();
-        insertPageBreak();
+      if (e.ctrlKey || e.metaKey) {
+        if (e.key === 'b' || e.key === 'B') {
+          e.preventDefault();
+          applyWrapFormat('**', '**');
+        } else if (e.key === 'i' || e.key === 'I') {
+          e.preventDefault();
+          applyWrapFormat('*', '*');
+        } else if (e.key === 'u' || e.key === 'U') {
+          e.preventDefault();
+          applyWrapFormat('<u>', '</u>');
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          insertPageBreak();
+        } else if (e.key === 's' || e.key === 'S') {
+          e.preventDefault();
+          performSave();
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -203,64 +239,107 @@ export function DocumentEditor({
     }
   };
 
+  // Change Template Name & update template badge in content
+  const handleTemplateChange = (newTpl: string) => {
+    setTemplateName(newTpl);
+    if (content.includes('[TEMPLATE_BADGE]')) {
+      const updated = content.replace(/\[TEMPLATE_BADGE\][^\n\r]+/, `[TEMPLATE_BADGE] ${newTpl}`);
+      handleContentChange(updated);
+    } else {
+      const updated = `[TEMPLATE_BADGE] ${newTpl}\n` + content;
+      handleContentChange(updated);
+    }
+  };
+
+  // Text Formatting Helper (Bold, Italic, Underline, etc.)
+  const applyWrapFormat = (prefix: string, suffix: string) => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const selectedText = content.substring(start, end) || 'Bold Text';
+      const replacement = `${prefix}${selectedText}${suffix}`;
+      const newContent = content.substring(0, start) + replacement + content.substring(end);
+      handleContentChange(newContent);
+
+      setTimeout(() => {
+        textarea.focus();
+        textarea.setSelectionRange(start + prefix.length, start + prefix.length + selectedText.length);
+      }, 50);
+    } else {
+      // If in full page view, append format token or wrap selection
+      const sample = `${prefix}Bold Text${suffix}`;
+      handleContentChange(content + '\n' + sample);
+    }
+  };
+
+  // Heading helper
+  const applyHeading = (level: number) => {
+    const prefix = '#'.repeat(level) + ' ';
+    const textarea = textareaRef.current;
+    if (textarea) {
+      const start = textarea.selectionStart;
+      const lineStart = content.lastIndexOf('\n', start - 1) + 1;
+      const newContent = content.substring(0, lineStart) + prefix + content.substring(lineStart);
+      handleContentChange(newContent);
+    } else {
+      handleContentChange(content + '\n\n' + prefix + 'New Heading\n');
+    }
+  };
+
   // Insert Page Break helper
   const insertPageBreak = () => {
     const textarea = textareaRef.current;
-    if (!textarea) {
-      handleContentChange(content + '\n\n[PAGE BREAK]\n\n');
-      return;
-    }
-
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
     const breakTag = '\n\n[PAGE BREAK]\n\n';
-    const newContent = content.substring(0, start) + breakTag + content.substring(end);
-    handleContentChange(newContent);
-
-    setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(start + breakTag.length, start + breakTag.length);
-    }, 50);
+    if (textarea) {
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const newContent = content.substring(0, start) + breakTag + content.substring(end);
+      handleContentChange(newContent);
+      setTimeout(() => {
+        textarea.focus();
+        textarea.setSelectionRange(start + breakTag.length, start + breakTag.length);
+      }, 50);
+    } else {
+      handleContentChange(content + breakTag);
+    }
   };
 
   // Insert Table helper
   const insertTable = () => {
     const tableTemplate = `\n| Header 1 | Header 2 | Header 3 |\n| --- | --- | --- |\n| Data 1 | Data 2 | Data 3 |\n| Row 2 | Row 2 | Row 2 |\n\n`;
     const textarea = textareaRef.current;
-    if (!textarea) {
+    if (textarea) {
+      const start = textarea.selectionStart;
+      const newContent = content.substring(0, start) + tableTemplate + content.substring(start);
+      handleContentChange(newContent);
+    } else {
       handleContentChange(content + tableTemplate);
-      return;
     }
-    const start = textarea.selectionStart;
-    const newContent = content.substring(0, start) + tableTemplate + content.substring(start);
-    handleContentChange(newContent);
   };
 
   // Font Size Helpers
-  const increaseFontSize = () => {
-    setFontSize((prev) => Math.min(32, prev + 1));
-  };
-
-  const decreaseFontSize = () => {
-    setFontSize((prev) => Math.max(10, prev - 1));
-  };
+  const increaseFontSize = () => setFontSize((prev) => Math.min(32, prev + 1));
+  const decreaseFontSize = () => setFontSize((prev) => Math.max(10, prev - 1));
 
   // Zoom Helpers
   const zoomIn = () => setZoom((prev) => Math.min(150, prev + 10));
   const zoomOut = () => setZoom((prev) => Math.max(50, prev - 10));
   const resetZoom = () => setZoom(100);
 
-  // Insert Cover Page / Title Page Generator
+  // Insert Cover Page / Decorated Title Page Generator
   const handleInsertCoverPage = () => {
-    const coverPageMarkdown = `# ${coverTitle || 'DOCUMENT TITLE'}
-${coverSubtitle ? `## ${coverSubtitle}\n` : ''}
----
+    const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    const coverPageMarkdown = `[TEMPLATE_BADGE] ${templateName}
+# **${coverTitle || title || 'DOCUMENT TITLE'}**
 
-**Submitted By:** ${coverAuthor || '[Name]'}  
-**Register No / Roll No:** ${coverRegNo || '[Reg No]'}  
-**Department / Branch:** ${coverDept || '[Department]'}  
-**Institution:** ${coverInstitution || '[Institution / Organization]'}  
-**Date:** ${coverDate}  
+> **Document Type:** ${templateName}  
+> **Submitted By:** ${coverAuthor || '[Author Name]'}  
+> **Register No / ID:** ${coverRegNo || '[Reg No]'}  
+> **Department / Branch:** ${coverDept || '[Department]'}  
+> **Institution / Organization:** ${coverInstitution || '[Institution]'}  
+> **Submission Date:** ${coverDate || currentDate}  
+> **Security & Compliance:** Verified & Approved  
 
 ---
 
@@ -268,34 +347,10 @@ ${coverSubtitle ? `## ${coverSubtitle}\n` : ''}
 
 `;
 
-    const newContent = coverPageMarkdown + content;
-    handleContentChange(newContent);
+    // Remove old template badge if present and prepend new decorated cover page
+    const cleanOldContent = content.replace(/^\[TEMPLATE_BADGE\][^\n\r]+\n*/, '');
+    handleContentChange(coverPageMarkdown + cleanOldContent);
     setShowCoverPageModal(false);
-  };
-
-  // Format Helpers
-  const applyWrapFormat = (prefix: string, suffix: string) => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selectedText = content.substring(start, end) || 'Sample Text';
-
-    const replacement = `${prefix}${selectedText}${suffix}`;
-    const newContent = content.substring(0, start) + replacement + content.substring(end);
-    handleContentChange(newContent);
-  };
-
-  const applyHeading = (level: number) => {
-    const prefix = '#'.repeat(level) + ' ';
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-
-    const start = textarea.selectionStart;
-    const lineStart = content.lastIndexOf('\n', start - 1) + 1;
-    const newContent = content.substring(0, lineStart) + prefix + content.substring(lineStart);
-    handleContentChange(newContent);
   };
 
   const handleUndo = () => {
@@ -331,14 +386,16 @@ ${coverSubtitle ? `## ${coverSubtitle}\n` : ''}
     setAiProcessing(true);
     try {
       const prompt = `Perform the following action on this document content: ${actionType}.
+Template: ${templateName}
 Tone: ${selectedAiTone}
-Additional User Instructions: ${aiInstruction || 'Improve readability, clean formatting, and structure into clear logical sections.'}`;
+Additional User Instructions: ${aiInstruction || 'Improve readability, structure clearly with bold highlights and clean tables.'}`;
 
       const res = await fetch('/api/ai/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: `Refined ${title}`,
+          templateName,
           tone: selectedAiTone,
           instructions: prompt + `\n\nContent to refine:\n${content}`,
           provider: 'gemini',
@@ -364,7 +421,7 @@ Additional User Instructions: ${aiInstruction || 'Improve readability, clean for
     .filter((line) => line.startsWith('#'))
     .map((line) => {
       const level = (line.match(/^#+/) || ['#'])[0].length;
-      const text = line.replace(/^#+\s*/, '');
+      const text = line.replace(/^#+\s*/, '').replace(/[*_]/g, '');
       return { level, text };
     });
 
@@ -380,22 +437,43 @@ Additional User Instructions: ${aiInstruction || 'Improve readability, clean for
       }`}
     >
       {/* 1. TOP HEADER & MAIN TOOLBAR */}
-      <header className="bg-slate-900 border-b border-slate-800 px-4 py-2.5 flex items-center justify-between gap-4 sticky top-0 z-40">
+      <header className="bg-slate-900 border-b border-slate-800 px-4 py-2.5 flex items-center justify-between gap-3 sticky top-0 z-40">
         <div className="flex items-center space-x-3 flex-1 min-w-0">
           <div className="w-8 h-8 rounded-xl bg-purple-600 flex items-center justify-center font-bold text-white shrink-0 shadow-sm font-display">
             W
           </div>
 
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => {
-              setTitle(e.target.value);
-              setSaveStatus('unsaved');
-            }}
-            placeholder="Document Title..."
-            className="bg-transparent font-display text-base font-bold text-white focus:outline-none focus:bg-slate-800/80 px-2.5 py-1 rounded-xl border border-transparent focus:border-slate-700 w-full truncate"
-          />
+          <div className="flex flex-col flex-1 min-w-0">
+            {/* Top Template Indicator */}
+            <div className="flex items-center space-x-2 mb-0.5">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-purple-400">
+                Template:
+              </span>
+              <select
+                value={templateName}
+                onChange={(e) => handleTemplateChange(e.target.value)}
+                className="bg-purple-950/80 text-purple-300 border border-purple-800/60 rounded-md text-[11px] font-bold px-2 py-0.5 focus:outline-none"
+              >
+                {TEMPLATE_PRESETS.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Document Title Input */}
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => {
+                setTitle(e.target.value);
+                setSaveStatus('unsaved');
+              }}
+              placeholder="Document Title..."
+              className="bg-transparent font-display text-base font-bold text-white focus:outline-none focus:bg-slate-800/80 px-2 py-0.5 rounded border border-transparent focus:border-slate-700 w-full truncate"
+            />
+          </div>
 
           {/* Save Status & Auto-page count */}
           <div className="hidden sm:flex items-center space-x-2 shrink-0">
@@ -441,6 +519,18 @@ Additional User Instructions: ${aiInstruction || 'Improve readability, clean for
               <span className="hidden md:inline">Pages</span>
             </button>
             <button
+              onClick={() => setViewMode('split-editor')}
+              className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1 ${
+                viewMode === 'split-editor'
+                  ? 'bg-purple-600 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+              title="Split View (Editor + Live Multi-Page Preview)"
+            >
+              <Edit3 className="w-3.5 h-3.5" />
+              <span className="hidden md:inline">Split</span>
+            </button>
+            <button
               onClick={() => setViewMode('continuous')}
               className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1 ${
                 viewMode === 'continuous'
@@ -453,6 +543,16 @@ Additional User Instructions: ${aiInstruction || 'Improve readability, clean for
               <span className="hidden md:inline">Editor</span>
             </button>
           </div>
+
+          {/* Decorated Front Title Page Generator Button */}
+          <button
+            onClick={() => setShowCoverPageModal(true)}
+            className="bg-purple-900/60 hover:bg-purple-800 border border-purple-700 text-purple-200 hover:text-white px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1"
+            title="Decorate Front Title Page (Make Title Bigger, Bold & Add Template Badge)"
+          >
+            <FileBadge className="w-3.5 h-3.5 text-purple-300" />
+            <span className="hidden lg:inline">Front Title Page</span>
+          </button>
 
           {/* Insert Page Break Button */}
           <button
@@ -541,13 +641,13 @@ Additional User Instructions: ${aiInstruction || 'Improve readability, clean for
       </header>
 
       {/* 2. SECONDARY RICH TEXT FORMATTING TOOLBAR */}
-      <div className="bg-slate-900/90 border-b border-slate-800 px-4 py-2 flex flex-wrap items-center gap-2 sticky top-[53px] z-30 shadow-md backdrop-blur-md">
+      <div className="bg-slate-900/90 border-b border-slate-800 px-4 py-2 flex flex-wrap items-center gap-2 sticky top-[57px] z-30 shadow-md backdrop-blur-md">
         {/* Undo / Redo */}
         <div className="flex items-center space-x-1 pr-2 border-r border-slate-800">
-          <button onClick={handleUndo} disabled={historyIndex === 0} className="p-1.5 text-slate-400 hover:text-white rounded disabled:opacity-40" title="Undo">
+          <button onClick={handleUndo} disabled={historyIndex === 0} className="p-1.5 text-slate-400 hover:text-white rounded disabled:opacity-40" title="Undo (Ctrl+Z)">
             <Undo className="w-4 h-4" />
           </button>
-          <button onClick={handleRedo} disabled={historyIndex === history.length - 1} className="p-1.5 text-slate-400 hover:text-white rounded disabled:opacity-40" title="Redo">
+          <button onClick={handleRedo} disabled={historyIndex === history.length - 1} className="p-1.5 text-slate-400 hover:text-white rounded disabled:opacity-40" title="Redo (Ctrl+Y)">
             <Redo className="w-4 h-4" />
           </button>
         </div>
@@ -587,21 +687,41 @@ Additional User Instructions: ${aiInstruction || 'Improve readability, clean for
           </button>
         </div>
 
-        {/* Text Decoration Controls */}
+        {/* Text Decoration Controls: Bold, Italic, Underline, Strikethrough, Code */}
         <div className="flex items-center space-x-1 pr-2 border-r border-slate-800">
-          <button onClick={() => applyWrapFormat('**', '**')} className="p-1.5 text-slate-300 hover:bg-slate-800 rounded font-bold" title="Bold">
-            <Bold className="w-4 h-4" />
+          <button
+            onClick={() => applyWrapFormat('**', '**')}
+            className="p-1.5 text-slate-200 hover:text-white hover:bg-purple-600/30 rounded font-extrabold flex items-center justify-center min-w-[28px] border border-slate-700/50"
+            title="Bold Text (Ctrl + B)"
+          >
+            <Bold className="w-4 h-4 text-purple-300" />
           </button>
-          <button onClick={() => applyWrapFormat('*', '*')} className="p-1.5 text-slate-300 hover:bg-slate-800 rounded italic" title="Italic">
-            <Italic className="w-4 h-4" />
+          <button
+            onClick={() => applyWrapFormat('*', '*')}
+            className="p-1.5 text-slate-200 hover:text-white hover:bg-purple-600/30 rounded italic flex items-center justify-center min-w-[28px] border border-slate-700/50"
+            title="Italic Text (Ctrl + I)"
+          >
+            <Italic className="w-4 h-4 text-purple-300" />
           </button>
-          <button onClick={() => applyWrapFormat('<u>', '</u>')} className="p-1.5 text-slate-300 hover:bg-slate-800 rounded underline" title="Underline">
-            <Underline className="w-4 h-4" />
+          <button
+            onClick={() => applyWrapFormat('<u>', '</u>')}
+            className="p-1.5 text-slate-200 hover:text-white hover:bg-purple-600/30 rounded underline flex items-center justify-center min-w-[28px] border border-slate-700/50"
+            title="Underline Text (Ctrl + U)"
+          >
+            <Underline className="w-4 h-4 text-purple-300" />
           </button>
-          <button onClick={() => applyWrapFormat('~~', '~~')} className="p-1.5 text-slate-300 hover:bg-slate-800 rounded line-through" title="Strikethrough">
+          <button
+            onClick={() => applyWrapFormat('~~', '~~')}
+            className="p-1.5 text-slate-300 hover:bg-slate-800 rounded line-through"
+            title="Strikethrough"
+          >
             <Strikethrough className="w-4 h-4" />
           </button>
-          <button onClick={() => applyWrapFormat('`', '`')} className="p-1.5 text-slate-300 hover:bg-slate-800 rounded font-mono" title="Inline Code">
+          <button
+            onClick={() => applyWrapFormat('`', '`')}
+            className="p-1.5 text-slate-300 hover:bg-slate-800 rounded font-mono"
+            title="Inline Code"
+          >
             <Code className="w-4 h-4" />
           </button>
         </div>
@@ -635,7 +755,7 @@ Additional User Instructions: ${aiInstruction || 'Improve readability, clean for
           </button>
         </div>
 
-        {/* Elements Insertion: Table, List, Page Break */}
+        {/* Elements Insertion: Table, List, Blockquote */}
         <div className="flex items-center space-x-1 pr-2 border-r border-slate-800">
           <button onClick={insertTable} className="p-1.5 text-slate-300 hover:bg-slate-800 rounded" title="Insert Table">
             <Table className="w-4 h-4 text-purple-400" />
@@ -666,7 +786,7 @@ Additional User Instructions: ${aiInstruction || 'Improve readability, clean for
         </div>
       </div>
 
-      {/* 3. 3-COLUMN WORKSPACE: LEFT (OUTLINE) | CENTER (MULTI-PAGE A4 SHEETS) | RIGHT (AI ASSISTANT) */}
+      {/* 3. 3-COLUMN WORKSPACE: LEFT (OUTLINE) | CENTER (MULTI-PAGE A4 SHEETS OR SPLIT) | RIGHT (AI ASSISTANT) */}
       <div className="flex-1 flex overflow-hidden bg-slate-950">
         {/* LEFT COLUMN: DOCUMENT OUTLINE */}
         {showLeftOutline && (
@@ -698,6 +818,10 @@ Additional User Instructions: ${aiInstruction || 'Improve readability, clean for
                 Document Stats
               </span>
               <div className="flex justify-between">
+                <span>Active Template:</span>
+                <span className="font-bold text-purple-300 truncate max-w-[120px]">{templateName}</span>
+              </div>
+              <div className="flex justify-between">
                 <span>Total Pages:</span>
                 <span className="font-bold text-purple-300">{totalPages} A4</span>
               </div>
@@ -714,7 +838,7 @@ Additional User Instructions: ${aiInstruction || 'Improve readability, clean for
         )}
 
         {/* CENTER COLUMN: A4 MULTI-PAGE WORKSPACE */}
-        <div className="flex-1 p-4 md:p-10 overflow-y-auto flex flex-col items-center custom-scrollbar">
+        <div className="flex-1 p-4 md:p-8 overflow-y-auto flex flex-col items-center custom-scrollbar">
           {viewMode === 'word-pages' ? (
             /* WORD-STYLE MULTI-PAGE VIEW */
             <div
@@ -725,12 +849,14 @@ Additional User Instructions: ${aiInstruction || 'Improve readability, clean for
               }}
             >
               {pages.map((page: PaginatedPage, index: number) => {
+                const isFirstPage = index === 0;
+
                 return (
                   <div key={page.pageNumber} className="flex flex-col items-center mb-8 w-full max-w-[800px]">
                     {/* Page Label / Header Indicator */}
                     <div className="w-full flex items-center justify-between text-xs text-slate-400 font-mono mb-2 px-2">
                       <span className="bg-slate-800 text-purple-300 px-2.5 py-0.5 rounded-full font-bold">
-                        PAGE {page.pageNumber} of {totalPages}
+                        {isFirstPage ? 'PAGE 1 • FRONT TITLE PAGE' : `PAGE ${page.pageNumber} of ${totalPages}`}
                       </span>
                       <span className="text-[11px] text-slate-500 font-sans">A4 • 210mm × 297mm</span>
                     </div>
@@ -743,7 +869,7 @@ Additional User Instructions: ${aiInstruction || 'Improve readability, clean for
                         fontSize: `${fontSize}px`,
                         color: textColor,
                         textAlign: alignment,
-                        borderTop: index === 0 && pdfBorderStyle !== 'none' ? `4px solid ${pdfBorderColor}` : undefined,
+                        borderTop: isFirstPage && pdfBorderStyle !== 'none' ? `5px solid ${pdfBorderColor}` : undefined,
                       }}
                     >
                       {/* Running Header on every A4 page */}
@@ -753,13 +879,16 @@ Additional User Instructions: ${aiInstruction || 'Improve readability, clean for
                             EasyDoc
                           </span>
                           <span className="font-bold text-slate-700 truncate max-w-[200px]">{title}</span>
+                          <span className="text-slate-400 font-medium text-[10px] hidden sm:inline">
+                            • {templateName}
+                          </span>
                         </div>
                         <div className="text-[10px] text-slate-400">
                           {new Date().toLocaleDateString()}
                         </div>
                       </div>
 
-                      {/* Paginated Page Content Body */}
+                      {/* Paginated Page Content Body with Real Bold & Formatted Inline Text */}
                       <div
                         className="flex-1 leading-relaxed text-slate-900"
                         dangerouslySetInnerHTML={{ __html: page.htmlContent }}
@@ -767,8 +896,8 @@ Additional User Instructions: ${aiInstruction || 'Improve readability, clean for
 
                       {/* Running Footer on every A4 page */}
                       <div className="flex items-center justify-between border-t border-slate-200 pt-3 mt-6 text-xs text-slate-400 font-sans">
-                        <span className="text-[10px] text-slate-400">EasyDoc Multi-Page Engine</span>
-                        <span className="bg-slate-100 text-slate-800 font-bold text-[10px] px-2 py-0.5 rounded-full border border-slate-200">
+                        <span className="text-[10px] text-slate-400">Official EasyDoc Multi-Page Report</span>
+                        <span className="bg-slate-100 text-slate-800 font-bold text-[10px] px-2.5 py-0.5 rounded-full border border-slate-200">
                           Page {page.pageNumber} of {totalPages}
                         </span>
                       </div>
@@ -778,7 +907,7 @@ Additional User Instructions: ${aiInstruction || 'Improve readability, clean for
                     {index < pages.length - 1 && (
                       <div className="w-full flex items-center justify-center my-4 opacity-50">
                         <div className="h-px bg-slate-800 flex-1 max-w-[200px]" />
-                        <span className="text-[10px] font-mono text-slate-500 mx-3 uppercase tracking-widest">
+                        <span className="text-[10px] font-mono text-purple-400 mx-3 uppercase tracking-widest font-bold">
                           Page Break
                         </span>
                         <div className="h-px bg-slate-800 flex-1 max-w-[200px]" />
@@ -787,6 +916,40 @@ Additional User Instructions: ${aiInstruction || 'Improve readability, clean for
                   </div>
                 );
               })}
+            </div>
+          ) : viewMode === 'split-editor' ? (
+            /* SPLIT VIEW: LIVE TEXT EDITOR (LEFT) + MULTI-PAGE PREVIEW (RIGHT) */
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 w-full max-w-[1700px] h-full min-h-[900px]">
+              {/* Textarea Editor */}
+              <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 flex flex-col h-full min-h-[850px]">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-3 text-xs font-bold text-purple-300">
+                  <span>Markdown & Text Editor (Live Synchronized)</span>
+                  <span className="text-[10px] text-slate-400 font-normal">Use **bold**, *italic*, # Headings</span>
+                </div>
+                <textarea
+                  ref={textareaRef}
+                  value={content}
+                  onChange={(e) => handleContentChange(e.target.value)}
+                  placeholder="Start typing your report..."
+                  className="flex-1 w-full bg-slate-950 p-4 border border-slate-800 rounded-lg text-slate-100 text-xs font-mono leading-relaxed resize-none focus:outline-none focus:ring-1 focus:ring-purple-600"
+                />
+              </div>
+
+              {/* Live Multi-Page A4 Preview */}
+              <div className="flex flex-col items-center overflow-y-auto max-h-[850px] custom-scrollbar pr-2">
+                {pages.map((page: PaginatedPage, index: number) => (
+                  <div key={page.pageNumber} className="bg-white text-slate-900 rounded-sm shadow-xl p-8 mb-6 w-full max-w-[700px] border border-slate-200">
+                    <div className="flex items-center justify-between border-b border-slate-200 pb-2 mb-4 text-[10px] text-slate-400">
+                      <span className="font-bold text-purple-700">{templateName}</span>
+                      <span>Page {page.pageNumber} of {totalPages}</span>
+                    </div>
+                    <div
+                      className="leading-relaxed text-xs text-slate-900"
+                      dangerouslySetInnerHTML={{ __html: page.htmlContent }}
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
           ) : (
             /* CONTINUOUS DIRECT EDITING CANVAS */
@@ -896,7 +1059,7 @@ Additional User Instructions: ${aiInstruction || 'Improve readability, clean for
                 rows={3}
                 value={aiInstruction}
                 onChange={(e) => setAiInstruction(e.target.value)}
-                placeholder="e.g. Add key metrics and format summary into a table..."
+                placeholder="e.g. Add executive summary bullet points and format key metrics in bold..."
                 className="w-full p-3 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white leading-relaxed focus:outline-none"
               />
               <button
@@ -918,7 +1081,7 @@ Additional User Instructions: ${aiInstruction || 'Improve readability, clean for
         )}
       </div>
 
-      {/* 4. COVER PAGE / TITLE PAGE MODAL */}
+      {/* 4. COVER PAGE / DECORATED FRONT TITLE PAGE MODAL */}
       {showCoverPageModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl max-w-lg w-full p-6 space-y-5 animate-scale-in">
@@ -926,7 +1089,7 @@ Additional User Instructions: ${aiInstruction || 'Improve readability, clean for
               <div className="flex items-center space-x-2">
                 <FileBadge className="w-5 h-5 text-purple-400" />
                 <h3 className="font-display font-bold text-lg text-white">
-                  Insert Title / Cover Page
+                  Decorated Front Title Page
                 </h3>
               </div>
               <button
@@ -939,12 +1102,27 @@ Additional User Instructions: ${aiInstruction || 'Improve readability, clean for
 
             <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
               <div>
-                <label className="text-xs font-bold text-purple-300 block mb-1">Project / Document Title</label>
+                <label className="text-xs font-bold text-purple-300 block mb-1">Active Template Category</label>
+                <select
+                  value={templateName}
+                  onChange={(e) => setTemplateName(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500"
+                >
+                  {TEMPLATE_PRESETS.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-purple-300 block mb-1">Document Title (Bigger & Bold)</label>
                 <input
                   type="text"
                   value={coverTitle}
                   onChange={(e) => setCoverTitle(e.target.value)}
-                  placeholder="e.g. Cloud AI Architecture Spec"
+                  placeholder="e.g. AI-Powered Medical Diagnosis Engine"
                   className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500"
                 />
               </div>
@@ -955,7 +1133,7 @@ Additional User Instructions: ${aiInstruction || 'Improve readability, clean for
                   type="text"
                   value={coverSubtitle}
                   onChange={(e) => setCoverSubtitle(e.target.value)}
-                  placeholder="e.g. Final Technical Documentation"
+                  placeholder="e.g. Comprehensive Technical Architecture & Report"
                   className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500"
                 />
               </div>
@@ -991,7 +1169,7 @@ Additional User Instructions: ${aiInstruction || 'Improve readability, clean for
                     type="text"
                     value={coverDept}
                     onChange={(e) => setCoverDept(e.target.value)}
-                    placeholder="e.g. Computer Science"
+                    placeholder="e.g. Computer Science & Engineering"
                     className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500"
                   />
                 </div>
@@ -1002,7 +1180,7 @@ Additional User Instructions: ${aiInstruction || 'Improve readability, clean for
                     type="text"
                     value={coverInstitution}
                     onChange={(e) => setCoverInstitution(e.target.value)}
-                    placeholder="e.g. Stanford University"
+                    placeholder="e.g. Stanford University / Tech Corp"
                     className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500"
                   />
                 </div>
@@ -1020,7 +1198,7 @@ Additional User Instructions: ${aiInstruction || 'Improve readability, clean for
                 onClick={handleInsertCoverPage}
                 className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold text-xs rounded-xl shadow-sm"
               >
-                Insert Title Page
+                Apply Decorated Title Page
               </button>
             </div>
           </div>

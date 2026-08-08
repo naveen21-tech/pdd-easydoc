@@ -20,6 +20,75 @@ import {
 export interface DocxExportOptions {
   author?: string;
   institution?: string;
+  templateName?: string;
+}
+
+// Parses inline bold (**text**), italic (*text*), underline (<u>text</u>), and inline code (`code`) into native Word TextRuns
+function parseFormattedTextRuns(rawText: string, baseOptions: Partial<any> = {}): TextRun[] {
+  const runs: TextRun[] = [];
+
+  // Match markdown tokens: **bold**, *italic*, `code`, <u>underline</u>, or plain text
+  const regex = /(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`|<u>[^<]+<\/u>|[^*`<_]+|.)/g;
+  let match: RegExpExecArray | null;
+
+  while ((match = regex.exec(rawText)) !== null) {
+    const token = match[0];
+    if (!token) continue;
+
+    if (token.startsWith('**') && token.endsWith('**') && token.length >= 4) {
+      runs.push(
+        new TextRun({
+          text: token.slice(2, -2),
+          bold: true,
+          color: baseOptions.color || '0F172A',
+          size: baseOptions.size || 22,
+          font: baseOptions.font,
+        })
+      );
+    } else if (token.startsWith('*') && token.endsWith('*') && token.length >= 2) {
+      runs.push(
+        new TextRun({
+          text: token.slice(1, -1),
+          italics: true,
+          color: baseOptions.color || '1E293B',
+          size: baseOptions.size || 22,
+          font: baseOptions.font,
+        })
+      );
+    } else if (token.startsWith('`') && token.endsWith('`') && token.length >= 2) {
+      runs.push(
+        new TextRun({
+          text: token.slice(1, -1),
+          font: 'Courier New',
+          color: '7C3AED',
+          size: 20,
+          shading: { fill: 'F1F5F9', type: ShadingType.CLEAR },
+        })
+      );
+    } else if (token.startsWith('<u>') && token.endsWith('</u>') && token.length >= 7) {
+      runs.push(
+        new TextRun({
+          text: token.slice(3, -4),
+          underline: {},
+          color: baseOptions.color || '0F172A',
+          size: baseOptions.size || 22,
+        })
+      );
+    } else {
+      runs.push(
+        new TextRun({
+          text: token,
+          bold: baseOptions.bold,
+          italics: baseOptions.italics,
+          color: baseOptions.color || '1E293B',
+          size: baseOptions.size || 22,
+          font: baseOptions.font,
+        })
+      );
+    }
+  }
+
+  return runs.length > 0 ? runs : [new TextRun({ text: rawText, ...baseOptions })];
 }
 
 export async function generateDocxBuffer(
@@ -29,14 +98,44 @@ export async function generateDocxBuffer(
 ): Promise<Buffer> {
   const lines = markdownContent.split('\n');
   const children: (Paragraph | Table)[] = [];
+  const templateName = options?.templateName || 'Official Document';
 
-  // Document Main Title
+  // 1. Front Title Page Header Decoration (Template Badge)
   children.push(
     new Paragraph({
-      text: title,
-      heading: HeadingLevel.HEADING_1,
-      alignment: AlignmentType.CENTER,
-      spacing: { before: 200, after: 300 },
+      children: [
+        new TextRun({
+          text: `TEMPLATE: ${templateName.toUpperCase()}`,
+          bold: true,
+          color: '7C3AED',
+          size: 19, // 9.5pt
+          shading: { fill: 'F5F3FF', type: ShadingType.CLEAR },
+        }),
+      ],
+      spacing: { before: 100, after: 120 },
+    })
+  );
+
+  // 2. Bold & Bigger Title on Front Title Page
+  children.push(
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: title,
+          bold: true,
+          color: '0F172A',
+          size: 56, // 28pt bold title
+        }),
+      ],
+      spacing: { before: 120, after: 200 },
+      border: {
+        bottom: {
+          color: '7C3AED',
+          size: 24,
+          style: BorderStyle.SINGLE,
+          space: 8,
+        },
+      },
     })
   );
 
@@ -56,14 +155,11 @@ export async function generateDocxBuffer(
           return new TableCell({
             children: [
               new Paragraph({
-                children: [
-                  new TextRun({
-                    text: txt.trim(),
-                    bold: isHeader,
-                    color: isHeader ? '1E1B4B' : '334155',
-                    size: 20, // 10pt
-                  }),
-                ],
+                children: parseFormattedTextRuns(txt.trim(), {
+                  bold: isHeader,
+                  color: isHeader ? '1E1B4B' : '334155',
+                  size: 20, // 10pt
+                }),
               }),
             ],
             shading: isHeader
@@ -102,6 +198,16 @@ export async function generateDocxBuffer(
   lines.forEach((line) => {
     const trimmed = line.trim();
 
+    // Skip duplicate title if it matches main title
+    if (trimmed === `# ${title}` || trimmed === `# **${title}**`) {
+      return;
+    }
+
+    // Skip template badge line as we added it at top
+    if (trimmed.startsWith('[TEMPLATE_BADGE]')) {
+      return;
+    }
+
     // Check Table
     if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
       inTable = true;
@@ -137,7 +243,11 @@ export async function generateDocxBuffer(
     if (trimmed.startsWith('# ')) {
       children.push(
         new Paragraph({
-          text: trimmed.replace(/^#\s+/, ''),
+          children: parseFormattedTextRuns(trimmed.replace(/^#\s+/, ''), {
+            bold: true,
+            size: 40, // 20pt
+            color: '1E1B4B',
+          }),
           heading: HeadingLevel.HEADING_1,
           spacing: { before: 280, after: 140 },
           keepNext: true,
@@ -147,7 +257,11 @@ export async function generateDocxBuffer(
       // Heading 2
       children.push(
         new Paragraph({
-          text: trimmed.replace(/^##\s+/, ''),
+          children: parseFormattedTextRuns(trimmed.replace(/^##\s+/, ''), {
+            bold: true,
+            size: 32, // 16pt
+            color: '7C3AED',
+          }),
           heading: HeadingLevel.HEADING_2,
           spacing: { before: 220, after: 110 },
           keepNext: true,
@@ -157,7 +271,11 @@ export async function generateDocxBuffer(
       // Heading 3
       children.push(
         new Paragraph({
-          text: trimmed.replace(/^###\s+/, ''),
+          children: parseFormattedTextRuns(trimmed.replace(/^###\s+/, ''), {
+            bold: true,
+            size: 26, // 13pt
+            color: '1E1B4B',
+          }),
           heading: HeadingLevel.HEADING_3,
           spacing: { before: 180, after: 90 },
           keepNext: true,
@@ -168,10 +286,8 @@ export async function generateDocxBuffer(
       children.push(
         new Paragraph({
           children: [
-            new TextRun({
-              text: '• ' + trimmed.substring(2),
-              size: 22, // 11pt
-            }),
+            new TextRun({ text: '•  ', bold: true, color: '7C3AED', size: 22 }),
+            ...parseFormattedTextRuns(trimmed.substring(2), { size: 22 }),
           ],
           indent: { left: 400 },
           spacing: { after: 70 },
@@ -179,13 +295,14 @@ export async function generateDocxBuffer(
       );
     } else if (/^\d+\.\s/.test(trimmed)) {
       // Numbered list item
+      const numMatch = trimmed.match(/^(\d+\.)\s+(.*)$/);
+      const numStr = numMatch ? numMatch[1] : '1.';
+      const rest = numMatch ? numMatch[2] : trimmed;
       children.push(
         new Paragraph({
           children: [
-            new TextRun({
-              text: trimmed,
-              size: 22,
-            }),
+            new TextRun({ text: `${numStr}  `, bold: true, color: '7C3AED', size: 22 }),
+            ...parseFormattedTextRuns(rest, { size: 22 }),
           ],
           indent: { left: 400 },
           spacing: { after: 70 },
@@ -195,14 +312,11 @@ export async function generateDocxBuffer(
       // Blockquote
       children.push(
         new Paragraph({
-          children: [
-            new TextRun({
-              text: trimmed.replace(/^>\s+/, ''),
-              italics: true,
-              color: '1E1B4B',
-              size: 22,
-            }),
-          ],
+          children: parseFormattedTextRuns(trimmed.replace(/^>\s+/, ''), {
+            italics: true,
+            color: '1E1B4B',
+            size: 22,
+          }),
           indent: { left: 500, right: 300 },
           spacing: { before: 120, after: 120 },
           border: {
@@ -216,17 +330,13 @@ export async function generateDocxBuffer(
         })
       );
     } else {
-      // Standard text paragraph
-      const cleanText = trimmed.replace(/[*_]/g, '');
+      // Standard text paragraph with inline bold / italic parsing
       children.push(
         new Paragraph({
-          children: [
-            new TextRun({
-              text: cleanText,
-              size: 22, // 11pt
-              color: '1E293B',
-            }),
-          ],
+          children: parseFormattedTextRuns(trimmed, {
+            size: 22, // 11pt
+            color: '1E293B',
+          }),
           alignment: AlignmentType.JUSTIFIED,
           spacing: { after: 120, line: 276 }, // 1.15 line spacing
         })

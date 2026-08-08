@@ -104,8 +104,15 @@ async function handleExport(request: Request, params: { id: string }) {
     let contentType: string;
     let fileExtension: string;
 
+    const detectedTemplate =
+      content.match(/\[TEMPLATE_BADGE\]\s*([^\n\r]+)/)?.[1] ||
+      (documentRecord as any).template?.name ||
+      'Official Report';
+
     if (format === 'docx') {
-      const docxBuf = await generateDocxBuffer(title, content);
+      const docxBuf = await generateDocxBuffer(title, content, {
+        templateName: detectedTemplate,
+      });
       fileBuffer = new Uint8Array(docxBuf);
       contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
       fileExtension = 'docx';
@@ -119,7 +126,10 @@ async function handleExport(request: Request, params: { id: string }) {
       fileExtension = 'md';
     } else {
       // Default: Styled PDF / Printable HTML Attachment
-      fileBuffer = generateStyledHtmlDocument(title, content, { borderColor, borderStyle });
+      fileBuffer = generateStyledHtmlDocument(title, content, {
+        borderColor,
+        borderStyle,
+      });
       contentType = 'text/html; charset=utf-8';
       fileExtension = 'html';
     }

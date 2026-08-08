@@ -1,7 +1,8 @@
 // Intelligent Content-Aware Pagination Engine for A4 Documents (210mm x 297mm)
+// Supports Rich Inline Formatting (Bold, Italic, Underline, Code, Tables, Title Page Decoration)
 
 export interface DocumentBlock {
-  type: 'heading1' | 'heading2' | 'heading3' | 'paragraph' | 'list-item' | 'blockquote' | 'table' | 'code' | 'page-break' | 'hr';
+  type: 'heading1' | 'heading2' | 'heading3' | 'paragraph' | 'list-item' | 'blockquote' | 'table' | 'code' | 'page-break' | 'hr' | 'template-badge';
   content: string;
   raw: string;
   weight: number; // Approximate height in points/pixels
@@ -38,7 +39,7 @@ export function parseContentIntoBlocks(markdown: string): DocumentBlock[] {
         type: 'table',
         content: tableContent,
         raw: tableContent,
-        weight: tableRows.length * 36 + 20,
+        weight: tableRows.length * 38 + 24,
       });
       tableRows = [];
       inTable = false;
@@ -64,7 +65,18 @@ export function parseContentIntoBlocks(markdown: string): DocumentBlock[] {
         type: 'paragraph',
         content: '',
         raw: '',
-        weight: 14,
+        weight: 12,
+      });
+      continue;
+    }
+
+    // Template Badge Indicator
+    if (trimmed.startsWith('[TEMPLATE_BADGE]') || trimmed.startsWith('Template:') || trimmed.startsWith('**Template:**')) {
+      blocks.push({
+        type: 'template-badge',
+        content: trimmed.replace(/^\[TEMPLATE_BADGE\]\s*/, '').replace(/^\*\*Template:\*\*\s*/, '').replace(/^Template:\s*/, ''),
+        raw: line,
+        weight: 40,
       });
       continue;
     }
@@ -88,27 +100,27 @@ export function parseContentIntoBlocks(markdown: string): DocumentBlock[] {
       continue;
     }
 
-    // Headings
+    // Headings (H1 is bigger, bold and styled for Title / Cover page)
     if (trimmed.startsWith('# ')) {
       blocks.push({
         type: 'heading1',
         content: trimmed.replace(/^#\s+/, ''),
         raw: line,
-        weight: 56, // Larger height + margin
+        weight: 68, // Larger height for bold title
       });
     } else if (trimmed.startsWith('## ')) {
       blocks.push({
         type: 'heading2',
         content: trimmed.replace(/^##\s+/, ''),
         raw: line,
-        weight: 44,
+        weight: 48,
       });
     } else if (trimmed.startsWith('### ')) {
       blocks.push({
         type: 'heading3',
         content: trimmed.replace(/^###\s+/, ''),
         raw: line,
-        weight: 36,
+        weight: 38,
       });
     } else if (trimmed.startsWith('- ') || trimmed.startsWith('* ') || /^\d+\.\s/.test(trimmed)) {
       // List items
@@ -116,7 +128,7 @@ export function parseContentIntoBlocks(markdown: string): DocumentBlock[] {
         type: 'list-item',
         content: trimmed.replace(/^([-*]|\d+\.)\s+/, ''),
         raw: line,
-        weight: 24,
+        weight: 26,
       });
     } else if (trimmed.startsWith('> ')) {
       // Blockquotes
@@ -126,7 +138,7 @@ export function parseContentIntoBlocks(markdown: string): DocumentBlock[] {
         type: 'blockquote',
         content: quoteText,
         raw: line,
-        weight: approxLines * 22 + 24,
+        weight: approxLines * 24 + 28,
       });
     } else {
       // Standard Paragraph
@@ -135,7 +147,7 @@ export function parseContentIntoBlocks(markdown: string): DocumentBlock[] {
         type: 'paragraph',
         content: trimmed,
         raw: line,
-        weight: approxLines * 22 + 10,
+        weight: approxLines * 24 + 12,
       });
     }
   }
@@ -158,7 +170,7 @@ export function paginateDocument(markdownContent: string): PaginationResult {
   const pushCurrentPage = () => {
     if (currentPageBlocks.length > 0) {
       const rawText = currentPageBlocks.map((b) => b.raw).join('\n');
-      const htmlContent = renderBlocksToHtml(currentPageBlocks);
+      const htmlContent = renderBlocksToHtml(currentPageBlocks, pageIndex === 1);
       pages.push({
         pageNumber: pageIndex,
         blocks: [...currentPageBlocks],
@@ -210,27 +222,80 @@ export function paginateDocument(markdownContent: string): PaginationResult {
   };
 }
 
-export function renderBlocksToHtml(blocks: DocumentBlock[], borderColor = '#7C3AED'): string {
+// Convert inline formatting (Bold, Italic, Underline, Code, Links) safely into HTML
+export function formatInlineText(text: string): string {
+  if (!text) return '';
+
+  let html = text;
+
+  // 1. Convert Markdown Bold (**text** or __text__)
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong style="font-weight: 700; color: #0F172A;">$1</strong>');
+  html = html.replace(/__(.+?)__/g, '<strong style="font-weight: 700; color: #0F172A;">$1</strong>');
+
+  // 2. Convert Markdown Italic (*text* or _text_)
+  html = html.replace(/\*([^*]+?)\*/g, '<em style="font-style: italic;">$1</em>');
+  html = html.replace(/_([^_]+?)_/g, '<em style="font-style: italic;">$1</em>');
+
+  // 3. Convert Inline Code (`code`)
+  html = html.replace(/`([^`]+?)`/g, '<code style="font-family: monospace; background: #F1F5F9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; border: 1px solid #E2E8F0; color: #7C3AED;">$1</code>');
+
+  // 4. Convert Strikethrough (~~text~~)
+  html = html.replace(/~~(.+?)~~/g, '<s style="text-decoration: line-through; opacity: 0.75;">$1</s>');
+
+  // 5. Convert Underline (<u>text</u>)
+  html = html.replace(/<u>(.+?)<\/u>/gi, '<u style="text-decoration: underline;">$1</u>');
+
+  // 6. Convert Links [text](url)
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" style="color: #7C3AED; font-weight: 600; text-decoration: underline;">$1</a>');
+
+  return html;
+}
+
+export function renderBlocksToHtml(blocks: DocumentBlock[], isFrontTitlePage = false, borderColor = '#7C3AED'): string {
   let html = '';
 
   for (const block of blocks) {
-    if (block.type === 'heading1') {
-      html += `<h1 style="color: #1E1B4B; font-family: 'Sora', sans-serif; font-size: 22px; font-weight: 700; border-bottom: 2px solid ${borderColor}; padding-bottom: 6px; margin-top: 18px; margin-bottom: 12px; page-break-after: avoid; break-after: avoid-page;">${escapeHtml(block.content)}</h1>`;
+    if (block.type === 'template-badge') {
+      // Decorated Top Template Badge
+      html += `
+        <div style="margin-bottom: 20px; display: inline-flex; align-items: center; background: #F5F3FF; border: 1.5px solid #DDD6FE; padding: 5px 14px; border-radius: 20px; box-shadow: 0 1px 3px rgba(124, 58, 237, 0.08);">
+          <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #7C3AED; margin-right: 8px;"></span>
+          <span style="font-size: 11.5px; font-weight: 700; color: #6D28D9; text-transform: uppercase; letter-spacing: 0.5px;">Template: ${escapeHtml(block.content)}</span>
+        </div>
+      `;
+    } else if (block.type === 'heading1') {
+      // Decorated Front Title (Bigger, Bold, with Accent Underline)
+      if (isFrontTitlePage) {
+        html += `
+          <div style="margin-top: 12px; margin-bottom: 24px; padding-bottom: 14px; border-bottom: 3px solid ${borderColor};">
+            <h1 style="color: #0F172A; font-family: 'Sora', sans-serif; font-size: 28px; font-weight: 800; line-height: 1.25; letter-spacing: -0.5px; margin: 0 0 8px 0; page-break-after: avoid; break-after: avoid-page;">
+              ${formatInlineText(block.content)}
+            </h1>
+            <div style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: #64748B; font-weight: 600;">
+              <span>OFFICIAL EASYDOC REPORT</span>
+              <span>•</span>
+              <span style="color: #7C3AED;">VERIFIED & FORMATTED</span>
+            </div>
+          </div>
+        `;
+      } else {
+        html += `<h1 style="color: #1E1B4B; font-family: 'Sora', sans-serif; font-size: 22px; font-weight: 700; border-bottom: 2px solid ${borderColor}; padding-bottom: 6px; margin-top: 20px; margin-bottom: 12px; page-break-after: avoid; break-after: avoid-page;">${formatInlineText(block.content)}</h1>`;
+      }
     } else if (block.type === 'heading2') {
-      html += `<h2 style="color: ${borderColor}; font-family: 'Sora', sans-serif; font-size: 17px; font-weight: 700; margin-top: 16px; margin-bottom: 8px; page-break-after: avoid; break-after: avoid-page;">${escapeHtml(block.content)}</h2>`;
+      html += `<h2 style="color: ${borderColor}; font-family: 'Sora', sans-serif; font-size: 17px; font-weight: 700; margin-top: 18px; margin-bottom: 8px; page-break-after: avoid; break-after: avoid-page;">${formatInlineText(block.content)}</h2>`;
     } else if (block.type === 'heading3') {
-      html += `<h3 style="color: #1E1B4B; font-family: 'Sora', sans-serif; font-size: 14px; font-weight: 600; margin-top: 14px; margin-bottom: 6px; page-break-after: avoid; break-after: avoid-page;">${escapeHtml(block.content)}</h3>`;
+      html += `<h3 style="color: #1E1B4B; font-family: 'Sora', sans-serif; font-size: 14px; font-weight: 600; margin-top: 14px; margin-bottom: 6px; page-break-after: avoid; break-after: avoid-page;">${formatInlineText(block.content)}</h3>`;
     } else if (block.type === 'list-item') {
-      html += `<li style="margin-left: 20px; margin-bottom: 5px; color: #334155; line-height: 1.5; font-size: 13px;">${escapeHtml(block.content)}</li>`;
+      html += `<li style="margin-left: 20px; margin-bottom: 6px; color: #334155; line-height: 1.6; font-size: 13.5px;">${formatInlineText(block.content)}</li>`;
     } else if (block.type === 'blockquote') {
-      html += `<blockquote style="background: #F8FAFC; border-left: 4px solid ${borderColor}; padding: 10px 14px; margin: 10px 0; color: #0F172A; font-style: italic; font-size: 13px; border-radius: 0 4px 4px 0;">${escapeHtml(block.content)}</blockquote>`;
+      html += `<blockquote style="background: #F8FAFC; border-left: 4px solid ${borderColor}; padding: 12px 16px; margin: 14px 0; color: #0F172A; font-size: 13.5px; border-radius: 0 6px 6px 0; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">${formatInlineText(block.content)}</blockquote>`;
     } else if (block.type === 'table') {
       html += renderMarkdownTableToHtml(block.content, borderColor);
     } else if (block.type === 'paragraph') {
       if (!block.content) {
         html += `<div style="height: 10px;"></div>`;
       } else {
-        html += `<p style="margin-bottom: 8px; color: #1E293B; line-height: 1.6; font-size: 13.5px; text-align: justify;">${escapeHtml(block.content)}</p>`;
+        html += `<p style="margin-bottom: 10px; color: #1E293B; line-height: 1.65; font-size: 13.5px;">${formatInlineText(block.content)}</p>`;
       }
     }
   }
@@ -242,7 +307,7 @@ function renderMarkdownTableToHtml(tableMarkdown: string, borderColor = '#7C3AED
   const rows = tableMarkdown.split('\n').filter((r) => r.trim());
   if (rows.length === 0) return '';
 
-  let html = `<table style="width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 12px; page-break-inside: auto; break-inside: auto;">`;
+  let html = `<table style="width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 12px; page-break-inside: auto; break-inside: auto; border: 1px solid #E2E8F0; border-radius: 6px; overflow: hidden;">`;
 
   rows.forEach((row, rowIndex) => {
     if (row.includes('---')) return; // Skip separator line
@@ -251,14 +316,14 @@ function renderMarkdownTableToHtml(tableMarkdown: string, borderColor = '#7C3AED
     if (rowIndex === 0) {
       html += `<thead style="display: table-header-group; page-break-inside: avoid; break-inside: avoid;"><tr style="background: #F1F5F9; border-bottom: 2px solid ${borderColor};">`;
       cells.forEach((cell) => {
-        html += `<th style="padding: 8px 10px; text-align: left; font-weight: 700; color: #1E1B4B; border: 1px solid #CBD5E1;">${escapeHtml(cell.trim())}</th>`;
+        html += `<th style="padding: 9px 12px; text-align: left; font-weight: 700; color: #1E1B4B; border: 1px solid #CBD5E1;">${formatInlineText(cell.trim())}</th>`;
       });
       html += `</tr></thead><tbody>`;
     } else {
       const bg = rowIndex % 2 === 0 ? '#F8FAFC' : '#FFFFFF';
       html += `<tr style="background: ${bg}; page-break-inside: avoid; break-inside: avoid;">`;
       cells.forEach((cell) => {
-        html += `<td style="padding: 7px 10px; border: 1px solid #E2E8F0; color: #334155;">${escapeHtml(cell.trim())}</td>`;
+        html += `<td style="padding: 8px 12px; border: 1px solid #E2E8F0; color: #334155;">${formatInlineText(cell.trim())}</td>`;
       });
       html += `</tr>`;
     }
