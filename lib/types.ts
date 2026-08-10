@@ -311,3 +311,33 @@ export interface ATSAnalysisResult {
   suggestions: string[];
 }
 
+// -------------------------------------------------------------
+// FACULTY DOCUMENT ASSISTANT TYPES
+// -------------------------------------------------------------
+export type FacultyDocType =
+  | 'Lesson Plan'
+  | 'Question Paper'
+  | 'Assignment Sheet'
+  | 'Course Outcomes'
+  | 'Internal Assessment Report'
+  | 'Student Feedback Form'
+  | 'Attendance Report'
+  | 'Meeting Minutes'
+  | 'Academic Report';
+
+export interface FacultyDocRequest {
+  docType: FacultyDocType;
+  courseName: string;
+  courseCode?: string;
+  department?: string;
+  semester?: string;
+  academicYear?: string;
+  instructorName?: string;
+  targetUnitOrTopic?: string;
+  bloomsTaxonomyLevel?: string;
+  totalMarks?: number;
+  durationMinutes?: number;
+  specificInstructions?: string;
+  additionalDetails?: string;
+}
+
