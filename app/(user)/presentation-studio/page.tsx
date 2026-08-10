@@ -30,6 +30,8 @@ import {
   FileCode,
   ArrowRight,
   AlertTriangle,
+  Wand2,
+  Zap,
 } from 'lucide-react';
 import { SlideItem, PresentationStyle, PresentationItem, DocumentItem } from '@/lib/types';
 import { exportPresentationToPptx } from '@/lib/export/pptx';
@@ -84,6 +86,29 @@ const PRESENTATION_STYLES: { id: PresentationStyle; name: string; desc: string; 
   },
 ];
 
+const TOPIC_PRESETS = [
+  {
+    title: 'Machine Learning in Healthcare Diagnostics',
+    content: 'Deep learning image classification for MRI/CT scans, multi-modal clinical EHR data pipelines, HIPAA compliance, model interpretability, and real-time hospital inference latency benchmarks.',
+  },
+  {
+    title: 'Distributed Cloud Microservices & Kubernetes',
+    content: 'High-availability containerized microservices, Kafka event-driven messaging, Redis stateful caching, automated blue-green deployments, and zero-downtime horizontal scaling.',
+  },
+  {
+    title: 'Zero-Trust Cybersecurity & Cryptographic Verification',
+    content: 'Identity-first access controls, OAuth 2.0 / OIDC tokens, SHA-256 tamper-proof ledger auditing, automated vulnerability scanning, and end-to-end payload encryption.',
+  },
+  {
+    title: 'Next.js 14 & Supabase Full-Stack Architecture',
+    content: 'App Router server components, Supabase PostgreSQL with row-level security, Prisma connection pooling, real-time WebSockets, and Vercel edge deployment.',
+  },
+  {
+    title: 'IoT Smart City Infrastructure & Sensor Networks',
+    content: 'Edge computing gateways, MQTT telemetry pipelines, low-power LoRaWAN sensor nodes, anomaly detection algorithms, and real-time municipal dashboard analytics.',
+  },
+];
+
 const SAMPLE_DEMO_SLIDES: SlideItem[] = [
   {
     id: 'demo-1',
@@ -91,21 +116,21 @@ const SAMPLE_DEMO_SLIDES: SlideItem[] = [
     title: 'EasyDoc: Intelligent Document Synthesis Platform',
     subtitle: 'System Architecture & Engineering Defense Presentation',
     bullets: [
-      'Multi-Model LLM Orchestration with Groq & Gemini',
-      'Automated A4 Word Pagination and Smart Page Breaks',
-      'Tamper-Proof SHA-256 Verification Registry & QR Badges',
+      'Multi-Model LLM Orchestration with Groq LLaMA 3.3 70B & Google Gemini 1.5 Flash',
+      'Intelligent A4 Word Pagination Engine with Real-Time DOM Virtualization',
+      'Tamper-Proof Cryptographic Verification Registry with SHA-256 Checksums & QR Codes',
     ],
     layout: 'title',
-    notes: 'Welcome the panel, state the project name and thesis objectives clearly.',
+    notes: 'Welcome the examination panel, state the project name and thesis objectives clearly.',
   },
   {
     id: 'demo-2',
     slideNumber: 2,
     title: 'Problem Statement & Identified Inefficiencies',
-    subtitle: 'Why existing document tooling fails engineering teams',
+    subtitle: 'Why existing documentation tooling fails engineering teams',
     bullets: [
-      'Manual formatting wastes 40% of technical reporting cycles',
-      'Lack of synchronized multi-format export (PDF, Word DOCX, PPTX Keynote)',
+      'Manual formatting wastes over 40% of developer and researcher technical reporting cycles',
+      'Lack of synchronized multi-format export across PDF, Word DOCX, and Keynote PPTX',
       'No verifiable cryptographic proof for published academic and corporate papers',
     ],
     layout: 'content',
@@ -117,9 +142,9 @@ const SAMPLE_DEMO_SLIDES: SlideItem[] = [
     title: 'Core System Topology & Microservice Architecture',
     subtitle: 'High-throughput Next.js 14 & Supabase PostgreSQL design',
     bullets: [
-      'Edge Middleware routing with Sub-50ms Supabase Session Validation',
-      'Prisma Connection Pooling with transactional consistency',
-      'In-browser A4 virtual DOM renderer with real-time word pagination',
+      'Edge Middleware routing with Sub-50ms Supabase Session Validation & RLS policies',
+      'Prisma Connection Pooling with transactional consistency across all 7 Cyber Studios',
+      'In-browser A4 virtual DOM renderer with real-time multi-page word pagination',
     ],
     layout: 'split',
     notes: 'Walk through the architectural tiers from client to database layer.',
@@ -174,10 +199,11 @@ function PresentationStudioContent() {
   // Status & UI States
   const [generating, setGenerating] = useState<boolean>(false);
   const [saving, setSaving] = useState<boolean>(false);
+  const [enhancingSlide, setEnhancingSlide] = useState<boolean>(false);
+  const [enrichingDeck, setEnrichingDeck] = useState<boolean>(false);
   const [exportingPptx, setExportingPptx] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [pastPresentations, setPastPresentations] = useState<any[]>([]);
-  const [loadingPast, setLoadingPast] = useState<boolean>(false);
 
   useEffect(() => {
     fetchUserData();
@@ -185,7 +211,6 @@ function PresentationStudioContent() {
 
   const fetchUserData = async () => {
     try {
-      setLoadingPast(true);
       const [docRes, presRes] = await Promise.all([
         fetch('/api/documents'),
         fetch('/api/presentations'),
@@ -198,10 +223,10 @@ function PresentationStudioContent() {
         if (!selectedDocId && docs.length > 0) {
           setSelectedDocId(docs[0].id);
         } else if (docs.length === 0) {
-          // If user has no docs, auto switch to custom mode
+          // If user has no docs, auto switch to custom mode with rich preset
           setSourceMode('custom');
-          setCustomTitle('Distributed Cloud Systems Architecture');
-          setCustomContent('High availability, fault tolerance, consensus algorithms, microservices communication, and observability in cloud platforms.');
+          setCustomTitle(TOPIC_PRESETS[0].title);
+          setCustomContent(TOPIC_PRESETS[0].content);
         }
       }
 
@@ -211,13 +236,18 @@ function PresentationStudioContent() {
       }
     } catch (e) {
       console.error('Fetch presentation studio user data error:', e);
-    } finally {
-      setLoadingPast(false);
     }
   };
 
+  const handleApplyPreset = (preset: { title: string; content: string }) => {
+    setSourceMode('custom');
+    setCustomTitle(preset.title);
+    setCustomContent(preset.content);
+    setToastMessage(`Selected topic: "${preset.title}"`);
+    setTimeout(() => setToastMessage(null), 2500);
+  };
+
   const handleGenerateDeck = async () => {
-    // Validate inputs
     let titleToUse = customTitle.trim();
     let contentToUse = customContent.trim();
 
@@ -262,7 +292,7 @@ function PresentationStudioContent() {
         setCurrentDeckTitle(data.title || 'EasyDoc Keynote Deck');
         setSavedPresentationId(data.presentationId);
         setActiveSlideIndex(0);
-        setToastMessage(`✓ Generated ${data.slides.length} keynote slides!`);
+        setToastMessage(`✓ Generated ${data.slides.length} detailed keynote slides!`);
         setTimeout(() => setToastMessage(null), 3500);
         fetchUserData();
       } else {
@@ -273,6 +303,71 @@ function PresentationStudioContent() {
       alert('Slide generation notice: ' + (e?.message || 'Please check your connection and try again.'));
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const handleEnhanceActiveSlide = async () => {
+    if (!activeSlide) return;
+    setEnhancingSlide(true);
+    try {
+      const res = await fetch('/api/presentations/enhance-slide', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          deckTitle: currentDeckTitle,
+          slideTitle: activeSlide.title,
+          currentBullets: activeSlide.bullets,
+          style: selectedStyle,
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.enhanced) {
+          const updated = [...currentDeck];
+          updated[activeSlideIndex] = {
+            ...activeSlide,
+            subtitle: data.enhanced.subtitle || activeSlide.subtitle,
+            bullets: data.enhanced.bullets || activeSlide.bullets,
+            notes: data.enhanced.notes || activeSlide.notes,
+          };
+          setCurrentDeck(updated);
+          setToastMessage(`✓ Slide ${activeSlideIndex + 1} enriched with detailed AI contents!`);
+          setTimeout(() => setToastMessage(null), 3000);
+        }
+      }
+    } catch (e) {
+      console.error('Enhance active slide error:', e);
+    } finally {
+      setEnhancingSlide(false);
+    }
+  };
+
+  const handleEnrichEntireDeck = async () => {
+    if (currentDeck.length === 0) return;
+    setEnrichingDeck(true);
+    try {
+      const res = await fetch('/api/presentations/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customTitle: currentDeckTitle,
+          customContent: currentDeckTitle + ' ' + currentDeck.map((s) => s.title).join('. '),
+          slideCount: currentDeck.length,
+          style: selectedStyle,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.slides) {
+        setCurrentDeck(data.slides);
+        setToastMessage(`✓ All ${data.slides.length} slides enriched with detailed technical contents!`);
+        setTimeout(() => setToastMessage(null), 3500);
+      }
+    } catch (e) {
+      console.error('Enrich entire deck error:', e);
+    } finally {
+      setEnrichingDeck(false);
     }
   };
 
@@ -368,7 +463,7 @@ function PresentationStudioContent() {
   const addBulletPoint = () => {
     if (!activeSlide) return;
     const bullets = Array.isArray(activeSlide.bullets) ? [...activeSlide.bullets] : [];
-    updateActiveSlide('bullets', [...bullets, 'New highlight key takeaway point']);
+    updateActiveSlide('bullets', [...bullets, 'New detailed takeaway or architecture component']);
   };
 
   const removeBulletPoint = (bulletIndex: number) => {
@@ -381,15 +476,15 @@ function PresentationStudioContent() {
     const newSlide: SlideItem = {
       id: `slide-${Date.now()}`,
       slideNumber: currentDeck.length + 1,
-      title: 'New Slide Focus',
-      subtitle: 'Slide Subtitle & Engineering Scope',
+      title: 'New Technical Topic',
+      subtitle: 'Architecture & Implementation Scope',
       bullets: [
-        'Key technical point A with clear metrics',
-        'Modular architectural component specification',
-        'Verified test outcome and deployment milestone',
+        'Modular architectural component specification with clear responsibilities',
+        'Stateful caching and asynchronous pipeline processing mechanisms',
+        'Verified compliance benchmarks and high-throughput execution milestones',
       ],
       layout: 'content',
-      notes: 'Presenter notes for this slide.',
+      notes: 'Presenter notes explaining key engineering rationale.',
     };
     setCurrentDeck([...currentDeck, newSlide]);
     setActiveSlideIndex(currentDeck.length);
@@ -451,7 +546,7 @@ function PresentationStudioContent() {
             Presentation Studio
           </h1>
           <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">
-            Convert any EasyDoc document, research spec, or custom topic into a 16:9 widescreen keynote slide deck.
+            Generate rich, content-dense 16:9 keynote slide decks populated with technical details, architecture specs, and presenter notes.
           </p>
         </div>
 
@@ -459,7 +554,7 @@ function PresentationStudioContent() {
           {currentDeck.length === 0 && (
             <button
               onClick={handleLoadDemo}
-              className="inline-flex items-center space-x-1.5 bg-purple-100 dark:bg-brand-amethyst text-purple-900 dark:text-brand-lavender border border-purple-200 dark:border-brand-lavender/30 px-4 py-2.5 rounded-xl text-xs font-bold hover:bg-purple-200 transition-all"
+              className="inline-flex items-center space-x-1.5 bg-purple-100 dark:bg-brand-amethyst text-purple-900 dark:text-brand-lavender border border-purple-200 dark:border-brand-lavender/30 px-4 py-2.5 rounded-xl text-xs font-bold hover:bg-purple-200 transition-all shadow-sm"
             >
               <Play className="w-3.5 h-3.5 text-purple-700 dark:text-brand-lavender" />
               <span>Load Sample Demo Deck</span>
@@ -468,6 +563,16 @@ function PresentationStudioContent() {
 
           {currentDeck.length > 0 && (
             <>
+              <button
+                onClick={handleEnrichEntireDeck}
+                disabled={enrichingDeck}
+                className="inline-flex items-center space-x-1.5 bg-purple-100 dark:bg-brand-amethyst text-purple-900 dark:text-brand-lavender border border-purple-200 dark:border-brand-lavender/30 px-3.5 py-2.5 rounded-xl text-xs font-bold hover:bg-purple-200 transition-all"
+                title="Use AI to re-populate all slides with deep technical content"
+              >
+                {enrichingDeck ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
+                <span className="hidden sm:inline">AI Enrich All</span>
+              </button>
+
               <button
                 onClick={handleSaveDeck}
                 disabled={saving}
@@ -576,6 +681,26 @@ function PresentationStudioContent() {
           </div>
         ) : (
           <div className="space-y-4">
+            {/* Quick Topic Chips */}
+            <div className="space-y-1.5">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-purple-700 dark:text-brand-lavender flex items-center space-x-1">
+                <Zap className="w-3 h-3 text-amber-500" />
+                <span>Quick Preset Topics (Click to Populate):</span>
+              </span>
+              <div className="flex flex-wrap gap-2">
+                {TOPIC_PRESETS.map((tp, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => handleApplyPreset(tp)}
+                    className="text-[11px] font-semibold px-3 py-1.5 rounded-xl border border-purple-200 dark:border-brand-lavender/30 bg-purple-50 dark:bg-brand-amethyst/30 hover:bg-purple-100 text-purple-900 dark:text-brand-lavender transition-all"
+                  >
+                    {tp.title}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="md:col-span-2 space-y-1.5">
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
@@ -586,7 +711,7 @@ function PresentationStudioContent() {
                   value={customTitle}
                   onChange={(e) => setCustomTitle(e.target.value)}
                   placeholder="e.g. Distributed Consensus in Cloud Systems"
-                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl text-xs font-semibold text-slate-900 dark:text-white"
+                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-purple-500"
                 />
               </div>
 
@@ -609,13 +734,13 @@ function PresentationStudioContent() {
 
             <div className="space-y-1.5">
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                Document Content / Transcript / Specs (Optional)
+                Document Content / Specifications / Keywords
               </label>
               <textarea
                 rows={3}
                 value={customContent}
                 onChange={(e) => setCustomContent(e.target.value)}
-                placeholder="Paste document text, research abstract, or bullet points here..."
+                placeholder="Add specific keywords, problem descriptions, or specifications to guide the AI..."
                 className="w-full px-4 py-2.5 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl text-xs font-medium text-slate-900 dark:text-white"
               />
             </div>
@@ -669,7 +794,7 @@ function PresentationStudioContent() {
             {generating ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Synthesizing Keynote Slides...</span>
+                <span>Synthesizing Keynote Slides with Rich Content...</span>
               </>
             ) : (
               <>
@@ -748,6 +873,21 @@ function PresentationStudioContent() {
                   </div>
 
                   <div className="flex items-center space-x-1">
+                    {/* AI Auto-Fill / Enhance Active Slide */}
+                    <button
+                      onClick={handleEnhanceActiveSlide}
+                      disabled={enhancingSlide}
+                      className="inline-flex items-center space-x-1 text-xs font-bold text-purple-700 dark:text-brand-lavender bg-purple-100 dark:bg-brand-amethyst/60 hover:bg-purple-200 px-3 py-1.5 rounded-lg border border-purple-200 dark:border-brand-lavender/30 transition-all mr-2"
+                      title="Auto-generate detailed bullet points and speaker notes for this slide based on its title"
+                    >
+                      {enhancingSlide ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Sparkles className="w-3.5 h-3.5 text-purple-600 dark:text-brand-lavender" />
+                      )}
+                      <span>AI Auto-Fill Slide</span>
+                    </button>
+
                     <button
                       onClick={() => moveSlide('up')}
                       disabled={activeSlideIndex === 0}
@@ -791,7 +931,7 @@ function PresentationStudioContent() {
                     </div>
 
                     {/* Main Slide Content */}
-                    <div className="space-y-4 my-auto">
+                    <div className="space-y-3.5 my-auto">
                       <input
                         type="text"
                         value={activeSlide.title || ''}
@@ -811,19 +951,19 @@ function PresentationStudioContent() {
                       )}
 
                       {/* Bullets List */}
-                      <div className="space-y-2 pt-2">
+                      <div className="space-y-2 pt-1">
                         {(activeSlide.bullets || []).map((b, bIdx) => (
                           <div key={bIdx} className="flex items-start space-x-2 group">
-                            <span className="text-purple-400 font-bold mt-0.5">•</span>
-                            <input
-                              type="text"
+                            <span className="text-purple-400 font-bold mt-0.5 shrink-0">•</span>
+                            <textarea
+                              rows={1}
                               value={b}
                               onChange={(e) => updateBulletPoint(bIdx, e.target.value)}
-                              className="flex-1 bg-transparent text-xs sm:text-sm text-slate-100 focus:outline-none border-b border-transparent focus:border-purple-400/50"
+                              className="flex-1 bg-transparent text-xs sm:text-sm text-slate-100 focus:outline-none border-b border-transparent focus:border-purple-400/50 resize-none"
                             />
                             <button
                               onClick={() => removeBulletPoint(bIdx)}
-                              className="opacity-0 group-hover:opacity-100 p-0.5 text-rose-400 hover:text-rose-300 transition-opacity"
+                              className="opacity-0 group-hover:opacity-100 p-0.5 text-rose-400 hover:text-rose-300 transition-opacity shrink-0"
                             >
                               <Trash2 className="w-3 h-3" />
                             </button>
@@ -831,13 +971,24 @@ function PresentationStudioContent() {
                         ))}
                       </div>
 
-                      <button
-                        onClick={addBulletPoint}
-                        className="inline-flex items-center space-x-1 text-[11px] font-bold text-purple-300 hover:text-white pt-1"
-                      >
-                        <Plus className="w-3 h-3" />
-                        <span>Add Bullet Point</span>
-                      </button>
+                      <div className="flex items-center space-x-3 pt-1">
+                        <button
+                          onClick={addBulletPoint}
+                          className="inline-flex items-center space-x-1 text-[11px] font-bold text-purple-300 hover:text-white"
+                        >
+                          <Plus className="w-3 h-3" />
+                          <span>Add Bullet Point</span>
+                        </button>
+
+                        <button
+                          onClick={handleEnhanceActiveSlide}
+                          disabled={enhancingSlide}
+                          className="inline-flex items-center space-x-1 text-[11px] font-bold text-emerald-400 hover:text-emerald-300"
+                        >
+                          <Wand2 className="w-3 h-3" />
+                          <span>AI Auto-Expand Points</span>
+                        </button>
+                      </div>
                     </div>
 
                     {/* Footer */}
