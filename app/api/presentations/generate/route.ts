@@ -16,25 +16,31 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { documentId, customTitle, customContent, slideCount = 8, style = 'Academic' } = body;
 
-    let docTitle = customTitle || 'Presentation';
-    let docContent = customContent || '';
+    let docTitle = (customTitle || '').trim();
+    let docContent = (customContent || '').trim();
 
     // If documentId is passed, fetch from DB
-    if (documentId) {
-      const existingDoc = await prisma.document.findFirst({
-        where: { id: documentId, userId: profile.id },
-      });
-      if (existingDoc) {
-        docTitle = existingDoc.title;
-        docContent = existingDoc.content;
+    if (documentId && documentId.trim()) {
+      try {
+        const existingDoc = await prisma.document.findFirst({
+          where: { id: documentId.trim(), userId: profile.id },
+        });
+        if (existingDoc) {
+          docTitle = existingDoc.title;
+          docContent = existingDoc.content || existingDoc.title;
+        }
+      } catch (dbFindErr) {
+        console.warn('Prisma document lookup error:', dbFindErr);
       }
     }
 
-    if (!docContent.trim()) {
-      return NextResponse.json(
-        { error: 'No document content provided for slide generation.' },
-        { status: 400 }
-      );
+    // Default title if still empty
+    if (!docTitle) {
+      docTitle = 'Project Presentation';
+    }
+
+    if (!docContent) {
+      docContent = docTitle;
     }
 
     // 1. Generate slides
@@ -42,7 +48,7 @@ export async function POST(req: Request) {
       documentTitle: docTitle,
       documentContent: docContent,
       slideCount: Number(slideCount) || 8,
-      style: style as PresentationStyle,
+      style: (style as PresentationStyle) || 'Academic',
     });
 
     // 2. Persist in database
@@ -56,7 +62,6 @@ export async function POST(req: Request) {
           style: style || 'Academic',
           slides: slides as any,
         },
-
       });
     } catch (dbErr) {
       console.warn('Prisma presentation create note:', dbErr);
