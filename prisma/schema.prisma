@@ -21,29 +21,37 @@ enum DocStatus {
 }
 
 model Profile {
-  id            String         @id @default(uuid()) // matches Supabase auth.users.id
+  id            String                 @id @default(uuid()) // matches Supabase auth.users.id
   name          String
-  email         String         @unique
-  role          Role           @default(USER)
+  email         String                 @unique
+  role          Role                   @default(USER)
   avatarUrl     String?
-  plan          String         @default("Free")
-  createdAt     DateTime       @default(now())
+  plan          String                 @default("Free")
+  createdAt     DateTime               @default(now())
   documents     Document[]
+  projects      Project[]
+  presentations Presentation[]
+  vivaSessions  VivaSession[]
+  careerProfiles CareerProfile[]
   aiRequests    AIRequest[]
   notifications Notification[]
 }
 
 model Document {
-  id         String    @id @default(uuid())
-  userId     String
-  user       Profile   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title      String
-  content    String    // rich text / markdown / HTML
-  templateId String?
-  template   Template? @relation(fields: [templateId], references: [id])
-  status     DocStatus @default(DRAFT)
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  id           String                @id @default(uuid())
+  userId       String
+  user         Profile               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title        String
+  content      String                // rich text / markdown / HTML
+  templateId   String?
+  template     Template?             @relation(fields: [templateId], references: [id])
+  projectId    String?
+  project      Project?              @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  status       DocStatus             @default(DRAFT)
+  verification DocumentVerification?
+  healthReport DocumentHealthReport?
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
 }
 
 model Template {
@@ -56,12 +64,99 @@ model Template {
   documents    Document[]
 }
 
+model Project {
+  id               String      @id @default(uuid())
+  userId           String
+  user             Profile     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name             String
+  domain           String
+  description      String
+  problemStatement String?
+  objectives       String?
+  targetUsers      String?
+  techStack        Json?       // languages, frameworks, database, tools
+  modules          Json?       // array of module specs
+  documents        Document[]
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+}
+
+model Presentation {
+  id          String   @id @default(uuid())
+  userId      String
+  user        Profile  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documentId  String?
+  title       String
+  style       String   @default("Academic")
+  slides      Json     // Array of slide objects { id, title, subtitle, bullets, layout, notes, icon }
+  theme       Json?    // Theme customization
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model VivaSession {
+  id          String   @id @default(uuid())
+  userId      String
+  user        Profile  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documentId  String?
+  projectId   String?
+  title       String
+  difficulty  String   @default("Intermediate")
+  questions   Json     // Array of questions { id, question, answer, difficulty, category, userScore, userEvaluation }
+  totalScore  Int?
+  feedback    Json?    // { strongAreas, weakAreas, recommendations, overallComment }
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model DocumentVerification {
+  id               String    @id @default(uuid())
+  verificationId   String    @unique // e.g. "EDOC-2026-8F92A71C"
+  documentId       String    @unique
+  document         Document  @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  userId           String
+  documentTitle    String
+  documentType     String
+  checksum         String
+  isRevoked        Boolean   @default(false)
+  issuedAt         DateTime  @default(now())
+  revokedAt        DateTime?
+  scanCount        Int       @default(0)
+}
+
+model DocumentHealthReport {
+  id                   String   @id @default(uuid())
+  documentId           String   @unique
+  document             Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  overallScore         Int      @default(100)
+  structureScore       Int      @default(100)
+  readabilityScore     Int      @default(100)
+  grammarScore         Int      @default(100)
+  professionalismScore Int      @default(100)
+  completenessScore    Int      @default(100)
+  formattingScore      Int      @default(100)
+  issues               Json?    // Array of issue items with category, description, and suggested fix
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model CareerProfile {
+  id          String   @id @default(uuid())
+  userId      String
+  user        Profile  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  targetRole  String?
+  resumeData  Json     // Full ATS resume object
+  atsScore    Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
 model AIRequest {
   id             String   @id @default(uuid())
   userId         String
   user           Profile  @relation(fields: [userId], references: [id], onDelete: Cascade)
   prompt         String
-  provider       String   // "openai" | "anthropic" | "gemini"
+  provider       String   // "openai" | "anthropic" | "gemini" | "groq"
   responseTimeMs Int
   success        Boolean  @default(true)
   createdAt      DateTime @default(now())
@@ -76,3 +171,4 @@ model Notification {
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
 }
+

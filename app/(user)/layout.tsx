@@ -27,7 +27,13 @@ import {
   Trash2,
   Settings,
   Command,
+  FolderGit2,
+  Presentation,
+  HelpCircle,
+  Activity,
+  ShieldCheck,
 } from 'lucide-react';
+
 import { createClient } from '@/lib/supabase/client';
 import { CommandPalette } from '@/components/ui/CommandPalette';
 
@@ -121,11 +127,17 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Generate AI', href: '/generate', icon: Sparkles },
+    { name: 'Project Studio', href: '/project-docs', icon: FolderGit2 },
+    { name: 'Presentation Studio', href: '/presentation-studio', icon: Presentation },
+    { name: 'Viva Studio', href: '/viva-studio', icon: HelpCircle },
+    { name: 'Document Health', href: '/document-health', icon: Activity },
+    { name: 'Verification', href: '/verification', icon: ShieldCheck },
+    { name: 'Career Studio', href: '/career-studio', icon: FileCheck2 },
     { name: 'Templates', href: '/templates', icon: FileText },
-    { name: 'ATS Resume', href: '/resume-builder', icon: FileCheck2 },
     { name: 'History', href: '/history', icon: Clock },
     { name: 'Profile', href: '/profile', icon: User },
   ];
+
 
   const formattedBreadcrumb = pathname.replace('/', '').replace('-', ' ') || 'Dashboard';
 

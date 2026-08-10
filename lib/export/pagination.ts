@@ -341,3 +341,78 @@ function escapeHtml(str: string): string {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
 }
+
+export function generateTableOfContents(markdown: string): string {
+  const lines = markdown.split('\n');
+  const headings: { title: string; level: number; page: number }[] = [];
+
+  let estimatedPage = 1;
+  let currentWeight = 0;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (line.includes('[PAGE BREAK]') || line === '---') {
+      estimatedPage++;
+      currentWeight = 0;
+      continue;
+    }
+
+    currentWeight += 18;
+    if (currentWeight >= 870) {
+      estimatedPage++;
+      currentWeight = 0;
+    }
+
+    if (line.startsWith('# ') && !line.includes('Table of Contents')) {
+      headings.push({
+        title: line.replace('# ', '').replace(/[*#]/g, '').trim(),
+        level: 1,
+        page: estimatedPage,
+      });
+    } else if (line.startsWith('## ') && !line.includes('Table of Contents')) {
+      headings.push({
+        title: line.replace('## ', '').replace(/[*#]/g, '').trim(),
+        level: 2,
+        page: estimatedPage,
+      });
+    } else if (line.startsWith('### ') && !line.includes('Table of Contents')) {
+      headings.push({
+        title: line.replace('### ', '').replace(/[*#]/g, '').trim(),
+        level: 3,
+        page: estimatedPage,
+      });
+    }
+  }
+
+  if (headings.length === 0) {
+    return '## Table of Contents\n\n*No headings detected. Add # or ## headings to populate.*';
+  }
+
+  let toc = `## Table of Contents\n\n| Section / Chapter | Level | Est. Page |\n| :--- | :--- | :---: |\n`;
+  headings.forEach((h) => {
+    const indent = h.level === 1 ? '**' : h.level === 2 ? '&nbsp;&nbsp;• ' : '&nbsp;&nbsp;&nbsp;&nbsp;— ';
+    const close = h.level === 1 ? '**' : '';
+    toc += `| ${indent}${h.title}${close} | H${h.level} | ${h.page} |\n`;
+  });
+
+  return toc;
+}
+
+export function insertOrUpdateTableOfContents(content: string): string {
+  const tocMarkdown = generateTableOfContents(content);
+
+  // If already has a Table of Contents section, replace it
+  const tocRegex = /## Table of Contents[\s\S]*?(?=\n## |\n# |\[PAGE BREAK\]|$)/i;
+  if (tocRegex.test(content)) {
+    return content.replace(tocRegex, tocMarkdown.trim());
+  }
+
+  // Otherwise insert after Page 1 / Title page
+  if (content.includes('[PAGE BREAK]')) {
+    return content.replace('[PAGE BREAK]', `[PAGE BREAK]\n\n${tocMarkdown}\n\n[PAGE BREAK]`);
+  }
+
+  // Prepend after title
+  return content.replace(/(#\s+[^\n]+)/, `$1\n\n${tocMarkdown}\n\n[PAGE BREAK]`);
+}
+

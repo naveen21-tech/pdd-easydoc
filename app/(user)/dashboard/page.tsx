@@ -26,8 +26,13 @@ import {
   Flame,
   Layers,
   Sparkle,
+  FolderGit2,
+  Presentation,
+  HelpCircle,
+  ShieldCheck,
 } from 'lucide-react';
 import { downloadDocumentFile } from '@/lib/download';
+
 
 export default function UserDashboard() {
   const [documents, setDocuments] = useState<any[]>([]);
@@ -229,7 +234,156 @@ export default function UserDashboard() {
         </div>
       </div>
 
-      {/* 3. CONTINUE EDITING BANNER */}
+      {/* 3. ADVANCED CREATION STUDIOS GRID */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="font-display font-bold text-lg text-slate-900 dark:text-white">
+              Advanced Document Studios
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-brand-lavender/80">
+              Specialized creation engines for engineering projects, slides, defense, quality, and careers
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Card 1: Project Documentation Generator */}
+          <div className="glass-panel p-6 rounded-2xl border border-slate-200 dark:border-dark-border hover:border-purple-500 transition-all flex flex-col justify-between space-y-4 group">
+            <div className="space-y-2">
+              <div className="w-10 h-10 rounded-2xl bg-purple-100 dark:bg-brand-amethyst text-purple-700 dark:text-brand-lavender flex items-center justify-center border border-purple-200 dark:border-brand-lavender/30">
+                <FolderGit2 className="w-5 h-5" />
+              </div>
+              <h4 className="font-display font-bold text-base text-slate-900 dark:text-white group-hover:text-purple-700 dark:group-hover:text-brand-lavender transition-colors">
+                Project Documentation
+              </h4>
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                Create complete software project documentation packages (SRS, Architecture, DB Design, API Docs, Test Cases) from your project details.
+              </p>
+            </div>
+            <Link
+              href="/project-docs"
+              className="inline-flex items-center justify-center space-x-2 bg-gradient-to-r from-purple-700 to-indigo-800 dark:from-brand-purple dark:to-brand-amethyst text-white font-bold text-xs py-2.5 px-4 rounded-xl shadow-sm hover:shadow-md transition-all"
+            >
+              <span>Create Project Documentation</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          {/* Card 2: Document -> PPT */}
+          <div className="glass-panel p-6 rounded-2xl border border-slate-200 dark:border-dark-border hover:border-purple-500 transition-all flex flex-col justify-between space-y-4 group">
+            <div className="space-y-2">
+              <div className="w-10 h-10 rounded-2xl bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-400 flex items-center justify-center border border-blue-200 dark:border-blue-800">
+                <Presentation className="w-5 h-5" />
+              </div>
+              <h4 className="font-display font-bold text-base text-slate-900 dark:text-white group-hover:text-purple-700 dark:group-hover:text-brand-lavender transition-colors">
+                Document → Presentation
+              </h4>
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                Convert any document or report into a 16:9 keynote slide deck with custom themes and instant PPTX export.
+              </p>
+            </div>
+            <Link
+              href="/presentation-studio"
+              className="inline-flex items-center justify-center space-x-2 bg-gradient-to-r from-purple-700 to-indigo-800 dark:from-brand-purple dark:to-brand-amethyst text-white font-bold text-xs py-2.5 px-4 rounded-xl shadow-sm hover:shadow-md transition-all"
+            >
+              <span>Launch Presentation Studio</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          {/* Card 3: Viva Studio */}
+          <div className="glass-panel p-6 rounded-2xl border border-slate-200 dark:border-dark-border hover:border-purple-500 transition-all flex flex-col justify-between space-y-4 group">
+            <div className="space-y-2">
+              <div className="w-10 h-10 rounded-2xl bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-400 flex items-center justify-center border border-amber-200 dark:border-amber-800">
+                <HelpCircle className="w-5 h-5" />
+              </div>
+              <h4 className="font-display font-bold text-base text-slate-900 dark:text-white group-hover:text-purple-700 dark:group-hover:text-brand-lavender transition-colors">
+                Viva Studio
+              </h4>
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                Simulate technical defense exams with voice or text answering, real-time AI scoring (0–100), and feedback.
+              </p>
+            </div>
+            <Link
+              href="/viva-studio"
+              className="inline-flex items-center justify-center space-x-2 bg-gradient-to-r from-purple-700 to-indigo-800 dark:from-brand-purple dark:to-brand-amethyst text-white font-bold text-xs py-2.5 px-4 rounded-xl shadow-sm hover:shadow-md transition-all"
+            >
+              <span>Practice Viva Defense</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          {/* Card 4: Document Health Score */}
+          <div className="glass-panel p-6 rounded-2xl border border-slate-200 dark:border-dark-border hover:border-purple-500 transition-all flex flex-col justify-between space-y-4 group">
+            <div className="space-y-2">
+              <div className="w-10 h-10 rounded-2xl bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 flex items-center justify-center border border-emerald-200 dark:border-emerald-800">
+                <Activity className="w-5 h-5" />
+              </div>
+              <h4 className="font-display font-bold text-base text-slate-900 dark:text-white group-hover:text-purple-700 dark:group-hover:text-brand-lavender transition-colors">
+                Document Health Score
+              </h4>
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                Comprehensive 6-pillar diagnostics for structure, readability, grammar, and completeness with 1-click automatic fixes.
+              </p>
+            </div>
+            <Link
+              href="/document-health"
+              className="inline-flex items-center justify-center space-x-2 bg-gradient-to-r from-purple-700 to-indigo-800 dark:from-brand-purple dark:to-brand-amethyst text-white font-bold text-xs py-2.5 px-4 rounded-xl shadow-sm hover:shadow-md transition-all"
+            >
+              <span>Check Document Health</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          {/* Card 5: Document Verification */}
+          <div className="glass-panel p-6 rounded-2xl border border-slate-200 dark:border-dark-border hover:border-purple-500 transition-all flex flex-col justify-between space-y-4 group">
+            <div className="space-y-2">
+              <div className="w-10 h-10 rounded-2xl bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400 flex items-center justify-center border border-indigo-200 dark:border-indigo-800">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <h4 className="font-display font-bold text-base text-slate-900 dark:text-white group-hover:text-purple-700 dark:group-hover:text-brand-lavender transition-colors">
+                Document Verification & QR
+              </h4>
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                Issue tamper-proof cryptographic verification IDs and embed scan-to-verify QR badges on official publications.
+              </p>
+            </div>
+            <Link
+              href="/verification"
+              className="inline-flex items-center justify-center space-x-2 bg-gradient-to-r from-purple-700 to-indigo-800 dark:from-brand-purple dark:to-brand-amethyst text-white font-bold text-xs py-2.5 px-4 rounded-xl shadow-sm hover:shadow-md transition-all"
+            >
+              <span>Verification Registry</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          {/* Card 6: Career Studio & ATS Resume */}
+          <div className="glass-panel p-6 rounded-2xl border border-slate-200 dark:border-dark-border hover:border-purple-500 transition-all flex flex-col justify-between space-y-4 group">
+            <div className="space-y-2">
+              <div className="w-10 h-10 rounded-2xl bg-purple-100 dark:bg-brand-amethyst text-purple-700 dark:text-brand-lavender flex items-center justify-center border border-purple-200 dark:border-brand-lavender/30">
+                <FileCheck2 className="w-5 h-5" />
+              </div>
+              <h4 className="font-display font-bold text-base text-slate-900 dark:text-white group-hover:text-purple-700 dark:group-hover:text-brand-lavender transition-colors">
+                Career Studio & ATS
+              </h4>
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                Build ATS-parsed resumes, analyze job description keyword match rates, and generate tailored cover letters.
+              </p>
+            </div>
+            <Link
+              href="/career-studio"
+              className="inline-flex items-center justify-center space-x-2 bg-gradient-to-r from-purple-700 to-indigo-800 dark:from-brand-purple dark:to-brand-amethyst text-white font-bold text-xs py-2.5 px-4 rounded-xl shadow-sm hover:shadow-md transition-all"
+            >
+              <span>Launch Career Studio</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* 4. CONTINUE EDITING BANNER */}
+
       {latestDocument && (
         <div className="glass-card p-6 border-l-4 border-l-purple-600 dark:border-l-brand-lavender flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="space-y-1">

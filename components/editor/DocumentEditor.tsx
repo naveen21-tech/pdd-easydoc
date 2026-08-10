@@ -57,9 +57,13 @@ import {
   FileText,
   FileType,
   Edit3,
+  Activity,
+  QrCode,
+  BookOpen,
 } from 'lucide-react';
 import { downloadDocumentFile, ExportFormat } from '@/lib/download';
-import { paginateDocument, PaginatedPage } from '@/lib/export/pagination';
+import { paginateDocument, PaginatedPage, insertOrUpdateTableOfContents } from '@/lib/export/pagination';
+import { HealthReportItem, HealthIssueItem } from '@/lib/types';
 
 export interface DocumentEditorProps {
   documentId: string;
@@ -68,6 +72,7 @@ export interface DocumentEditorProps {
   initialTemplateName?: string;
   onSave?: (title: string, content: string) => Promise<void>;
 }
+
 
 export function DocumentEditor({
   documentId,
@@ -101,6 +106,17 @@ export function DocumentEditor({
   const [textColor, setTextColor] = useState('#0F172A');
   const [alignment, setAlignment] = useState<'left' | 'center' | 'right' | 'justify'>('left');
 
+  // Smart Header & Footer State
+  const [showHeaderFooterModal, setShowHeaderFooterModal] = useState(false);
+  const [headerText, setHeaderText] = useState(initialTitle);
+  const [footerText, setFooterText] = useState('EasyDoc Verified Document');
+  const [pageNumberPos, setPageNumberPos] = useState<'bottom-center' | 'bottom-right' | 'bottom-left' | 'top-right'>('bottom-center');
+
+  // Document Health Modal State
+  const [showHealthModal, setShowHealthModal] = useState(false);
+  const [healthReport, setHealthReport] = useState<HealthReportItem | null>(null);
+  const [analyzingHealth, setAnalyzingHealth] = useState(false);
+
   // PDF Border Customizer state
   const [pdfBorderColor, setPdfBorderColor] = useState('#7C3AED');
   const [pdfBorderStyle, setPdfBorderStyle] = useState<'solid' | 'double' | 'formal' | 'none'>('solid');
@@ -127,6 +143,7 @@ export function DocumentEditor({
 
   // Download state
   const [downloadingFormat, setDownloadingFormat] = useState<ExportFormat | null>(null);
+
 
   // Undo/Redo history
   const [history, setHistory] = useState<string[]>([initialContent]);
@@ -544,6 +561,57 @@ Additional User Instructions: ${aiInstruction || 'Improve readability, structure
             </button>
           </div>
 
+          {/* Update Table of Contents Button */}
+          <button
+            onClick={() => {
+              const updated = insertOrUpdateTableOfContents(content);
+              handleContentChange(updated);
+            }}
+            className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-purple-300 hover:text-white px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1"
+            title="Auto-Generate or Update Table of Contents (H1/H2/H3)"
+          >
+            <BookOpen className="w-3.5 h-3.5 text-purple-400" />
+            <span className="hidden lg:inline">Update TOC</span>
+          </button>
+
+          {/* Header & Footer Customizer Button */}
+          <button
+            onClick={() => setShowHeaderFooterModal(true)}
+            className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-purple-300 hover:text-white px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1"
+            title="Configure Header, Footer, and Page Numbering"
+          >
+            <FileType className="w-3.5 h-3.5 text-purple-400" />
+            <span className="hidden lg:inline">Header/Footer</span>
+          </button>
+
+          {/* Document Health Diagnostics Button */}
+          <button
+            onClick={async () => {
+              setShowHealthModal(true);
+              setAnalyzingHealth(true);
+              try {
+                const res = await fetch('/api/health/analyze', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ title, content }),
+                });
+                if (res.ok) {
+                  const data = await res.json();
+                  setHealthReport(data.report);
+                }
+              } catch (e) {
+                console.error(e);
+              } finally {
+                setAnalyzingHealth(false);
+              }
+            }}
+            className="bg-purple-950/80 hover:bg-purple-900 border border-purple-800/80 text-purple-200 hover:text-white px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1"
+            title="Inspect 6-Pillar Document Health & Auto-Fix"
+          >
+            <Activity className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+            <span className="hidden lg:inline">Health Check</span>
+          </button>
+
           {/* Decorated Front Title Page Generator Button */}
           <button
             onClick={() => setShowCoverPageModal(true)}
@@ -598,6 +666,7 @@ Additional User Instructions: ${aiInstruction || 'Improve readability, structure
           >
             <Sparkles className="w-4 h-4 text-purple-400" />
           </button>
+
 
           {/* Save Button */}
           <button
@@ -1278,6 +1347,206 @@ Additional User Instructions: ${aiInstruction || 'Improve readability, structure
           </div>
         </div>
       )}
+
+      {/* 6. SMART HEADER, FOOTER & PAGE NUMBER MODAL */}
+      {showHeaderFooterModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl max-w-lg w-full p-6 space-y-5 animate-scale-in">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="flex items-center space-x-2">
+                <FileType className="w-5 h-5 text-purple-400" />
+                <h3 className="font-display font-bold text-lg text-white">Smart Header & Footer</h3>
+              </div>
+              <button
+                onClick={() => setShowHeaderFooterModal(false)}
+                className="p-1 text-slate-400 hover:text-white rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-300 block">Header Title Text</label>
+                <input
+                  type="text"
+                  value={headerText}
+                  onChange={(e) => setHeaderText(e.target.value)}
+                  placeholder="Document Title in Header..."
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-300 block">Footer Label Text</label>
+                <input
+                  type="text"
+                  value={footerText}
+                  onChange={(e) => setFooterText(e.target.value)}
+                  placeholder="e.g. Confidential • EasyDoc Verified"
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-300 block">Page Number Position</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { id: 'bottom-center', label: 'Bottom Center' },
+                    { id: 'bottom-right', label: 'Bottom Right' },
+                    { id: 'bottom-left', label: 'Bottom Left' },
+                    { id: 'top-right', label: 'Top Right' },
+                  ].map((pos) => (
+                    <button
+                      key={pos.id}
+                      onClick={() => setPageNumberPos(pos.id as any)}
+                      className={`py-2 px-3 rounded-xl text-xs font-semibold border transition-all ${
+                        pageNumberPos === pos.id
+                          ? 'bg-purple-600 text-white border-purple-500 shadow-sm'
+                          : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      {pos.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2 border-t border-slate-800">
+              <button
+                onClick={() => setShowHeaderFooterModal(false)}
+                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold text-xs rounded-xl shadow-sm"
+              >
+                Save Layout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 7. DOCUMENT HEALTH DIAGNOSTICS MODAL */}
+      {showHealthModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl max-w-2xl w-full p-6 space-y-5 animate-scale-in max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="flex items-center space-x-2">
+                <Activity className="w-5 h-5 text-emerald-400" />
+                <h3 className="font-display font-bold text-lg text-white">Document Health Score</h3>
+              </div>
+              <button
+                onClick={() => setShowHealthModal(false)}
+                className="p-1 text-slate-400 hover:text-white rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {analyzingHealth ? (
+              <div className="py-12 text-center text-slate-400 text-xs flex flex-col items-center justify-center space-y-3">
+                <Loader2 className="w-7 h-7 animate-spin text-purple-400" />
+                <span>Running 6-pillar diagnostics...</span>
+              </div>
+            ) : healthReport ? (
+              <div className="space-y-4">
+                {/* Overall Score */}
+                <div className="p-4 bg-purple-950/60 border border-purple-800/60 rounded-2xl flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-purple-300">
+                      Overall Health Score
+                    </span>
+                    <p className="font-display font-black text-3xl text-white">
+                      {healthReport.overallScore} / 100
+                    </p>
+                  </div>
+                  <span className="text-xs font-bold text-emerald-400 bg-emerald-950 px-3 py-1 rounded-full border border-emerald-800">
+                    {healthReport.overallScore >= 85 ? 'Verified Quality' : 'Improvements Available'}
+                  </span>
+                </div>
+
+                {/* Pillar Grid */}
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 text-center text-[10px] font-bold">
+                  <div className="p-2 bg-slate-950 rounded-xl border border-slate-800">
+                    <span className="text-slate-500 block">Structure</span>
+                    <span className="text-purple-400 text-sm">{healthReport.structureScore}</span>
+                  </div>
+                  <div className="p-2 bg-slate-950 rounded-xl border border-slate-800">
+                    <span className="text-slate-500 block">Readability</span>
+                    <span className="text-purple-400 text-sm">{healthReport.readabilityScore}</span>
+                  </div>
+                  <div className="p-2 bg-slate-950 rounded-xl border border-slate-800">
+                    <span className="text-slate-500 block">Grammar</span>
+                    <span className="text-purple-400 text-sm">{healthReport.grammarScore}</span>
+                  </div>
+                  <div className="p-2 bg-slate-950 rounded-xl border border-slate-800">
+                    <span className="text-slate-500 block">Formal</span>
+                    <span className="text-purple-400 text-sm">{healthReport.professionalismScore}</span>
+                  </div>
+                  <div className="p-2 bg-slate-950 rounded-xl border border-slate-800">
+                    <span className="text-slate-500 block">Complete</span>
+                    <span className="text-purple-400 text-sm">{healthReport.completenessScore}</span>
+                  </div>
+                  <div className="p-2 bg-slate-950 rounded-xl border border-slate-800">
+                    <span className="text-slate-500 block">Format</span>
+                    <span className="text-purple-400 text-sm">{healthReport.formattingScore}</span>
+                  </div>
+                </div>
+
+                {/* Issues List with 1-Click Fix */}
+                <div className="space-y-2 pt-2">
+                  <span className="text-xs font-bold text-slate-300 block">
+                    Quality Suggestions ({healthReport.issues?.length || 0})
+                  </span>
+                  {healthReport.issues?.map((issue) => (
+                    <div
+                      key={issue.id}
+                      className="p-3 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between gap-3 text-xs"
+                    >
+                      <div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-[9px] font-bold uppercase bg-purple-900 text-purple-200 px-1.5 py-0.5 rounded">
+                            {issue.category}
+                          </span>
+                          <span className="font-bold text-white">{issue.title}</span>
+                        </div>
+                        <p className="text-slate-400 text-[11px] mt-0.5">{issue.description}</p>
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          if (issue.autoFixAction?.type === 'append' && issue.autoFixAction.replacement) {
+                            handleContentChange(content + issue.autoFixAction.replacement);
+                          } else if (issue.autoFixAction?.type === 'prepend' && issue.autoFixAction.replacement) {
+                            handleContentChange(issue.autoFixAction.replacement + content);
+                          }
+                          setHealthReport({
+                            ...healthReport,
+                            overallScore: Math.min(100, healthReport.overallScore + 4),
+                            issues: healthReport.issues.filter((i) => i.id !== issue.id),
+                          });
+                        }}
+                        className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-[11px] font-bold shrink-0"
+                      >
+                        Fix
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            <div className="flex justify-end pt-2 border-t border-slate-800">
+              <button
+                onClick={() => setShowHealthModal(false)}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs rounded-xl"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
