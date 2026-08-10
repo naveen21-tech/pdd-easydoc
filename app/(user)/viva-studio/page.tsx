@@ -28,6 +28,7 @@ import {
   ArrowRight,
   Copy,
   Volume2,
+  Zap,
 } from 'lucide-react';
 import { VivaQuestionItem, VivaDifficulty, VivaCategory, ProjectItem, DocumentItem } from '@/lib/types';
 
@@ -47,11 +48,18 @@ const VIVA_CATEGORIES: VivaCategory[] = [
 
 const DIFFICULTY_LEVELS: VivaDifficulty[] = ['Basic', 'Intermediate', 'Advanced', 'Expert'];
 
+const TOPIC_PRESETS = [
+  'Distributed Cloud Microservices & Kubernetes',
+  'Machine Learning Model Deployment & Optimization',
+  'Zero-Trust Cybersecurity & Cryptographic Verification',
+  'Next.js 14 & Supabase Full-Stack Architecture',
+  'High-Throughput Database Indexing & ACID Transactions',
+];
+
 function VivaStudioContent() {
   const searchParams = useSearchParams();
-  const initialProjectId = searchParams.get('projectId');
-  const initialDocId = searchParams.get('docId');
-
+  const initialProjectId = searchParams?.get('projectId');
+  const initialDocId = searchParams?.get('docId');
 
   // Input states
   const [sourceType, setSourceType] = useState<'project' | 'document' | 'custom'>(
@@ -61,7 +69,7 @@ function VivaStudioContent() {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>(initialProjectId || '');
   const [selectedDocId, setSelectedDocId] = useState<string>(initialDocId || '');
-  const [customTopic, setCustomTopic] = useState('');
+  const [customTopic, setCustomTopic] = useState('Distributed Cloud Systems & Microservices');
   const [difficulty, setDifficulty] = useState<VivaDifficulty>('Intermediate');
   const [questionCount, setQuestionCount] = useState<number>(8);
   const [selectedCategories, setSelectedCategories] = useState<VivaCategory[]>(VIVA_CATEGORIES);
@@ -95,17 +103,21 @@ function VivaStudioContent() {
 
       if (projRes.ok) {
         const pData = await projRes.json();
-        setProjects(pData.projects || []);
-        if (!selectedProjectId && pData.projects?.length > 0) {
-          setSelectedProjectId(pData.projects[0].id);
+        const pList = pData.projects || [];
+        setProjects(pList);
+        if (!selectedProjectId && pList.length > 0) {
+          setSelectedProjectId(pList[0].id);
+        } else if (pList.length === 0 && !initialDocId) {
+          setSourceType('custom');
         }
       }
 
       if (docRes.ok) {
         const dData = await docRes.json();
-        setDocuments(dData.documents || []);
-        if (!selectedDocId && dData.documents?.length > 0) {
-          setSelectedDocId(dData.documents[0].id);
+        const dList = dData.documents || [];
+        setDocuments(dList);
+        if (!selectedDocId && dList.length > 0) {
+          setSelectedDocId(dList[0].id);
         }
       }
     } catch (e) {
@@ -130,7 +142,7 @@ function VivaStudioContent() {
     try {
       const payload: any = {
         difficulty,
-        questionCount,
+        questionCount: Number(questionCount) || 8,
         categories: selectedCategories,
       };
 
@@ -158,7 +170,7 @@ function VivaStudioContent() {
         setCurrentEvaluation(null);
         setShowExpectedAnswer(false);
         setSessionAnswers({});
-        setToastMessage(`Generated ${data.questions?.length || 0} viva defense questions!`);
+        setToastMessage(`✓ Generated ${data.questions?.length || 0} viva defense questions!`);
         setTimeout(() => setToastMessage(null), 3000);
       } else {
         const err = await res.json();
@@ -168,6 +180,19 @@ function VivaStudioContent() {
       alert(e?.message || 'Error creating viva questions.');
     } finally {
       setGenerating(false);
+    }
+  };
+
+  // Text-to-Speech Speak Question
+  const speakQuestion = (text: string) => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      window.speechSynthesis.speak(utterance);
+      setToastMessage('Speaking question...');
+      setTimeout(() => setToastMessage(null), 2500);
     }
   };
 
@@ -256,7 +281,6 @@ function VivaStudioContent() {
       setCurrentEvaluation(existing?.evaluation || null);
       setShowExpectedAnswer(false);
     } else {
-      // Finished all questions -> View Scorecard
       setViewMode('scorecard');
     }
   };
@@ -282,7 +306,7 @@ function VivaStudioContent() {
       )
     : 0;
 
-  const currentQ = questions[currentQuestionIndex] || null;
+  const activeQuestion = questions[currentQuestionIndex] || null;
 
   return (
     <div className="space-y-8 animate-fade-in pb-12">
@@ -297,402 +321,543 @@ function VivaStudioContent() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <div className="inline-flex items-center space-x-2 bg-purple-100 dark:bg-brand-amethyst/60 text-purple-800 dark:text-brand-lavender px-3 py-1 rounded-full text-xs font-bold mb-2 border border-purple-200 dark:border-brand-lavender/30">
+          <div className="inline-flex items-center space-x-2 bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 px-3 py-1 rounded-full text-xs font-bold mb-2 border border-amber-200 dark:border-amber-700/40">
             <HelpCircle className="w-3.5 h-3.5" />
-            <span>Feature 3 • Viva Defense & Technical Q&A Studio</span>
+            <span>Feature 3 • Viva & Technical Defense Studio</span>
           </div>
           <h1 className="font-display font-extrabold text-3xl text-slate-900 dark:text-white">
             Viva Studio
           </h1>
           <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">
-            Simulate viva defense examinations, test your project knowledge, and receive real-time AI scoring.
+            Simulate university examination defenses, viva voice exams, and principal technical interviews with real-time AI scoring.
           </p>
         </div>
 
         {questions.length > 0 && (
-          <div className="flex items-center space-x-2 bg-slate-100 dark:bg-dark-bg p-1 rounded-xl border border-slate-200 dark:border-dark-border text-xs font-bold">
+          <div className="flex items-center space-x-2 bg-slate-100 dark:bg-dark-surface p-1 rounded-2xl border border-slate-200 dark:border-dark-border text-xs font-bold">
             <button
               onClick={() => setViewMode('practice')}
-              className={`px-3 py-1.5 rounded-lg transition-all ${
+              className={`px-3 py-1.5 rounded-xl transition-all ${
                 viewMode === 'practice'
-                  ? 'bg-white dark:bg-dark-surface text-purple-800 dark:text-brand-lavender shadow-sm'
-                  : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
+                  ? 'bg-purple-700 text-white shadow-md'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
               }`}
             >
               Interactive Practice
             </button>
             <button
               onClick={() => setViewMode('bank')}
-              className={`px-3 py-1.5 rounded-lg transition-all ${
+              className={`px-3 py-1.5 rounded-xl transition-all ${
                 viewMode === 'bank'
-                  ? 'bg-white dark:bg-dark-surface text-purple-800 dark:text-brand-lavender shadow-sm'
-                  : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
+                  ? 'bg-purple-700 text-white shadow-md'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
               }`}
             >
-              Question Bank ({questions.length})
+              Question Bank
+            </button>
+            <button
+              onClick={() => setViewMode('scorecard')}
+              className={`px-3 py-1.5 rounded-xl transition-all ${
+                viewMode === 'scorecard'
+                  ? 'bg-purple-700 text-white shadow-md'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
+              }`}
+            >
+              Scorecard ({totalEvaluated}/{questions.length})
             </button>
           </div>
         )}
       </div>
 
-      {/* 1. SETUP / GENERATOR ACCORDION */}
-      <div className="bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-2xl p-6 shadow-sm space-y-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-dark-border pb-4">
-          <h2 className="font-display font-bold text-base text-slate-900 dark:text-white flex items-center space-x-2">
-            <Brain className="w-4 h-4 text-purple-600 dark:text-brand-lavender" />
-            <span>Generate Viva Defense Questions</span>
-          </h2>
+      {/* Generator Configuration Panel */}
+      {viewMode === 'generator' && (
+        <div className="bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-2xl p-6 shadow-sm space-y-6">
+          <div className="flex items-center justify-between border-b border-slate-100 dark:border-dark-border pb-4">
+            <h2 className="font-display font-bold text-base text-slate-900 dark:text-white flex items-center space-x-2">
+              <Sparkles className="w-4 h-4 text-amber-500" />
+              <span>Configure Defense Exam Session</span>
+            </h2>
 
-          <div className="flex items-center space-x-1 text-xs font-semibold bg-slate-100 dark:bg-dark-bg p-1 rounded-xl">
-            <button
-              onClick={() => setSourceType('project')}
-              className={`px-3 py-1 rounded-lg transition-all ${
-                sourceType === 'project'
-                  ? 'bg-white dark:bg-dark-surface text-purple-800 dark:text-brand-lavender font-bold shadow-sm'
-                  : 'text-slate-500'
-              }`}
-            >
-              From Project
-            </button>
-            <button
-              onClick={() => setSourceType('document')}
-              className={`px-3 py-1 rounded-lg transition-all ${
-                sourceType === 'document'
-                  ? 'bg-white dark:bg-dark-surface text-purple-800 dark:text-brand-lavender font-bold shadow-sm'
-                  : 'text-slate-500'
-              }`}
-            >
-              From Document
-            </button>
-            <button
-              onClick={() => setSourceType('custom')}
-              className={`px-3 py-1 rounded-lg transition-all ${
-                sourceType === 'custom'
-                  ? 'bg-white dark:bg-dark-surface text-purple-800 dark:text-brand-lavender font-bold shadow-sm'
-                  : 'text-slate-500'
-              }`}
-            >
-              Custom Topic
-            </button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {sourceType === 'project' && (
-            <div className="md:col-span-2 space-y-1.5">
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                Select Project Package
-              </label>
-              <select
-                value={selectedProjectId}
-                onChange={(e) => setSelectedProjectId(e.target.value)}
-                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl text-xs font-semibold text-slate-900 dark:text-white"
+            {/* Source Mode Tabs */}
+            <div className="flex items-center bg-slate-100 dark:bg-dark-bg p-1 rounded-xl border border-slate-200 dark:border-dark-border text-xs font-bold">
+              <button
+                onClick={() => setSourceType('project')}
+                className={`px-3 py-1.5 rounded-lg transition-all ${
+                  sourceType === 'project'
+                    ? 'bg-white dark:bg-dark-surface text-purple-800 dark:text-brand-lavender shadow-sm'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
               >
-                {projects.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name} ({p.domain})
-                  </option>
-                ))}
-              </select>
+                From Project
+              </button>
+              <button
+                onClick={() => setSourceType('document')}
+                className={`px-3 py-1.5 rounded-lg transition-all ${
+                  sourceType === 'document'
+                    ? 'bg-white dark:bg-dark-surface text-purple-800 dark:text-brand-lavender shadow-sm'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                From Document
+              </button>
+              <button
+                onClick={() => setSourceType('custom')}
+                className={`px-3 py-1.5 rounded-lg transition-all ${
+                  sourceType === 'custom'
+                    ? 'bg-white dark:bg-dark-surface text-purple-800 dark:text-brand-lavender shadow-sm'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                Custom Topic
+              </button>
+            </div>
+          </div>
+
+          {/* Source Input Picker */}
+          {sourceType === 'project' && (
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                Select Software Project Package
+              </label>
+              {projects.length > 0 ? (
+                <select
+                  value={selectedProjectId}
+                  onChange={(e) => setSelectedProjectId(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl text-xs font-semibold text-slate-900 dark:text-white"
+                >
+                  {projects.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} ({p.domain})
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 rounded-xl text-xs text-amber-800 dark:text-amber-300 flex items-center justify-between">
+                  <span>No saved projects found.</span>
+                  <button onClick={() => setSourceType('custom')} className="font-bold underline text-purple-700">
+                    Switch to Custom Topic
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
           {sourceType === 'document' && (
-            <div className="md:col-span-2 space-y-1.5">
+            <div className="space-y-1.5">
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                Select Document
+                Select Source Document
               </label>
-              <select
-                value={selectedDocId}
-                onChange={(e) => setSelectedDocId(e.target.value)}
-                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl text-xs font-semibold text-slate-900 dark:text-white"
-              >
-                {documents.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.title}
-                  </option>
-                ))}
-              </select>
+              {documents.length > 0 ? (
+                <select
+                  value={selectedDocId}
+                  onChange={(e) => setSelectedDocId(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl text-xs font-semibold text-slate-900 dark:text-white"
+                >
+                  {documents.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.title}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 rounded-xl text-xs text-amber-800 dark:text-amber-300">
+                  No documents found. Please switch to Custom Topic mode.
+                </div>
+              )}
             </div>
           )}
 
           {sourceType === 'custom' && (
-            <div className="md:col-span-2 space-y-1.5">
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-purple-700 dark:text-brand-lavender flex items-center space-x-1">
+                  <Zap className="w-3 h-3 text-amber-500" />
+                  <span>Preset Topics (Click to Select):</span>
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {TOPIC_PRESETS.map((t, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setCustomTopic(t)}
+                      className="text-[11px] font-semibold px-3 py-1.5 rounded-xl border border-purple-200 dark:border-brand-lavender/30 bg-purple-50 dark:bg-brand-amethyst/30 hover:bg-purple-100 text-purple-900 dark:text-brand-lavender transition-all"
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                  Viva Defense Topic / Subject
+                </label>
+                <input
+                  type="text"
+                  value={customTopic}
+                  onChange={(e) => setCustomTopic(e.target.value)}
+                  placeholder="e.g. Distributed Consensus in Cloud Systems"
+                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl text-xs font-semibold text-slate-900 dark:text-white"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Difficulty & Count Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                Custom Topic / Domain
+                Examination Difficulty
               </label>
-              <input
-                type="text"
-                value={customTopic}
-                onChange={(e) => setCustomTopic(e.target.value)}
-                placeholder="e.g. Distributed Database Sharding, OAuth 2.0 PKCE, Microservices"
+              <div className="grid grid-cols-4 gap-2">
+                {DIFFICULTY_LEVELS.map((diff) => (
+                  <button
+                    key={diff}
+                    type="button"
+                    onClick={() => setDifficulty(diff)}
+                    className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all ${
+                      difficulty === diff
+                        ? 'bg-purple-100 dark:bg-brand-amethyst text-purple-900 dark:text-brand-lavender border-purple-400 dark:border-brand-lavender shadow-sm'
+                        : 'border-slate-200 dark:border-dark-border hover:bg-slate-50 dark:hover:bg-dark-hover text-slate-600 dark:text-slate-300'
+                    }`}
+                  >
+                    {diff}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                Number of Defense Questions
+              </label>
+              <select
+                value={questionCount}
+                onChange={(e) => setQuestionCount(Number(e.target.value))}
                 className="w-full px-4 py-2.5 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl text-xs font-semibold text-slate-900 dark:text-white"
-              />
+              >
+                <option value={5}>5 Questions (Rapid Check)</option>
+                <option value={8}>8 Questions (Standard Viva)</option>
+                <option value={12}>12 Questions (Comprehensive Exam)</option>
+                <option value={15}>15 Questions (Mastery Defense)</option>
+              </select>
             </div>
-          )}
+          </div>
 
-          <div className="space-y-1.5">
+          {/* Categories Selector */}
+          <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-dark-border">
             <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-              Difficulty Level
+              Include Question Categories
             </label>
-            <select
-              value={difficulty}
-              onChange={(e) => setDifficulty(e.target.value as VivaDifficulty)}
-              className="w-full px-4 py-2.5 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl text-xs font-semibold text-slate-900 dark:text-white"
-            >
-              {DIFFICULTY_LEVELS.map((d) => (
-                <option key={d} value={d}>
-                  {d}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Category Checkboxes */}
-        <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-dark-border">
-          <label className="block text-xs font-bold text-purple-700 dark:text-brand-lavender uppercase tracking-wider">
-            Target Examination Categories
-          </label>
-          <div className="flex flex-wrap gap-2">
-            {VIVA_CATEGORIES.map((cat) => {
-              const isSelected = selectedCategories.includes(cat);
-              return (
-                <button
-                  key={cat}
-                  onClick={() => toggleCategory(cat)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
-                    isSelected
-                      ? 'bg-purple-100 dark:bg-brand-amethyst text-purple-900 dark:text-brand-lavender border-purple-300 dark:border-brand-lavender/40'
-                      : 'bg-slate-50 dark:bg-dark-bg text-slate-500 border-slate-200 dark:border-dark-border'
-                  }`}
-                >
-                  {cat}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="flex justify-end pt-2">
-          <button
-            onClick={handleGenerateViva}
-            disabled={generating}
-            className="inline-flex items-center space-x-2 bg-gradient-to-r from-purple-700 to-indigo-800 dark:from-brand-purple dark:to-brand-amethyst text-white font-extrabold text-xs px-8 py-3.5 rounded-xl shadow-xl hover:scale-[1.02] transition-all disabled:opacity-50"
-          >
-            {generating ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Assembling Viva Questions...</span>
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4 text-purple-200" />
-                <span>Generate Viva Questions ({questionCount})</span>
-              </>
-            )}
-          </button>
-        </div>
-      </div>
-
-      {/* 2. INTERACTIVE PRACTICE MODE */}
-      {viewMode === 'practice' && currentQ && (
-        <div className="bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-3xl p-6 sm:p-8 shadow-xl space-y-6 animate-scale-in max-w-4xl mx-auto">
-          {/* Header & Question Navigation Indicator */}
-          <div className="flex items-center justify-between border-b border-slate-100 dark:border-dark-border pb-4">
-            <div className="flex items-center space-x-2">
-              <span className="text-xs font-mono font-bold bg-purple-100 dark:bg-brand-amethyst text-purple-800 dark:text-brand-lavender px-3 py-1 rounded-full border border-purple-200 dark:border-brand-lavender/30">
-                Question {currentQuestionIndex + 1} of {questions.length}
-              </span>
-              <span className="text-xs font-bold text-slate-500">({currentQ.difficulty})</span>
+            <div className="flex flex-wrap gap-2">
+              {VIVA_CATEGORIES.map((cat) => {
+                const isSelected = selectedCategories.includes(cat);
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => toggleCategory(cat)}
+                    className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center space-x-1.5 ${
+                      isSelected
+                        ? 'bg-purple-100 dark:bg-brand-amethyst text-purple-900 dark:text-brand-lavender border-purple-400 dark:border-brand-lavender'
+                        : 'border-slate-200 dark:border-dark-border text-slate-500 hover:bg-slate-50'
+                    }`}
+                  >
+                    {isSelected && <Check className="w-3 h-3 text-purple-700 dark:text-brand-lavender" />}
+                    <span>{cat}</span>
+                  </button>
+                );
+              })}
             </div>
-
-            <span className="text-xs font-extrabold uppercase tracking-wider bg-slate-100 dark:bg-dark-bg text-purple-700 dark:text-brand-lavender px-3 py-1 rounded-full border border-slate-200 dark:border-dark-border">
-              {currentQ.category}
-            </span>
           </div>
 
-          {/* Question Text */}
-          <div className="p-6 bg-slate-50 dark:bg-dark-bg/60 border border-slate-200 dark:border-dark-border rounded-2xl space-y-2">
-            <span className="text-[11px] font-bold text-purple-700 dark:text-brand-lavender uppercase tracking-wider block">
-              Examiner Question:
-            </span>
-            <h3 className="font-display font-extrabold text-lg sm:text-xl text-slate-900 dark:text-white leading-snug">
-              "{currentQ.question}"
-            </h3>
-          </div>
-
-          {/* User Answer Textarea & Voice Input */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                Your Answer / Technical Defense:
-              </label>
-
-              <button
-                onClick={toggleSpeechRecognition}
-                className={`inline-flex items-center space-x-1.5 text-xs font-bold px-3 py-1.5 rounded-xl border transition-all ${
-                  isRecording
-                    ? 'bg-rose-100 text-rose-700 border-rose-300 dark:bg-rose-950 dark:text-rose-300 animate-pulse'
-                    : 'bg-slate-100 dark:bg-dark-bg text-slate-700 dark:text-slate-300 border-slate-200 dark:border-dark-border hover:bg-slate-200'
-                }`}
-              >
-                {isRecording ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
-                <span>{isRecording ? 'Listening... (Speak Now)' : 'Voice Input (Mic)'}</span>
-              </button>
-            </div>
-
-            <textarea
-              rows={4}
-              value={userAnswerText}
-              onChange={(e) => setUserAnswerText(e.target.value)}
-              placeholder="Type your explanation, technical reasoning, and trade-offs here..."
-              className="w-full px-4 py-3 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-2xl text-xs sm:text-sm text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-purple-500 focus:outline-none"
-            />
-          </div>
-
-          {/* Evaluation Action Buttons */}
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+          {/* Launch Button */}
+          <div className="flex justify-end pt-2">
             <button
-              onClick={() => setShowExpectedAnswer(!showExpectedAnswer)}
-              className="text-xs font-bold text-purple-700 dark:text-brand-lavender hover:underline flex items-center space-x-1"
+              onClick={handleGenerateViva}
+              disabled={generating}
+              className="inline-flex items-center space-x-2 bg-gradient-to-r from-purple-700 to-indigo-800 dark:from-brand-purple dark:to-brand-amethyst text-white font-extrabold text-xs px-8 py-3.5 rounded-xl shadow-xl hover:scale-[1.02] transition-all disabled:opacity-50"
             >
-              <Eye className="w-3.5 h-3.5" />
-              <span>{showExpectedAnswer ? 'Hide Standard Answer' : 'Show Standard Answer'}</span>
-            </button>
-
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={handleSubmitAnswer}
-                disabled={evaluating || !userAnswerText.trim()}
-                className="inline-flex items-center space-x-2 bg-gradient-to-r from-purple-700 to-indigo-800 dark:from-brand-purple dark:to-brand-amethyst text-white font-extrabold text-xs px-6 py-2.5 rounded-xl shadow-md hover:shadow-lg transition-all disabled:opacity-50"
-              >
-                {evaluating ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Send className="w-3.5 h-3.5" />
-                )}
-                <span>Evaluate Answer</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Expected Answer Reveal */}
-          {showExpectedAnswer && (
-            <div className="p-4 bg-purple-50 dark:bg-brand-amethyst/30 border border-purple-200 dark:border-brand-lavender/30 rounded-2xl space-y-1.5 animate-fade-in">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-purple-800 dark:text-brand-lavender">
-                Expected Technical Standard:
-              </span>
-              <p className="text-xs text-slate-800 dark:text-slate-200 leading-relaxed font-medium">
-                {currentQ.answer}
-              </p>
-            </div>
-          )}
-
-          {/* Instant AI Evaluation Result Card */}
-          {currentEvaluation && (
-            <div className="p-6 bg-slate-50 dark:bg-dark-bg/60 border border-slate-200 dark:border-dark-border rounded-2xl space-y-4 animate-scale-in">
-              <div className="flex items-center justify-between border-b border-slate-200 dark:border-dark-border pb-3">
-                <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-purple-700 dark:text-brand-lavender">
-                    AI Evaluation Score
-                  </span>
-                  <p className="font-display font-black text-2xl text-slate-900 dark:text-white">
-                    {currentEvaluation.score} / 100
-                  </p>
-                </div>
-
-                <div
-                  className={`px-3 py-1 rounded-full text-xs font-bold ${
-                    currentEvaluation.score >= 80
-                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-400'
-                      : currentEvaluation.score >= 60
-                      ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-400'
-                      : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-400'
-                  }`}
-                >
-                  {currentEvaluation.score >= 80 ? 'Mastery' : currentEvaluation.score >= 60 ? 'Satisfactory' : 'Needs Review'}
-                </div>
-              </div>
-
-              <p className="text-xs text-slate-700 dark:text-slate-300 italic">
-                "{currentEvaluation.feedbackComment}"
-              </p>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                {/* Correct points */}
-                <div className="space-y-1.5">
-                  <span className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center space-x-1">
-                    <Check className="w-3.5 h-3.5" />
-                    <span>Demonstrated Strengths</span>
-                  </span>
-                  <ul className="space-y-1 text-slate-600 dark:text-slate-300">
-                    {currentEvaluation.correctPoints?.map((pt: string, idx: number) => (
-                      <li key={idx} className="flex items-start space-x-1.5">
-                        <span className="text-emerald-500">•</span>
-                        <span>{pt}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* Missing points / Suggested improvements */}
-                <div className="space-y-1.5">
-                  <span className="font-bold text-amber-600 dark:text-amber-400 flex items-center space-x-1">
-                    <AlertCircle className="w-3.5 h-3.5" />
-                    <span>Areas to Expand</span>
-                  </span>
-                  <ul className="space-y-1 text-slate-600 dark:text-slate-300">
-                    {currentEvaluation.missingPoints?.map((pt: string, idx: number) => (
-                      <li key={idx} className="flex items-start space-x-1.5">
-                        <span className="text-amber-500">•</span>
-                        <span>{pt}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Bottom Step Navigation */}
-          <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-dark-border">
-            <button
-              onClick={handlePrevQuestion}
-              disabled={currentQuestionIndex === 0}
-              className="inline-flex items-center space-x-1.5 text-xs font-bold text-slate-600 dark:text-slate-300 disabled:opacity-40"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Previous Question</span>
-            </button>
-
-            <button
-              onClick={handleNextQuestion}
-              className="inline-flex items-center space-x-1.5 bg-purple-700 hover:bg-purple-800 dark:bg-brand-purple text-white font-bold text-xs px-6 py-2.5 rounded-xl shadow-md transition-all"
-            >
-              <span>{currentQuestionIndex < questions.length - 1 ? 'Next Question' : 'View Final Scorecard'}</span>
-              <ArrowRight className="w-4 h-4" />
+              {generating ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Synthesizing Viva Questions...</span>
+                </>
+              ) : (
+                <>
+                  <Brain className="w-4 h-4 text-purple-200" />
+                  <span>Generate Defense Exam ({questionCount} Questions)</span>
+                </>
+              )}
             </button>
           </div>
         </div>
       )}
 
-      {/* 3. QUESTION BANK VIEW (All in One Card) */}
-      {viewMode === 'bank' && (
-        <div className="bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-2xl p-6 shadow-sm space-y-4 animate-scale-in">
-          <div className="flex items-center justify-between border-b border-slate-100 dark:border-dark-border pb-4">
-            <div>
-              <h3 className="font-display font-bold text-lg text-slate-900 dark:text-white">
-                Viva Question Bank ({questions.length} Items)
-              </h3>
-              <p className="text-xs text-slate-500">Comprehensive study questions and expected technical answers</p>
+      {/* Interactive Practice Mode */}
+      {viewMode === 'practice' && activeQuestion && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-scale-in">
+          {/* Left: Question Navigation List (4 cols) */}
+          <div className="lg:col-span-4 space-y-4">
+            <div className="bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-2xl p-4 shadow-sm space-y-3">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-dark-border pb-3">
+                <span className="font-display font-bold text-xs text-slate-900 dark:text-white">
+                  Exam Questions ({questions.length})
+                </span>
+                <button
+                  onClick={() => setViewMode('generator')}
+                  className="text-xs font-bold text-purple-700 dark:text-brand-lavender hover:underline"
+                >
+                  New Session
+                </button>
+              </div>
+
+              <div className="space-y-2 max-h-[550px] overflow-y-auto pr-1">
+                {questions.map((q, idx) => {
+                  const isCurrent = currentQuestionIndex === idx;
+                  const hasAnswered = !!sessionAnswers[idx];
+                  const qScore = sessionAnswers[idx]?.evaluation?.score;
+
+                  return (
+                    <div
+                      key={q.id || idx}
+                      onClick={() => {
+                        setCurrentQuestionIndex(idx);
+                        const existing = sessionAnswers[idx];
+                        setUserAnswerText(existing?.userAnswer || '');
+                        setCurrentEvaluation(existing?.evaluation || null);
+                        setShowExpectedAnswer(false);
+                      }}
+                      className={`p-3 rounded-xl cursor-pointer transition-all border text-left select-none flex items-start justify-between ${
+                        isCurrent
+                          ? 'border-purple-600 dark:border-brand-lavender bg-purple-50 dark:bg-brand-amethyst/60 ring-2 ring-purple-400/40 shadow-sm'
+                          : 'border-slate-200 dark:border-dark-border hover:bg-slate-50 dark:hover:bg-dark-hover'
+                      }`}
+                    >
+                      <div className="space-y-1 pr-2">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-[10px] font-mono font-bold text-purple-700 dark:text-brand-lavender">
+                            Q{idx + 1}
+                          </span>
+                          <span className="text-[9px] uppercase font-bold text-slate-400">
+                            {q.category}
+                          </span>
+                        </div>
+                        <p className="text-xs font-semibold text-slate-900 dark:text-white line-clamp-2">
+                          {q.question}
+                        </p>
+                      </div>
+
+                      {hasAnswered && (
+                        <div
+                          className={`text-xs font-mono font-bold px-2 py-0.5 rounded-md ${
+                            qScore >= 80
+                              ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                              : qScore >= 60
+                              ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                              : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
+                          }`}
+                        >
+                          {qScore}/100
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
+          </div>
+
+          {/* Right: Active Question & Interactive Answer Studio (8 cols) */}
+          <div className="lg:col-span-8 space-y-6">
+            <div className="bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-2xl p-6 shadow-sm space-y-6">
+              {/* Question Banner */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xs font-mono font-bold text-purple-700 dark:text-brand-lavender bg-purple-100 dark:bg-brand-amethyst px-2.5 py-0.5 rounded-md">
+                      Question {currentQuestionIndex + 1} of {questions.length}
+                    </span>
+                    <span className="text-xs font-bold text-slate-500">
+                      {activeQuestion.category} • {activeQuestion.difficulty}
+                    </span>
+                  </div>
+
+                  <button
+                    onClick={() => speakQuestion(activeQuestion.question)}
+                    className="p-1.5 text-slate-500 hover:text-purple-700 hover:bg-purple-50 rounded-lg transition-all"
+                    title="Read Question Aloud"
+                  >
+                    <Volume2 className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <h3 className="font-display font-extrabold text-lg sm:text-xl text-slate-900 dark:text-white leading-snug">
+                  {activeQuestion.question}
+                </h3>
+              </div>
+
+              {/* User Answer Textarea with Mic Button */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                    Your Technical Answer
+                  </label>
+
+                  <button
+                    onClick={toggleSpeechRecognition}
+                    className={`inline-flex items-center space-x-1.5 px-3 py-1 rounded-xl text-xs font-bold transition-all ${
+                      isRecording
+                        ? 'bg-rose-500 text-white animate-pulse shadow-md'
+                        : 'bg-slate-100 dark:bg-dark-bg text-slate-700 dark:text-slate-300 hover:bg-slate-200'
+                    }`}
+                  >
+                    {isRecording ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
+                    <span>{isRecording ? 'Listening (Speak Now)...' : 'Voice Input'}</span>
+                  </button>
+                </div>
+
+                <textarea
+                  rows={4}
+                  value={userAnswerText}
+                  onChange={(e) => setUserAnswerText(e.target.value)}
+                  placeholder="State your technical answer, architectural mechanisms, trade-offs, and rationale..."
+                  className="w-full p-4 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-2xl text-xs sm:text-sm font-medium text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                />
+
+                <div className="flex items-center justify-between pt-1">
+                  <button
+                    onClick={() => setShowExpectedAnswer(!showExpectedAnswer)}
+                    className="text-xs font-bold text-purple-700 dark:text-brand-lavender hover:underline"
+                  >
+                    {showExpectedAnswer ? 'Hide Expected Answer' : 'Peek Expected Answer'}
+                  </button>
+
+                  <button
+                    onClick={handleSubmitAnswer}
+                    disabled={evaluating}
+                    className="inline-flex items-center space-x-2 bg-gradient-to-r from-purple-700 to-indigo-800 dark:from-brand-purple dark:to-brand-amethyst text-white font-bold text-xs px-6 py-2.5 rounded-xl shadow-md hover:shadow-lg transition-all disabled:opacity-50"
+                  >
+                    {evaluating ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Evaluating Answer...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-4 h-4" />
+                        <span>Submit for AI Evaluation</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Peek Expected Answer Card */}
+              {showExpectedAnswer && (
+                <div className="p-4 bg-purple-50 dark:bg-brand-amethyst/30 border border-purple-200 dark:border-brand-lavender/30 rounded-2xl text-xs space-y-2 animate-fade-in">
+                  <span className="font-bold text-purple-900 dark:text-brand-lavender uppercase tracking-wider block">
+                    Expected Examiner Response:
+                  </span>
+                  <p className="text-slate-800 dark:text-slate-200 leading-relaxed">
+                    {activeQuestion.answer}
+                  </p>
+                </div>
+              )}
+
+              {/* Real-Time AI Evaluation Scorecard */}
+              {currentEvaluation && (
+                <div className="p-5 rounded-2xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-bg/60 space-y-4 animate-scale-in">
+                  <div className="flex items-center justify-between border-b border-slate-200 dark:border-dark-border pb-3">
+                    <div className="flex items-center space-x-2">
+                      <Award className="w-5 h-5 text-amber-500" />
+                      <span className="font-display font-bold text-sm text-slate-900 dark:text-white">
+                        AI Examiner Scorecard
+                      </span>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xs text-slate-500">Score:</span>
+                      <span
+                        className={`font-display font-black text-xl ${
+                          currentEvaluation.score >= 80
+                            ? 'text-emerald-600'
+                            : currentEvaluation.score >= 60
+                            ? 'text-amber-600'
+                            : 'text-rose-600'
+                        }`}
+                      >
+                        {currentEvaluation.score} / 100
+                      </span>
+                    </div>
+                  </div>
+
+                  <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 italic">
+                    "{currentEvaluation.feedbackComment}"
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                    <div className="space-y-1.5">
+                      <span className="font-bold text-emerald-700 dark:text-emerald-400 block">
+                        ✓ Correct Points Identified:
+                      </span>
+                      <ul className="list-disc ml-4 space-y-1 text-slate-600 dark:text-slate-300">
+                        {currentEvaluation.correctPoints?.map((pt: string, pIdx: number) => (
+                          <li key={pIdx}>{pt}</li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <span className="font-bold text-amber-700 dark:text-amber-400 block">
+                        ⚠ Areas for Improvement:
+                      </span>
+                      <ul className="list-disc ml-4 space-y-1 text-slate-600 dark:text-slate-300">
+                        {currentEvaluation.missingPoints?.map((pt: string, pIdx: number) => (
+                          <li key={pIdx}>{pt}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Navigation Controls */}
+              <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-dark-border">
+                <button
+                  onClick={handlePrevQuestion}
+                  disabled={currentQuestionIndex === 0}
+                  className="inline-flex items-center space-x-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 disabled:opacity-40"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>Previous</span>
+                </button>
+
+                <button
+                  onClick={handleNextQuestion}
+                  className="inline-flex items-center space-x-1.5 bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-sm"
+                >
+                  <span>{currentQuestionIndex === questions.length - 1 ? 'View Final Scorecard' : 'Next Question'}</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Question Bank View */}
+      {viewMode === 'bank' && (
+        <div className="bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-2xl p-6 shadow-sm space-y-6">
+          <div className="flex items-center justify-between border-b border-slate-100 dark:border-dark-border pb-4">
+            <h3 className="font-display font-bold text-base text-slate-900 dark:text-white">
+              Complete Question Bank ({questions.length} Questions)
+            </h3>
             <button
               onClick={() => setViewMode('practice')}
-              className="inline-flex items-center space-x-1.5 bg-purple-700 text-white font-bold text-xs px-4 py-2 rounded-xl"
+              className="bg-purple-700 text-white text-xs font-bold px-4 py-2 rounded-xl"
             >
-              <span>Start Interactive Practice</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              Start Interactive Practice
             </button>
           </div>
 
@@ -700,23 +865,22 @@ function VivaStudioContent() {
             {questions.map((q, idx) => (
               <div
                 key={q.id || idx}
-                className="p-5 bg-slate-50 dark:bg-dark-bg/60 border border-slate-200 dark:border-dark-border rounded-2xl space-y-3"
+                className="p-5 rounded-2xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-bg/40 space-y-3"
               >
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-mono font-bold text-purple-700 dark:text-brand-lavender">
-                    #{idx + 1} • {q.category} ({q.difficulty})
+                    Question #{idx + 1} • {q.category}
+                  </span>
+                  <span className="text-[10px] font-bold uppercase bg-purple-100 dark:bg-brand-amethyst text-purple-900 dark:text-brand-lavender px-2 py-0.5 rounded-md">
+                    {q.difficulty}
                   </span>
                 </div>
                 <h4 className="font-display font-bold text-sm text-slate-900 dark:text-white">
                   {q.question}
                 </h4>
-                <div className="p-3 bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-xl">
-                  <span className="text-[10px] font-bold text-purple-700 dark:text-brand-lavender uppercase tracking-wider block mb-1">
-                    Expected Answer:
-                  </span>
-                  <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
-                    {q.answer}
-                  </p>
+                <div className="p-3 bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+                  <strong className="text-purple-700 dark:text-brand-lavender block mb-1">Expected Answer:</strong>
+                  {q.answer}
                 </div>
               </div>
             ))}
@@ -724,69 +888,52 @@ function VivaStudioContent() {
         </div>
       )}
 
-      {/* 4. FINAL EXAM SCORECARD VIEW */}
+      {/* Final Scorecard View */}
       {viewMode === 'scorecard' && (
-        <div className="bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-3xl p-8 shadow-xl space-y-8 animate-scale-in max-w-3xl mx-auto text-center">
-          <div className="w-16 h-16 rounded-3xl bg-purple-100 dark:bg-brand-amethyst text-purple-700 dark:text-brand-lavender flex items-center justify-center mx-auto shadow-md border border-purple-200 dark:border-brand-lavender/30">
+        <div className="bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-2xl p-8 shadow-sm space-y-6 animate-scale-in text-center max-w-2xl mx-auto">
+          <div className="w-16 h-16 rounded-3xl bg-purple-100 dark:bg-brand-amethyst text-purple-700 dark:text-brand-lavender flex items-center justify-center mx-auto shadow-md">
             <Award className="w-8 h-8" />
           </div>
 
           <div className="space-y-1">
-            <h2 className="font-display font-extrabold text-3xl text-slate-900 dark:text-white">
-              Viva Defense Scorecard
+            <h2 className="font-display font-extrabold text-2xl text-slate-900 dark:text-white">
+              Defense Examination Scorecard
             </h2>
-            <p className="text-xs text-slate-500">Evaluation completed across {totalEvaluated} answered questions</p>
+            <p className="text-xs text-slate-500">
+              Evaluated {totalEvaluated} of {questions.length} total questions
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="p-5 rounded-2xl bg-purple-50 dark:bg-brand-amethyst/40 border border-purple-200 dark:border-brand-lavender/30">
-              <span className="text-xs font-bold uppercase tracking-wider text-purple-700 dark:text-brand-lavender">
-                Overall Viva Score
-              </span>
-              <p className="font-display font-black text-4xl text-purple-900 dark:text-white mt-1">
-                {averageScore} / 100
-              </p>
+          <div className="p-6 bg-slate-50 dark:bg-dark-bg rounded-2xl border border-slate-200 dark:border-dark-border space-y-2">
+            <span className="text-xs uppercase font-bold text-slate-500">Aggregate Performance Score</span>
+            <div className="font-display font-black text-5xl text-purple-700 dark:text-brand-lavender">
+              {averageScore}%
             </div>
-
-            <div className="p-5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800">
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
-                Answered Questions
-              </span>
-              <p className="font-display font-black text-4xl text-emerald-600 dark:text-emerald-400 mt-1">
-                {totalEvaluated} / {questions.length}
-              </p>
-            </div>
-
-            <div className="p-5 rounded-2xl bg-slate-50 dark:bg-dark-bg/60 border border-slate-200 dark:border-dark-border">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
-                Difficulty Level
-              </span>
-              <p className="font-display font-black text-3xl text-slate-800 dark:text-white mt-1">
-                {difficulty}
-              </p>
-            </div>
+            <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 block">
+              {averageScore >= 80
+                ? 'Outstanding Defense Readiness! High conceptual clarity and strong technical articulation.'
+                : averageScore >= 60
+                ? 'Proficient Defense! Solid baseline, but review identified improvement areas.'
+                : 'Needs Technical Preparation. Review expected answers and reinforce core concepts.'}
+            </span>
           </div>
 
-          <div className="flex justify-center space-x-4 pt-4 border-t border-slate-100 dark:border-dark-border">
+          <div className="flex items-center justify-center space-x-3 pt-4">
             <button
               onClick={() => {
                 setViewMode('practice');
                 setCurrentQuestionIndex(0);
-                setSessionAnswers({});
-                setCurrentEvaluation(null);
-                setUserAnswerText('');
               }}
-              className="inline-flex items-center space-x-2 bg-gradient-to-r from-purple-700 to-indigo-800 dark:from-brand-purple dark:to-brand-amethyst text-white font-extrabold text-xs px-8 py-3.5 rounded-xl shadow-xl hover:scale-[1.02] transition-all"
+              className="bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs px-6 py-2.5 rounded-xl shadow-md"
             >
-              <RotateCcw className="w-4 h-4" />
-              <span>Practice Again</span>
+              Review Questions
             </button>
 
             <button
-              onClick={() => setViewMode('bank')}
-              className="text-xs font-bold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-dark-border px-6 py-3.5 rounded-xl hover:bg-slate-100"
+              onClick={() => setViewMode('generator')}
+              className="bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border text-slate-700 dark:text-slate-300 font-bold text-xs px-6 py-2.5 rounded-xl"
             >
-              Review Question Bank
+              Start New Session
             </button>
           </div>
         </div>
@@ -809,4 +956,3 @@ export default function VivaStudioPage() {
     </React.Suspense>
   );
 }
-

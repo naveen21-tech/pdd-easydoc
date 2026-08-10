@@ -26,6 +26,7 @@ import {
   ChevronRight,
   Download,
   Eye,
+  Zap,
 } from 'lucide-react';
 import { ProjectModuleItem } from '@/lib/types';
 
@@ -46,6 +47,79 @@ const AVAILABLE_DOC_TYPES = [
   { id: 'Conclusion & References', label: 'Conclusion & References', desc: 'Summary of findings, bibliographies, and citations' },
 ];
 
+const PROJECT_PRESETS = [
+  {
+    name: 'E-Commerce Microservices Cloud Platform',
+    domain: 'Cloud Computing & Distributed Systems',
+    description: 'High-availability containerized microservices platform with event-driven message queuing, Redis caching, stripe payment gateways, and automated load balancing.',
+    problemStatement: 'Monolithic legacy systems struggle with traffic spikes, cascading service failures, and high deployment downtimes during peak sale periods.',
+    objectives: 'Achieve sub-200ms p95 latency, 99.99% availability, automated horizontal scaling, and isolated fault domains across independent microservices.',
+    targetUsers: 'Online Shoppers, Platform Sellers, Warehouse Operators, and System Administrators.',
+    languages: 'TypeScript, Go, SQL',
+    frameworks: 'Next.js 14, NestJS, Tailwind CSS',
+    database: 'PostgreSQL, Redis, RabbitMQ',
+    tools: 'Docker, Kubernetes, GitHub Actions, AWS',
+    modules: [
+      {
+        id: 'mod-1',
+        name: 'Identity & Authentication Service',
+        description: 'Stateless JWT cookie sessions, OAuth2 login, and role-based permissions.',
+        features: ['User Registration', 'MFA Login', 'Token Refresh', 'RBAC Middleware'],
+        userRole: 'All Users',
+      },
+      {
+        id: 'mod-2',
+        name: 'Order Processing & Payment Gateway',
+        description: 'Transactional shopping cart management, Stripe checkout, and invoice generation.',
+        features: ['Cart Synchronization', 'Stripe Webhooks', 'Order Tracking', 'Refund Handlers'],
+        userRole: 'Customer',
+      },
+      {
+        id: 'mod-3',
+        name: 'Inventory & Warehouse Dispatch',
+        description: 'Real-time stock reservation, SKU tracking, and automated fulfillment dispatches.',
+        features: ['Stock Level Alerts', 'SKU Management', 'Dispatch Logging', 'Supplier Sync'],
+        userRole: 'Warehouse Operator',
+      },
+    ],
+  },
+  {
+    name: 'AI Healthcare Diagnostic & EHR System',
+    domain: 'Healthcare Informatics & Applied AI',
+    description: 'HIPAA-compliant hospital management platform featuring deep learning medical scan classification, FHIR-standard patient records, and real-time vital telemetry.',
+    problemStatement: 'Diagnostic backlogs, siloed medical records, and manual triage delays increase critical patient wait times by up to 45%.',
+    objectives: 'Provide sub-second AI diagnostic recommendations, guarantee 100% HIPAA compliance, and synchronize EHR records seamlessly across departments.',
+    targetUsers: 'Chief Medical Officers, Radiologists, Attending Nurses, and Registered Patients.',
+    languages: 'Python, TypeScript, SQL',
+    frameworks: 'Next.js 14, FastAPI, PyTorch',
+    database: 'PostgreSQL, pgvector, Redis',
+    tools: 'Docker, CUDA, Vercel, Git',
+    modules: [
+      {
+        id: 'mod-1',
+        name: 'Patient EHR & Triage Management',
+        description: 'Encrypted patient records, demographic history, and digital triage intake.',
+        features: ['Patient Intake', 'Vital Signs Log', 'Medical History', 'Doctor Allocation'],
+        userRole: 'Hospital Staff',
+      },
+      {
+        id: 'mod-2',
+        name: 'AI Radiographic Image Analyzer',
+        description: 'Convolutional neural network inference for chest X-ray and MRI scan segmentation.',
+        features: ['DICOM Image Upload', 'Anomaly Detection', 'Confidence Score', 'Doctor Sign-off'],
+        userRole: 'Radiologist',
+      },
+      {
+        id: 'mod-3',
+        name: 'Telemedicine & Prescription Portal',
+        description: 'Real-time WebRTC video consultations and digitally signed e-prescriptions.',
+        features: ['Video Consultation', 'E-Prescription', 'Pharmacy Dispatch', 'Billing Sync'],
+        userRole: 'Doctor & Patient',
+      },
+    ],
+  },
+];
+
 export default function ProjectDocsPage() {
   const router = useRouter();
 
@@ -55,17 +129,17 @@ export default function ProjectDocsPage() {
   const [loadingProjects, setLoadingProjects] = useState<boolean>(true);
 
   // Step 1 State: Project Information
-  const [projectName, setProjectName] = useState('');
+  const [projectName, setProjectName] = useState('Distributed Cloud Systems Architecture');
   const [projectDomain, setProjectDomain] = useState('Web & Cloud Enterprise');
-  const [projectDescription, setProjectDescription] = useState('');
-  const [problemStatement, setProblemStatement] = useState('');
-  const [objectives, setObjectives] = useState('');
-  const [targetUsers, setTargetUsers] = useState('');
+  const [projectDescription, setProjectDescription] = useState('High-availability, fault-tolerant microservices platform featuring event-driven messaging, distributed caching, and zero-downtime deployments.');
+  const [problemStatement, setProblemStatement] = useState('Monolithic legacy architectures fail to scale horizontally under unpredictable peak traffic.');
+  const [objectives, setObjectives] = useState('Achieve sub-second latency, zero-loss transaction consistency, and seamless horizontal auto-scaling.');
+  const [targetUsers, setTargetUsers] = useState('Software Engineers, DevOps Architects, and Enterprise Stakeholders');
 
   // Tech Stack Tags
   const [languages, setLanguages] = useState('TypeScript, Python, SQL');
   const [frameworks, setFrameworks] = useState('Next.js 14, React, Node.js');
-  const [database, setDatabase] = useState('PostgreSQL, Supabase');
+  const [database, setDatabase] = useState('PostgreSQL, Supabase, Redis');
   const [tools, setTools] = useState('Git, Docker, Vercel, VS Code');
 
   // Step 2 State: Modules
@@ -79,16 +153,16 @@ export default function ProjectDocsPage() {
     },
     {
       id: 'mod-2',
-      name: 'Document Generation Studio',
-      description: 'Multi-model AI document synthesis with live typography formatting.',
-      features: ['AI Synthesis', 'Export to PDF/DOCX', 'Template Engine'],
+      name: 'Core Application Engine',
+      description: 'Business logic controllers with transactional database pooling.',
+      features: ['Task Pipeline', 'Event Broker', 'Stateful Cache'],
       userRole: 'Standard User',
     },
     {
       id: 'mod-3',
-      name: 'Admin Governance Console',
-      description: 'System audit logs, AI token usage metrics, and user management.',
-      features: ['Audit Logs', 'Latency Analytics', 'User Management'],
+      name: 'Governance & Analytics Console',
+      description: 'System audit logs, API telemetry metrics, and user management.',
+      features: ['Audit Logs', 'Latency Analytics', 'User Controls'],
       userRole: 'Administrator',
     },
   ]);
@@ -126,6 +200,20 @@ export default function ProjectDocsPage() {
     } finally {
       setLoadingProjects(false);
     }
+  };
+
+  const handleApplyPreset = (preset: typeof PROJECT_PRESETS[0]) => {
+    setProjectName(preset.name);
+    setProjectDomain(preset.domain);
+    setProjectDescription(preset.description);
+    setProblemStatement(preset.problemStatement);
+    setObjectives(preset.objectives);
+    setTargetUsers(preset.targetUsers);
+    setLanguages(preset.languages);
+    setFrameworks(preset.frameworks);
+    setDatabase(preset.database);
+    setTools(preset.tools);
+    setModules(preset.modules);
   };
 
   const addModule = () => {
@@ -190,8 +278,8 @@ export default function ProjectDocsPage() {
     setStep(4);
 
     const initialSteps = [
-      { label: 'Processing project information & domain metadata...', status: 'in-progress' as const },
-      { label: 'Analyzing software architecture and module breakdown...', status: 'pending' as const },
+      { label: 'Processing project architecture & metadata...', status: 'in-progress' as const },
+      { label: 'Analyzing software modules & requirements...', status: 'pending' as const },
       ...selectedDocs.map((doc) => ({
         label: `Synthesizing ${doc}...`,
         status: 'pending' as const,
@@ -201,7 +289,6 @@ export default function ProjectDocsPage() {
 
     setGenerationSteps(initialSteps);
 
-    // Simulate animated step progression while API runs
     let stepIndex = 0;
     const progressInterval = setInterval(() => {
       setGenerationSteps((prev) => {
@@ -293,13 +380,11 @@ export default function ProjectDocsPage() {
             className={`p-3 rounded-xl flex items-center justify-center space-x-2 transition-all ${
               step === 1
                 ? 'bg-purple-100 dark:bg-brand-amethyst text-purple-900 dark:text-brand-lavender border border-purple-300 dark:border-brand-lavender/40'
-                : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-dark-hover'
+                : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-dark-hover'
             }`}
           >
-            <span className="w-5 h-5 rounded-full bg-purple-600 dark:bg-brand-purple text-white text-[10px] flex items-center justify-center">
-              1
-            </span>
-            <span>Project Details</span>
+            <span className="w-5 h-5 rounded-full bg-purple-600 text-white text-[10px] flex items-center justify-center">1</span>
+            <span>Project Info</span>
           </button>
 
           <button
@@ -307,13 +392,11 @@ export default function ProjectDocsPage() {
             className={`p-3 rounded-xl flex items-center justify-center space-x-2 transition-all ${
               step === 2
                 ? 'bg-purple-100 dark:bg-brand-amethyst text-purple-900 dark:text-brand-lavender border border-purple-300 dark:border-brand-lavender/40'
-                : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-dark-hover'
+                : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-dark-hover'
             }`}
           >
-            <span className="w-5 h-5 rounded-full bg-purple-600 dark:bg-brand-purple text-white text-[10px] flex items-center justify-center">
-              2
-            </span>
-            <span>Modules</span>
+            <span className="w-5 h-5 rounded-full bg-purple-600 text-white text-[10px] flex items-center justify-center">2</span>
+            <span>Modules ({modules.length})</span>
           </button>
 
           <button
@@ -321,51 +404,57 @@ export default function ProjectDocsPage() {
             className={`p-3 rounded-xl flex items-center justify-center space-x-2 transition-all ${
               step === 3
                 ? 'bg-purple-100 dark:bg-brand-amethyst text-purple-900 dark:text-brand-lavender border border-purple-300 dark:border-brand-lavender/40'
-                : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-dark-hover'
+                : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-dark-hover'
             }`}
           >
-            <span className="w-5 h-5 rounded-full bg-purple-600 dark:bg-brand-purple text-white text-[10px] flex items-center justify-center">
-              3
-            </span>
-            <span>Select Docs ({selectedDocs.length})</span>
+            <span className="w-5 h-5 rounded-full bg-purple-600 text-white text-[10px] flex items-center justify-center">3</span>
+            <span>Artifacts ({selectedDocs.length})</span>
           </button>
 
           <button
-            onClick={() => !generating && step === 4 && setStep(4)}
+            onClick={() => !generating && setStep(4)}
             className={`p-3 rounded-xl flex items-center justify-center space-x-2 transition-all ${
               step === 4
                 ? 'bg-purple-100 dark:bg-brand-amethyst text-purple-900 dark:text-brand-lavender border border-purple-300 dark:border-brand-lavender/40'
-                : 'text-slate-500 dark:text-slate-400 opacity-60'
+                : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-dark-hover'
             }`}
           >
-            <span className="w-5 h-5 rounded-full bg-purple-600 dark:bg-brand-purple text-white text-[10px] flex items-center justify-center">
-              4
-            </span>
-            <span>Generate & Export</span>
+            <span className="w-5 h-5 rounded-full bg-purple-600 text-white text-[10px] flex items-center justify-center">4</span>
+            <span>Synthesize</span>
           </button>
         </div>
       </div>
 
       {errorMsg && (
-        <div className="p-4 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-xl text-rose-800 dark:text-rose-300 text-xs font-semibold">
+        <div className="p-4 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-2xl text-xs text-rose-800 dark:text-rose-300 font-semibold">
           {errorMsg}
         </div>
       )}
 
-      {/* STEP 1: PROJECT INFORMATION */}
+      {/* STEP 1: Project Information */}
       {step === 1 && (
         <div className="bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-2xl p-6 shadow-sm space-y-6 animate-scale-in">
-          <div className="border-b border-slate-100 dark:border-dark-border pb-4">
-            <h2 className="font-display font-bold text-lg text-slate-900 dark:text-white flex items-center space-x-2">
-              <Boxes className="w-5 h-5 text-purple-600 dark:text-brand-lavender" />
-              <span>Step 1 — Project Information & Technologies</span>
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              Provide foundational information about your software system to prime the AI documentation engine.
-            </p>
+          {/* Preset Quick Fillers */}
+          <div className="space-y-1.5 pb-2 border-b border-slate-100 dark:border-dark-border">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-purple-700 dark:text-brand-lavender flex items-center space-x-1">
+              <Zap className="w-3 h-3 text-amber-500" />
+              <span>1-Click Project Templates (Click to Pre-fill):</span>
+            </span>
+            <div className="flex flex-wrap gap-2">
+              {PROJECT_PRESETS.map((pr, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => handleApplyPreset(pr)}
+                  className="text-[11px] font-semibold px-3 py-1.5 rounded-xl border border-purple-200 dark:border-brand-lavender/30 bg-purple-50 dark:bg-brand-amethyst/30 hover:bg-purple-100 text-purple-900 dark:text-brand-lavender transition-all"
+                >
+                  {pr.name}
+                </button>
+              ))}
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                 Project Name *
@@ -374,180 +463,158 @@ export default function ProjectDocsPage() {
                 type="text"
                 value={projectName}
                 onChange={(e) => setProjectName(e.target.value)}
-                placeholder="e.g. EasyDoc — AI Document Engine"
-                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl text-xs text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                placeholder="e.g. Distributed Cloud Architecture"
+                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl text-xs font-semibold text-slate-900 dark:text-white"
               />
             </div>
 
             <div className="space-y-1.5">
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                Project Domain / Industry *
+                Domain / Industry *
               </label>
               <input
                 type="text"
                 value={projectDomain}
                 onChange={(e) => setProjectDomain(e.target.value)}
-                placeholder="e.g. EdTech, Healthcare, FinTech, SaaS, Cloud Automation"
-                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl text-xs text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                placeholder="e.g. Healthcare, E-Commerce, IoT"
+                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl text-xs font-semibold text-slate-900 dark:text-white"
               />
             </div>
+          </div>
 
-            <div className="md:col-span-2 space-y-1.5">
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                Project Description *
-              </label>
-              <textarea
-                rows={3}
-                value={projectDescription}
-                onChange={(e) => setProjectDescription(e.target.value)}
-                placeholder="Explain the comprehensive purpose, core problem solved, and end-to-end functionality..."
-                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl text-xs text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-purple-500 focus:outline-none"
-              />
-            </div>
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+              Project Description *
+            </label>
+            <textarea
+              rows={3}
+              value={projectDescription}
+              onChange={(e) => setProjectDescription(e.target.value)}
+              placeholder="Describe what the system does, key capabilities, and user value..."
+              className="w-full px-4 py-2.5 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl text-xs font-medium text-slate-900 dark:text-white"
+            />
+          </div>
 
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                 Problem Statement
               </label>
-              <textarea
-                rows={2}
+              <input
+                type="text"
                 value={problemStatement}
                 onChange={(e) => setProblemStatement(e.target.value)}
-                placeholder="What critical bottlenecks or inefficiency does this software resolve?"
-                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl text-xs text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                placeholder="What inefficiencies or challenges does this solve?"
+                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl text-xs font-medium text-slate-900 dark:text-white"
               />
             </div>
 
             <div className="space-y-1.5">
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                Primary Objectives
-              </label>
-              <textarea
-                rows={2}
-                value={objectives}
-                onChange={(e) => setObjectives(e.target.value)}
-                placeholder="Key measurable deliverables and goals..."
-                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl text-xs text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-purple-500 focus:outline-none"
-              />
-            </div>
-
-            <div className="md:col-span-2 space-y-1.5">
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                Target Users / Stakeholders
+                Target Stakeholders / Users
               </label>
               <input
                 type="text"
                 value={targetUsers}
                 onChange={(e) => setTargetUsers(e.target.value)}
-                placeholder="e.g. Students, Technical Leads, Enterprise End-Users, Review Boards"
-                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl text-xs text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                placeholder="e.g. End-Users, Doctors, Admins"
+                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl text-xs font-medium text-slate-900 dark:text-white"
               />
             </div>
           </div>
 
-          {/* Tech Stack Matrix */}
-          <div className="pt-4 border-t border-slate-100 dark:border-dark-border space-y-4">
-            <h3 className="text-xs font-bold text-purple-700 dark:text-brand-lavender uppercase tracking-wider flex items-center space-x-1.5">
-              <Code2 className="w-4 h-4" />
-              <span>Technology Stack & Development Tools</span>
-            </h3>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Tech Stack Specs */}
+          <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-dark-border">
+            <h4 className="text-xs font-bold text-purple-700 dark:text-brand-lavender uppercase tracking-wider">
+              Technology Stack Specifications
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <div className="space-y-1">
-                <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">Languages</span>
+                <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400">Languages</label>
                 <input
                   type="text"
                   value={languages}
                   onChange={(e) => setLanguages(e.target.value)}
-                  placeholder="TypeScript, Python, Java"
                   className="w-full px-3 py-2 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl text-xs font-medium"
                 />
               </div>
-
               <div className="space-y-1">
-                <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">Frameworks</span>
+                <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400">Frameworks</label>
                 <input
                   type="text"
                   value={frameworks}
                   onChange={(e) => setFrameworks(e.target.value)}
-                  placeholder="Next.js, React, Express"
                   className="w-full px-3 py-2 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl text-xs font-medium"
                 />
               </div>
-
               <div className="space-y-1">
-                <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">Database</span>
+                <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400">Databases</label>
                 <input
                   type="text"
                   value={database}
                   onChange={(e) => setDatabase(e.target.value)}
-                  placeholder="PostgreSQL, Supabase"
                   className="w-full px-3 py-2 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl text-xs font-medium"
                 />
               </div>
-
               <div className="space-y-1">
-                <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">Tools & CI/CD</span>
+                <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400">DevOps & Tools</label>
                 <input
                   type="text"
                   value={tools}
                   onChange={(e) => setTools(e.target.value)}
-                  placeholder="Docker, Git, Vercel"
                   className="w-full px-3 py-2 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl text-xs font-medium"
                 />
               </div>
             </div>
           </div>
 
-          <div className="flex justify-end pt-4 border-t border-slate-100 dark:border-dark-border">
+          <div className="flex justify-end pt-4">
             <button
               onClick={() => setStep(2)}
-              className="inline-flex items-center space-x-2 bg-purple-700 hover:bg-purple-800 dark:bg-brand-purple text-white font-bold text-xs px-6 py-3 rounded-xl shadow-md transition-all"
+              className="inline-flex items-center space-x-2 bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs px-6 py-2.5 rounded-xl shadow-md transition-all"
             >
-              <span>Continue to Step 2: Project Modules</span>
+              <span>Continue to Step 2: Modules</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
         </div>
       )}
 
-      {/* STEP 2: PROJECT MODULES */}
+      {/* STEP 2: Feature Modules */}
       {step === 2 && (
         <div className="bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-2xl p-6 shadow-sm space-y-6 animate-scale-in">
-          <div className="flex items-center justify-between border-b border-slate-100 dark:border-dark-border pb-4">
+          <div className="flex items-center justify-between border-b border-slate-100 dark:border-dark-border pb-3">
             <div>
-              <h2 className="font-display font-bold text-lg text-slate-900 dark:text-white flex items-center space-x-2">
-                <Layers className="w-5 h-5 text-purple-600 dark:text-brand-lavender" />
-                <span>Step 2 — Project Modules & Components</span>
-              </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                Define the modular breakdown of your application for precise SRS, API, and Architecture generation.
+              <h3 className="font-display font-bold text-sm text-slate-900 dark:text-white">
+                Project Architecture Modules ({modules.length})
+              </h3>
+              <p className="text-xs text-slate-500">
+                Define the structural components that make up your software system.
               </p>
             </div>
-
             <button
               onClick={addModule}
-              className="inline-flex items-center space-x-1.5 bg-purple-100 dark:bg-brand-amethyst text-purple-800 dark:text-brand-lavender font-bold text-xs px-3.5 py-2 rounded-xl border border-purple-200 dark:border-brand-lavender/30 hover:bg-purple-200 transition-all"
+              className="inline-flex items-center space-x-1 bg-purple-100 dark:bg-brand-amethyst text-purple-900 dark:text-brand-lavender text-xs font-bold px-3 py-1.5 rounded-xl hover:bg-purple-200"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-3.5 h-3.5" />
               <span>Add Module</span>
             </button>
           </div>
 
           <div className="space-y-4">
-            {modules.map((mod, index) => (
+            {modules.map((m, idx) => (
               <div
-                key={mod.id}
-                className="p-4 bg-slate-50 dark:bg-dark-bg/60 border border-slate-200 dark:border-dark-border rounded-2xl space-y-3 relative group"
+                key={m.id || idx}
+                className="p-4 rounded-2xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-bg/40 space-y-3 relative group"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-extrabold uppercase tracking-wider text-purple-700 dark:text-brand-lavender">
-                    Module {index + 1}
+                  <span className="text-xs font-mono font-bold text-purple-700 dark:text-brand-lavender">
+                    Module #{idx + 1}
                   </span>
                   {modules.length > 1 && (
                     <button
-                      onClick={() => removeModule(mod.id)}
-                      className="p-1 text-slate-400 hover:text-rose-600 transition-colors"
+                      onClick={() => removeModule(m.id)}
+                      className="p-1 text-slate-400 hover:text-rose-500 rounded-lg transition-colors"
                       title="Remove Module"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -555,65 +622,30 @@ export default function ProjectDocsPage() {
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">
-                      Module Name
-                    </label>
-                    <input
-                      type="text"
-                      value={mod.name}
-                      onChange={(e) => updateModule(mod.id, 'name', e.target.value)}
-                      placeholder="e.g. User Authentication"
-                      className="w-full px-3 py-2 bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-xl text-xs font-semibold"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">
-                      Assigned User Role
-                    </label>
-                    <input
-                      type="text"
-                      value={mod.userRole}
-                      onChange={(e) => updateModule(mod.id, 'userRole', e.target.value)}
-                      placeholder="e.g. Admin, Customer, Student"
-                      className="w-full px-3 py-2 bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-xl text-xs font-semibold"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">
-                      Key Features (comma separated)
-                    </label>
-                    <input
-                      type="text"
-                      value={mod.features.join(', ')}
-                      onChange={(e) =>
-                        updateModule(
-                          mod.id,
-                          'features',
-                          e.target.value.split(',').map((s) => s.trim()).filter(Boolean)
-                        )
-                      }
-                      placeholder="e.g. Login, Signup, OAuth, 2FA"
-                      className="w-full px-3 py-2 bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-xl text-xs font-semibold"
-                    />
-                  </div>
-
-                  <div className="md:col-span-3 space-y-1">
-                    <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">
-                      Module Description & Scope
-                    </label>
-                    <input
-                      type="text"
-                      value={mod.description}
-                      onChange={(e) => updateModule(mod.id, 'description', e.target.value)}
-                      placeholder="Detail the operational responsibility of this module..."
-                      className="w-full px-3 py-2 bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-xl text-xs font-semibold"
-                    />
-                  </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <input
+                    type="text"
+                    value={m.name}
+                    onChange={(e) => updateModule(m.id, 'name', e.target.value)}
+                    placeholder="Module Name..."
+                    className="w-full px-3 py-2 bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-xl text-xs font-bold text-slate-900 dark:text-white"
+                  />
+                  <input
+                    type="text"
+                    value={m.userRole}
+                    onChange={(e) => updateModule(m.id, 'userRole', e.target.value)}
+                    placeholder="User Role (e.g. Admin, Customer)..."
+                    className="w-full px-3 py-2 bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-xl text-xs font-medium text-slate-900 dark:text-white"
+                  />
                 </div>
+
+                <textarea
+                  rows={2}
+                  value={m.description}
+                  onChange={(e) => updateModule(m.id, 'description', e.target.value)}
+                  placeholder="Module operational scope and technical requirements..."
+                  className="w-full px-3 py-2 bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-xl text-xs font-medium text-slate-900 dark:text-white"
+                />
               </div>
             ))}
           </div>
@@ -621,7 +653,7 @@ export default function ProjectDocsPage() {
           <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-dark-border">
             <button
               onClick={() => setStep(1)}
-              className="inline-flex items-center space-x-2 text-slate-600 dark:text-slate-300 font-bold text-xs px-4 py-2.5 rounded-xl border border-slate-200 dark:border-dark-border hover:bg-slate-100"
+              className="inline-flex items-center space-x-1.5 text-xs font-bold text-slate-600 hover:text-slate-900"
             >
               <ArrowLeft className="w-4 h-4" />
               <span>Back to Step 1</span>
@@ -629,70 +661,70 @@ export default function ProjectDocsPage() {
 
             <button
               onClick={() => setStep(3)}
-              className="inline-flex items-center space-x-2 bg-purple-700 hover:bg-purple-800 dark:bg-brand-purple text-white font-bold text-xs px-6 py-3 rounded-xl shadow-md transition-all"
+              className="inline-flex items-center space-x-2 bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs px-6 py-2.5 rounded-xl shadow-md transition-all"
             >
-              <span>Continue to Step 3: Select Documents</span>
+              <span>Continue to Step 3: Documents</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
         </div>
       )}
 
-      {/* STEP 3: DOCUMENTATION SELECTION */}
+      {/* STEP 3: Documentation Artifacts Picker */}
       {step === 3 && (
         <div className="bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-2xl p-6 shadow-sm space-y-6 animate-scale-in">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-dark-border pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 dark:border-dark-border pb-3 gap-2">
             <div>
-              <h2 className="font-display font-bold text-lg text-slate-900 dark:text-white flex items-center space-x-2">
-                <FileText className="w-5 h-5 text-purple-600 dark:text-brand-lavender" />
-                <span>Step 3 — Documentation Selection</span>
-              </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                Choose which documents you want the AI engine to generate into your project workspace.
+              <h3 className="font-display font-bold text-sm text-slate-900 dark:text-white">
+                Select Deliverable Artifacts ({selectedDocs.length} of {AVAILABLE_DOC_TYPES.length} Selected)
+              </h3>
+              <p className="text-xs text-slate-500">
+                Choose the engineering documents to synthesize for this project package.
               </p>
             </div>
 
             <div className="flex items-center space-x-2">
               <button
                 onClick={handleSelectAllDocs}
-                className="text-xs font-bold text-purple-700 dark:text-brand-lavender bg-purple-50 dark:bg-brand-amethyst/40 border border-purple-200 dark:border-brand-lavender/30 px-3 py-1.5 rounded-lg hover:bg-purple-100"
+                className="text-xs font-bold text-purple-700 dark:text-brand-lavender hover:underline"
               >
                 Select All
               </button>
+              <span className="text-slate-300">•</span>
               <button
                 onClick={handleClearAllDocs}
-                className="text-xs font-bold text-slate-500 hover:text-slate-700 dark:text-slate-400 border border-slate-200 dark:border-dark-border px-3 py-1.5 rounded-lg hover:bg-slate-100"
+                className="text-xs font-bold text-slate-500 hover:underline"
               >
-                Clear All
+                Clear
               </button>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {AVAILABLE_DOC_TYPES.map((doc) => {
               const isSelected = selectedDocs.includes(doc.id);
               return (
                 <div
                   key={doc.id}
                   onClick={() => toggleDocSelection(doc.id)}
-                  className={`p-4 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between select-none ${
+                  className={`p-4 rounded-xl border cursor-pointer transition-all flex flex-col justify-between select-none ${
                     isSelected
-                      ? 'bg-purple-50 dark:bg-brand-amethyst/50 border-purple-600 dark:border-brand-lavender ring-2 ring-purple-400/40 shadow-sm'
-                      : 'bg-white dark:bg-dark-bg/40 border-slate-200 dark:border-dark-border hover:border-purple-300'
+                      ? 'border-purple-600 dark:border-brand-lavender bg-purple-50 dark:bg-brand-amethyst/50 ring-2 ring-purple-400/40 shadow-sm'
+                      : 'border-slate-200 dark:border-dark-border hover:border-purple-300 bg-white dark:bg-dark-bg/40'
                   }`}
                 >
-                  <div className="space-y-1.5">
+                  <div className="space-y-1">
                     <div className="flex items-center justify-between">
                       <h4 className="font-display font-bold text-xs text-slate-900 dark:text-white">
                         {doc.label}
                       </h4>
                       {isSelected ? (
-                        <CheckCircle2 className="w-4 h-4 text-purple-700 dark:text-brand-lavender shrink-0" />
+                        <CheckCircle2 className="w-4 h-4 text-purple-600 dark:text-brand-lavender shrink-0" />
                       ) : (
-                        <Circle className="w-4 h-4 text-slate-300 dark:text-slate-600 shrink-0" />
+                        <Circle className="w-4 h-4 text-slate-300 shrink-0" />
                       )}
                     </div>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">
                       {doc.desc}
                     </p>
                   </div>
@@ -704,174 +736,150 @@ export default function ProjectDocsPage() {
           <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-dark-border">
             <button
               onClick={() => setStep(2)}
-              className="inline-flex items-center space-x-2 text-slate-600 dark:text-slate-300 font-bold text-xs px-4 py-2.5 rounded-xl border border-slate-200 dark:border-dark-border hover:bg-slate-100"
+              className="inline-flex items-center space-x-1.5 text-xs font-bold text-slate-600 hover:text-slate-900"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span>Back to Modules</span>
+              <span>Back to Step 2</span>
             </button>
 
             <button
               onClick={handleStartGeneration}
               disabled={selectedDocs.length === 0}
-              className="inline-flex items-center space-x-2 bg-gradient-to-r from-purple-700 to-indigo-800 dark:from-brand-purple dark:to-brand-amethyst text-white font-extrabold text-xs px-8 py-3.5 rounded-xl shadow-xl hover:scale-[1.02] transition-all disabled:opacity-50"
+              className="inline-flex items-center space-x-2 bg-gradient-to-r from-purple-700 to-indigo-800 dark:from-brand-purple dark:to-brand-amethyst text-white font-extrabold text-xs px-8 py-3 rounded-xl shadow-xl hover:scale-[1.02] transition-all disabled:opacity-50"
             >
-              <Sparkles className="w-4 h-4 text-purple-200 dark:text-brand-lavender animate-pulse" />
-              <span>Generate Project Package ({selectedDocs.length} Documents)</span>
+              <Sparkles className="w-4 h-4 text-purple-200" />
+              <span>Synthesize {selectedDocs.length} Engineering Artifacts</span>
             </button>
           </div>
         </div>
       )}
 
-      {/* STEP 4: LIVE GENERATION PROGRESS & SUCCESS */}
+      {/* STEP 4: Live Generation & Project Workspace Link */}
       {step === 4 && (
-        <div className="bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-3xl p-8 shadow-xl space-y-6 animate-scale-in max-w-3xl mx-auto">
-          <div className="text-center space-y-2">
-            <div className="w-14 h-14 rounded-3xl bg-purple-100 dark:bg-brand-amethyst text-purple-700 dark:text-brand-lavender flex items-center justify-center mx-auto shadow-md border border-purple-200 dark:border-brand-lavender/30">
-              {generating ? (
-                <Loader2 className="w-7 h-7 animate-spin" />
-              ) : (
-                <CheckCircle2 className="w-7 h-7 text-emerald-500" />
-              )}
-            </div>
-            <h2 className="font-display font-extrabold text-2xl text-slate-900 dark:text-white">
-              {generating ? 'Generating Project Documentation...' : 'Documentation Package Ready!'}
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              {generating
-                ? 'Synthesizing software engineering specifications, diagrams, and test matrices...'
-                : `All ${selectedDocs.length} documents have been generated and assembled into your workspace.`}
-            </p>
-          </div>
-
-          {/* Progress list checklist */}
-          <div className="bg-slate-50 dark:bg-dark-bg/60 border border-slate-200 dark:border-dark-border rounded-2xl p-6 space-y-3">
-            {generationSteps.map((s, idx) => (
-              <div key={idx} className="flex items-center space-x-3 text-xs font-semibold">
-                {s.status === 'completed' ? (
-                  <div className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                    <Check className="w-3.5 h-3.5" />
-                  </div>
-                ) : s.status === 'in-progress' ? (
-                  <div className="w-5 h-5 rounded-full bg-purple-100 text-purple-700 dark:bg-brand-amethyst dark:text-brand-lavender flex items-center justify-center shrink-0">
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  </div>
-                ) : (
-                  <div className="w-5 h-5 rounded-full bg-slate-200 dark:bg-dark-surface text-slate-400 flex items-center justify-center shrink-0">
-                    <Circle className="w-3.5 h-3.5" />
-                  </div>
-                )}
-                <span
-                  className={
-                    s.status === 'completed'
-                      ? 'text-slate-900 dark:text-white'
-                      : s.status === 'in-progress'
-                      ? 'text-purple-700 dark:text-brand-lavender font-bold'
-                      : 'text-slate-400'
-                  }
-                >
-                  {s.label}
-                </span>
+        <div className="bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-2xl p-8 shadow-sm space-y-6 animate-scale-in text-center max-w-xl mx-auto">
+          {generating ? (
+            <div className="space-y-4">
+              <Loader2 className="w-12 h-12 animate-spin text-purple-600 dark:text-brand-lavender mx-auto" />
+              <div>
+                <h3 className="font-display font-extrabold text-lg text-slate-900 dark:text-white">
+                  Synthesizing Project Package...
+                </h3>
+                <p className="text-xs text-slate-500 mt-1">
+                  Generating professional, submission-grade engineering documents.
+                </p>
               </div>
-            ))}
-          </div>
 
-          {!generating && createdProjectId && (
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4 border-t border-slate-100 dark:border-dark-border">
-              <Link
-                href={`/project-docs/${createdProjectId}`}
-                className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 bg-gradient-to-r from-purple-700 to-indigo-800 dark:from-brand-purple dark:to-brand-amethyst text-white font-extrabold text-xs px-8 py-3.5 rounded-xl shadow-xl hover:scale-[1.02] transition-all"
-              >
-                <span>Open Project Documentation Workspace</span>
-                <ArrowRight className="w-4 h-4" />
-              </Link>
+              {/* Progress Steps Feed */}
+              <div className="space-y-2 text-left pt-4 max-h-60 overflow-y-auto pr-1">
+                {generationSteps.map((s, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center space-x-2 text-xs py-1 px-3 rounded-lg bg-slate-50 dark:bg-dark-bg/60 border border-slate-100 dark:border-dark-border"
+                  >
+                    {s.status === 'completed' ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                    ) : s.status === 'in-progress' ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-purple-600 shrink-0" />
+                    ) : (
+                      <Circle className="w-4 h-4 text-slate-300 shrink-0" />
+                    )}
+                    <span
+                      className={`truncate ${
+                        s.status === 'completed'
+                          ? 'text-slate-800 dark:text-slate-200 font-semibold'
+                          : s.status === 'in-progress'
+                          ? 'text-purple-700 dark:text-brand-lavender font-bold'
+                          : 'text-slate-400'
+                      }`}
+                    >
+                      {s.label}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="w-16 h-16 rounded-3xl bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto shadow-md">
+                <CheckCircle2 className="w-8 h-8" />
+              </div>
 
-              <button
-                onClick={() => {
-                  setStep(1);
-                  setProjectName('');
-                  setProjectDescription('');
-                  setCreatedProjectId(null);
-                }}
-                className="w-full sm:w-auto text-xs font-bold text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-dark-border px-6 py-3.5 rounded-xl hover:bg-slate-100"
-              >
-                Create Another Project
-              </button>
+              <div className="space-y-1">
+                <h3 className="font-display font-extrabold text-xl text-slate-900 dark:text-white">
+                  Documentation Package Created!
+                </h3>
+                <p className="text-xs text-slate-500">
+                  All {selectedDocs.length} engineering artifacts have been successfully synthesized.
+                </p>
+              </div>
+
+              <div className="pt-2">
+                {createdProjectId ? (
+                  <Link
+                    href={`/project-docs/${createdProjectId}`}
+                    className="inline-flex items-center space-x-2 bg-gradient-to-r from-purple-700 to-indigo-800 dark:from-brand-purple dark:to-brand-amethyst text-white font-extrabold text-xs px-8 py-3 rounded-xl shadow-xl hover:scale-[1.02] transition-all"
+                  >
+                    <span>Open Project Workspace</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+                ) : (
+                  <button
+                    onClick={() => router.push('/project-docs')}
+                    className="inline-flex items-center space-x-2 bg-purple-700 text-white font-bold text-xs px-8 py-3 rounded-xl shadow-md"
+                  >
+                    <span>View Projects</span>
+                  </button>
+                )}
+              </div>
             </div>
           )}
         </div>
       )}
 
-      {/* 4. PREVIOUSLY CREATED PROJECTS LIST */}
-      <div className="bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-2xl p-6 shadow-sm space-y-6">
-        <div className="flex items-center justify-between border-b border-slate-100 dark:border-dark-border pb-4">
-          <div>
-            <h3 className="font-display font-bold text-lg text-slate-900 dark:text-white">
-              Your Project Workspaces
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Access and manage all generated project packages
-            </p>
-          </div>
-          <span className="text-xs font-bold bg-purple-100 dark:bg-brand-amethyst/60 text-purple-800 dark:text-brand-lavender px-3 py-1 rounded-full border border-purple-200 dark:border-brand-lavender/30">
-            {projectsList.length} Total Projects
-          </span>
-        </div>
+      {/* Existing Projects History List */}
+      {projectsList.length > 0 && (
+        <div className="bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-2xl p-6 shadow-sm space-y-4">
+          <h3 className="font-display font-bold text-base text-slate-900 dark:text-white flex items-center space-x-2">
+            <FolderGit2 className="w-4 h-4 text-purple-600 dark:text-brand-lavender" />
+            <span>Existing Project Workspaces ({projectsList.length})</span>
+          </h3>
 
-        {loadingProjects ? (
-          <div className="py-12 text-center text-slate-400 text-xs flex items-center justify-center space-x-2">
-            <Loader2 className="w-4 h-4 animate-spin text-purple-600 dark:text-brand-purple" />
-            <span>Loading workspaces...</span>
-          </div>
-        ) : projectsList.length === 0 ? (
-          <div className="py-12 text-center text-slate-400 bg-slate-50 dark:bg-dark-bg/60 rounded-xl border border-dashed border-slate-200 dark:border-dark-border">
-            <FolderGit2 className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
-            <p className="font-semibold text-sm text-slate-700 dark:text-slate-300">No project packages created yet</p>
-            <p className="text-xs text-slate-400 mt-1 mb-4">Complete the wizard above to synthesize your first complete software package.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {projectsList.map((proj) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {projectsList.map((p) => (
               <div
-                key={proj.id}
-                className="p-5 rounded-2xl border border-slate-200 dark:border-dark-border bg-white dark:bg-dark-bg/50 hover:border-purple-500 transition-all shadow-sm space-y-4 flex flex-col justify-between"
+                key={p.id}
+                className="p-5 rounded-2xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-bg/40 flex flex-col justify-between space-y-3 hover:border-purple-400 transition-all"
               >
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-purple-800 dark:text-brand-lavender bg-purple-100 dark:bg-brand-amethyst/60 px-2.5 py-0.5 rounded border border-purple-200 dark:border-brand-lavender/30">
-                      {proj.domain || 'Software'}
-                    </span>
-                    <span className="text-[10px] font-mono text-slate-400">
-                      {new Date(proj.createdAt).toLocaleDateString()}
-                    </span>
-                  </div>
-
-                  <h4 className="font-display font-bold text-base text-slate-900 dark:text-white">
-                    {proj.name}
+                <div className="space-y-1">
+                  <span className="text-[10px] font-bold uppercase text-purple-700 dark:text-brand-lavender">
+                    {p.domain}
+                  </span>
+                  <h4 className="font-display font-bold text-sm text-slate-900 dark:text-white line-clamp-1">
+                    {p.name}
                   </h4>
-                  <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-2 leading-relaxed">
-                    {proj.description}
+                  <p className="text-xs text-slate-500 line-clamp-2">
+                    {p.description}
                   </p>
-
-                  <div className="flex items-center space-x-2 text-xs font-semibold text-purple-700 dark:text-brand-lavender pt-2">
-                    <FileText className="w-3.5 h-3.5" />
-                    <span>{proj.documents?.length || 0} Documents in Package</span>
-                  </div>
                 </div>
 
-                <div className="pt-3 border-t border-slate-100 dark:border-dark-border flex items-center justify-between">
+                <div className="flex items-center justify-between pt-2 border-t border-slate-200/60 dark:border-dark-border">
+                  <span className="text-[11px] font-semibold text-slate-500">
+                    {p.documents?.length || 0} Documents
+                  </span>
+
                   <Link
-                    href={`/project-docs/${proj.id}`}
+                    href={`/project-docs/${p.id}`}
                     className="inline-flex items-center space-x-1 text-xs font-bold text-purple-700 dark:text-brand-lavender hover:underline"
                   >
                     <span>Open Workspace</span>
-                    <ChevronRight className="w-3.5 h-3.5" />
+                    <ArrowRight className="w-3 h-3" />
                   </Link>
                 </div>
               </div>
             ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

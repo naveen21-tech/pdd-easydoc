@@ -31,33 +31,34 @@ export async function generateVivaQuestions(
   options: GenerateVivaOptions
 ): Promise<VivaQuestionItem[]> {
   const { title, contextContent, difficulty, questionCount, categories } = options;
+  const count = Math.max(4, Math.min(Number(questionCount) || 8, 15));
 
   const categoriesStr = categories && categories.length > 0
     ? categories.join(', ')
     : 'Technical, Architecture, Database, Programming, Security, Testing, Deployment, Project-specific';
 
-  const systemPrompt = `You are a Senior University Examiner and Principal Technical Interviewer.
-Generate ${questionCount} high-caliber viva defense and technical examination questions for "${title}" at "${difficulty}" difficulty.
+  const systemPrompt = `You are a Senior University Examiner, Technical Defense Lead, and Principal Engineer.
+Generate exactly ${count} high-caliber viva defense and technical examination questions for "${title}" at "${difficulty}" difficulty.
 Categories to cover: ${categoriesStr}.
 
 Output ONLY a valid JSON array conforming to this exact schema:
 [
   {
     "id": "viva-1",
-    "question": "Clear, precise technical question",
-    "answer": "Comprehensive, technically sound expected answer with rationale",
+    "question": "Clear, rigorous technical question asking about mechanism, trade-offs, or implementation",
+    "answer": "Exhaustive, technically sound expected answer with reasoning, architecture details, and keywords",
     "difficulty": "${difficulty}",
     "category": "Technical" | "Architecture" | "Database" | "Programming" | "Security" | "Testing" | "Deployment" | "Project-specific"
   }
 ]
-Return ONLY raw JSON without markdown code fences or conversational text.`;
+Return ONLY raw JSON.`;
 
-  const userPrompt = `Project / Document Title: ${title}
-Difficulty: ${difficulty}
-Target Questions: ${questionCount}
+  const userPrompt = `Project / Document Topic: ${title}
+Difficulty Level: ${difficulty}
+Target Questions: ${count}
 
 Context & Specifications:
-${contextContent.slice(0, 7000)}`;
+${(contextContent || title).slice(0, 7000)}`;
 
   // 1. Try Groq AI
   const groqKey = process.env.GROQ_API_KEY;
@@ -75,17 +76,20 @@ ${contextContent.slice(0, 7000)}`;
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userPrompt },
           ],
-          temperature: 0.6,
+          temperature: 0.5,
           max_tokens: 3500,
         }),
       });
 
       if (res.ok) {
         const data = await res.json();
-        const rawJson = data.choices?.[0]?.message?.content?.replace(/```json|```/g, '').trim();
-        if (rawJson) {
-          const parsed = JSON.parse(rawJson);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        const raw = data.choices?.[0]?.message?.content || '';
+        const match = raw.match(/\[\s*\{[\s\S]*\}\s*\]/);
+        if (match) {
+          const parsed = JSON.parse(match[0]);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return sanitizeQuestions(parsed, difficulty, count);
+          }
         }
       }
     } catch (e) {
@@ -100,10 +104,13 @@ ${contextContent.slice(0, 7000)}`;
       const ai = new GoogleGenerativeAI(geminiKey);
       const model = ai.getGenerativeModel({ model: 'gemini-1.5-flash' });
       const res = await model.generateContent(`${systemPrompt}\n\n${userPrompt}`);
-      const rawText = res.response.text().replace(/```json|```/g, '').trim();
-      if (rawText) {
-        const parsed = JSON.parse(rawText);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      const raw = res.response.text();
+      const match = raw.match(/\[\s*\{[\s\S]*\}\s*\]/);
+      if (match) {
+        const parsed = JSON.parse(match[0]);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return sanitizeQuestions(parsed, difficulty, count);
+        }
       }
     } catch (e) {
       console.warn('Gemini viva generation fallback:', e);
@@ -111,45 +118,38 @@ ${contextContent.slice(0, 7000)}`;
   }
 
   // 3. Fallback Synthesizer
-  return generateFallbackVivaQuestions(title, difficulty, questionCount);
+  return generateFallbackVivaQuestions(title, difficulty, count);
 }
 
 export async function evaluateVivaAnswer(
   options: EvaluateAnswerOptions
 ): Promise<VivaEvaluationResult> {
-  const { question, expectedAnswer, userAnswer, category, difficulty } = options;
+  const { question, expectedAnswer, userAnswer } = options;
 
   if (!userAnswer || userAnswer.trim().length < 3) {
     return {
-      score: 10,
+      score: 15,
       correctPoints: ['Attempt recorded'],
-      missingPoints: ['No technical depth or core concepts provided'],
-      suggestedImprovements: ['Explain the core mechanism, architectural trade-offs, and reasoning.'],
-      feedbackComment: 'Answer was too brief or incomplete to demonstrate understanding.',
+      missingPoints: ['No core technical explanation or concepts provided'],
+      suggestedImprovements: ['Explain the core mechanism, architectural rationale, and execution steps.'],
+      feedbackComment: 'Answer was too brief to demonstrate technical competence.',
     };
   }
 
-  const systemPrompt = `You are an expert technical evaluator and viva examiner.
-Evaluate the user's answer to the viva question against the expected standard.
+  const systemPrompt = `You are a principal technical examiner. Evaluate the candidate's answer to the viva defense question against the expected answer.
 Output ONLY a valid JSON object matching this schema:
 {
   "score": 85,
-  "correctPoints": ["Mentioned ACID compliance", "Understood indexing strategy"],
-  "missingPoints": ["Did not mention connection pooling or pgBouncer"],
-  "suggestedImprovements": ["Clarify trade-offs between horizontal vs vertical scaling"],
-  "feedbackComment": "Strong answer demonstrating good conceptual clarity."
-}
-Score must be an integer between 0 and 100 based on technical accuracy, completeness, and reasoning.
-Return ONLY raw JSON.`;
+  "correctPoints": ["Clearly articulated the core concepts", "Identified valid architectural trade-offs"],
+  "missingPoints": ["Did not mention connection pooling or edge caching mechanisms"],
+  "suggestedImprovements": ["Deepen understanding of asynchronous concurrency and error handling."],
+  "feedbackComment": "Strong, concise answer demonstrating solid technical understanding."
+}`;
 
   const userPrompt = `Question: ${question}
-Expected Standard Answer: ${expectedAnswer}
-Category: ${category || 'Technical'} (${difficulty || 'Intermediate'})
+Expected Answer: ${expectedAnswer}
+Candidate's Answer: ${userAnswer}`;
 
-Candidate's Answer:
-"${userAnswer}"`;
-
-  // 1. Try Groq AI
   const groqKey = process.env.GROQ_API_KEY;
   if (groqKey && groqKey !== 'mock-key' && !groqKey.includes('your-groq-key')) {
     try {
@@ -166,16 +166,23 @@ Candidate's Answer:
             { role: 'user', content: userPrompt },
           ],
           temperature: 0.3,
-          max_tokens: 1500,
+          max_tokens: 1200,
         }),
       });
 
       if (res.ok) {
         const data = await res.json();
-        const rawJson = data.choices?.[0]?.message?.content?.replace(/```json|```/g, '').trim();
-        if (rawJson) {
-          const parsed = JSON.parse(rawJson);
-          if (typeof parsed.score === 'number') return parsed;
+        const raw = data.choices?.[0]?.message?.content || '';
+        const match = raw.match(/\{[\s\S]*\}/);
+        if (match) {
+          const parsed = JSON.parse(match[0]);
+          return {
+            score: Math.max(0, Math.min(100, Number(parsed.score) || 75)),
+            correctPoints: Array.isArray(parsed.correctPoints) ? parsed.correctPoints : ['Addressed key parts of the question'],
+            missingPoints: Array.isArray(parsed.missingPoints) ? parsed.missingPoints : [],
+            suggestedImprovements: Array.isArray(parsed.suggestedImprovements) ? parsed.suggestedImprovements : [],
+            feedbackComment: parsed.feedbackComment || 'Satisfactory response.',
+          };
         }
       }
     } catch (e) {
@@ -183,34 +190,35 @@ Candidate's Answer:
     }
   }
 
-  // 2. Try Gemini AI
-  const geminiKey = process.env.GEMINI_API_KEY;
-  if (geminiKey && geminiKey !== 'mock-key' && !geminiKey.includes('your-gemini-key')) {
-    try {
-      const ai = new GoogleGenerativeAI(geminiKey);
-      const model = ai.getGenerativeModel({ model: 'gemini-1.5-flash' });
-      const res = await model.generateContent(`${systemPrompt}\n\n${userPrompt}`);
-      const rawText = res.response.text().replace(/```json|```/g, '').trim();
-      if (rawText) {
-        const parsed = JSON.parse(rawText);
-        if (typeof parsed.score === 'number') return parsed;
-      }
-    } catch (e) {
-      console.warn('Gemini viva evaluation fallback:', e);
-    }
-  }
-
-  // Fallback Evaluator
-  const words = userAnswer.trim().split(/\s+/).length;
-  const score = Math.min(95, Math.max(40, Math.round(words * 2.5) + 35));
+  // Deterministic Evaluation Fallback
+  const uWords = userAnswer.toLowerCase().split(/\s+/);
+  const eWords = expectedAnswer.toLowerCase().split(/\s+/);
+  const matchCount = uWords.filter((w) => w.length > 3 && eWords.includes(w)).length;
+  const calculatedScore = Math.min(95, Math.max(45, Math.round((matchCount / Math.max(5, eWords.length * 0.4)) * 100)));
 
   return {
-    score,
-    correctPoints: ['Addressed the main question subject', 'Demonstrated relevant technical terminology'],
-    missingPoints: ['Could provide deeper architectural trade-offs and edge case handling'],
-    suggestedImprovements: ['Structure the response using: 1. Core Principle, 2. Implementation Rationale, 3. Performance impact.'],
-    feedbackComment: score >= 80 ? 'Well-articulated answer with solid fundamentals.' : 'Good attempt; expand on specific architectural details for higher marks.',
+    score: calculatedScore,
+    correctPoints: ['Addressed the question with relevant terminology', 'Communicated structured explanation'],
+    missingPoints: ['Could expand further on low-level implementation details and trade-offs'],
+    suggestedImprovements: ['Provide concrete examples and reference performance metrics.'],
+    feedbackComment: calculatedScore > 75
+      ? 'Good technical clarity and solid grasp of the subject.'
+      : 'Acceptable foundation, but would benefit from deeper technical specificity.',
   };
+}
+
+function sanitizeQuestions(
+  raw: any[],
+  difficulty: VivaDifficulty,
+  targetCount: number
+): VivaQuestionItem[] {
+  return raw.slice(0, targetCount).map((q, idx) => ({
+    id: q.id || `viva-${idx + 1}-${Date.now()}`,
+    question: String(q.question || `Technical Question ${idx + 1}`).trim(),
+    answer: String(q.answer || 'Expected answer with technical rationale and architectural considerations.').trim(),
+    difficulty: (q.difficulty || difficulty) as VivaDifficulty,
+    category: (q.category || 'Technical') as VivaCategory,
+  }));
 }
 
 function generateFallbackVivaQuestions(
@@ -218,64 +226,60 @@ function generateFallbackVivaQuestions(
   difficulty: VivaDifficulty,
   count: number
 ): VivaQuestionItem[] {
-  const bank: VivaQuestionItem[] = [
+  const bank = [
     {
-      id: 'viva-1',
-      question: `Why did you select the primary database and ORM architecture for ${title}?`,
-      answer: 'PostgreSQL with Prisma was selected for strict ACID compliance, relational integrity, strong TypeScript typing, and seamless migration workflows.',
-      difficulty,
-      category: 'Database',
+      category: 'Architecture' as const,
+      question: `How does the core system topology of ${title} handle horizontal scalability and fault isolation?`,
+      answer: `The system utilizes a decoupled multi-tier architecture where stateless application servers communicate with persistent data stores via connection pools. Load balancers distribute ingress traffic, while asynchronous task queues isolate heavy background jobs to prevent thread blocking.`,
     },
     {
-      id: 'viva-2',
-      question: `How does ${title} handle user authentication, session security, and authorization?`,
-      answer: 'Authentication is enforced via HTTP-only secure cookies and JWT tokens. Protected routes are verified server-side using middleware and Row-Level Security (RLS).',
-      difficulty,
-      category: 'Security',
+      category: 'Security' as const,
+      question: `What security mechanisms prevent unauthorized access, privilege escalation, and SQL injection in ${title}?`,
+      answer: `Authentication is enforced via cryptographic JWT / cookie sessions validated in edge middleware. Data queries use parameterized ORM queries preventing SQL injection, while Row-Level Security (RLS) policies and Role-Based Access Control (RBAC) restrict unauthorized resource mutation.`,
     },
     {
-      id: 'viva-3',
-      question: `What architectural pattern is implemented in ${title}, and how does it support scalability?`,
-      answer: 'The system uses a modular multi-tier architecture separating presentation, API routes, and database layers, allowing serverless horizontal scaling without bottlenecks.',
-      difficulty,
-      category: 'Architecture',
+      category: 'Database' as const,
+      question: `Explain the database schema indexing strategy and transaction isolation level used in ${title}.`,
+      answer: `Indexes (B-Trees) are applied to primary lookups such as user foreign keys and timestamps to optimize query latency. Critical multi-table mutations are wrapped in ACID-compliant atomic transactions to guarantee data consistency during concurrent requests.`,
     },
     {
-      id: 'viva-4',
-      question: `How are API latency and heavy document generation workloads handled without degrading UI responsiveness?`,
-      answer: 'Heavy document processing is handled via asynchronous task pipelines with progress feedback and optimized server-side binary generation.',
-      difficulty,
-      category: 'Technical',
+      category: 'Programming' as const,
+      question: `How are asynchronous operations, error boundaries, and state hydration managed in the frontend?`,
+      answer: `Server-Side Rendering (SSR) streams pre-rendered HTML while React hydrates interactive state client-side. Async operations use native Fetch with exponential backoff and central try-catch error boundaries preventing cascading application crashes.`,
     },
     {
-      id: 'viva-5',
-      question: `What automated testing and quality assurance strategies are utilized in this project?`,
-      answer: 'The project implements end-to-end Selenium web automation, API route benchmarks, and OWASP vulnerability scans to ensure zero regressions.',
-      difficulty,
-      category: 'Testing',
+      category: 'Testing' as const,
+      question: `What automated testing strategy ensures regression prevention across major releases of ${title}?`,
+      answer: `A comprehensive testing pyramid includes unit tests for business utilities, integration tests for API endpoints, and end-to-end verification matrices. Automated CI/CD pipelines run these test suites prior to staging deployments.`,
     },
     {
-      id: 'viva-6',
-      question: `How are environment secrets and API keys protected in ${title}?`,
-      answer: 'All API keys are strictly confined to server-side runtime environments (process.env) and never exposed or leaked to client bundles.',
-      difficulty,
-      category: 'Security',
+      category: 'Deployment' as const,
+      question: `Describe the zero-downtime deployment process and environment variable management for production.`,
+      answer: `Deployments use containerized builds or edge serverless functions with blue-green routing. Environment secrets are injected via secure vaults without exposing keys in client bundles, allowing instant rollbacks if health check probes fail.`,
     },
     {
-      id: 'viva-7',
-      question: `What are the primary performance bottlenecks of this system, and how can they be mitigated in future releases?`,
-      answer: 'Key bottlenecks include AI inference latency and complex PDF pagination; mitigation involves edge caching, connection pooling, and client-side pre-rendering.',
-      difficulty,
-      category: 'Deployment',
+      category: 'Project-specific' as const,
+      question: `What is the single biggest technical trade-off made during the development of ${title}?`,
+      answer: `Balancing sub-second response latency with heavy AI computation was addressed by implementing streaming responses, local caching layers, and asynchronous background workers instead of synchronous blocking execution.`,
     },
     {
-      id: 'viva-8',
-      question: `Explain how the modules in ${title} communicate and maintain loose coupling.`,
-      answer: 'Modules communicate via strongly-typed RESTful endpoints and shared domain types, allowing individual components to be refactored independently.',
-      difficulty,
-      category: 'Programming',
+      category: 'Technical' as const,
+      question: `How would ${title} behave under a 10x traffic spike, and what caching strategies mitigate database bottlenecks?`,
+      answer: `Redis in-memory caching serves repeated read operations, while CDN edge caches deliver static assets. Database connection pooling (e.g. pgBouncer) prevents connection exhaustion, allowing auto-scaling groups to absorb traffic bursts smoothly.`,
     },
   ];
 
-  return bank.slice(0, Math.min(count, bank.length));
+  const questions: VivaQuestionItem[] = [];
+  for (let i = 0; i < count; i++) {
+    const item = bank[i % bank.length];
+    questions.push({
+      id: `viva-${i + 1}`,
+      question: item.question,
+      answer: item.answer,
+      difficulty,
+      category: item.category,
+    });
+  }
+
+  return questions;
 }

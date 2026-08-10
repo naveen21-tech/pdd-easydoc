@@ -131,7 +131,6 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
     { name: 'Presentation Studio', href: '/presentation-studio', icon: Presentation },
     { name: 'Viva Studio', href: '/viva-studio', icon: HelpCircle },
     { name: 'Document Health', href: '/document-health', icon: Activity },
-    { name: 'Verification', href: '/verification', icon: ShieldCheck },
     { name: 'Career Studio', href: '/career-studio', icon: FileCheck2 },
     { name: 'Templates', href: '/templates', icon: FileText },
     { name: 'History', href: '/history', icon: Clock },
