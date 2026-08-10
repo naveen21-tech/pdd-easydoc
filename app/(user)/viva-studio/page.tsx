@@ -30,7 +30,7 @@ import {
   Volume2,
   Zap,
 } from 'lucide-react';
-import { VivaQuestionItem, VivaDifficulty, VivaCategory, ProjectItem, DocumentItem } from '@/lib/types';
+import { VivaQuestionItem, VivaDifficulty, VivaCategory, DocumentItem } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -58,16 +58,13 @@ const TOPIC_PRESETS = [
 
 function VivaStudioContent() {
   const searchParams = useSearchParams();
-  const initialProjectId = searchParams?.get('projectId');
   const initialDocId = searchParams?.get('docId');
 
   // Input states
-  const [sourceType, setSourceType] = useState<'project' | 'document' | 'custom'>(
-    initialProjectId ? 'project' : initialDocId ? 'document' : 'project'
+  const [sourceType, setSourceType] = useState<'document' | 'custom'>(
+    initialDocId ? 'document' : 'custom'
   );
-  const [projects, setProjects] = useState<ProjectItem[]>([]);
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
-  const [selectedProjectId, setSelectedProjectId] = useState<string>(initialProjectId || '');
   const [selectedDocId, setSelectedDocId] = useState<string>(initialDocId || '');
   const [customTopic, setCustomTopic] = useState('Distributed Cloud Systems & Microservices');
   const [difficulty, setDifficulty] = useState<VivaDifficulty>('Intermediate');
@@ -96,28 +93,16 @@ function VivaStudioContent() {
 
   const fetchInitialData = async () => {
     try {
-      const [projRes, docRes] = await Promise.all([
-        fetch('/api/projects'),
-        fetch('/api/documents'),
-      ]);
-
-      if (projRes.ok) {
-        const pData = await projRes.json();
-        const pList = pData.projects || [];
-        setProjects(pList);
-        if (!selectedProjectId && pList.length > 0) {
-          setSelectedProjectId(pList[0].id);
-        } else if (pList.length === 0 && !initialDocId) {
-          setSourceType('custom');
-        }
-      }
-
+      const docRes = await fetch('/api/documents');
       if (docRes.ok) {
         const dData = await docRes.json();
         const dList = dData.documents || [];
         setDocuments(dList);
         if (!selectedDocId && dList.length > 0) {
           setSelectedDocId(dList[0].id);
+          setSourceType('document');
+        } else if (dList.length === 0) {
+          setSourceType('custom');
         }
       }
     } catch (e) {
@@ -146,9 +131,7 @@ function VivaStudioContent() {
         categories: selectedCategories,
       };
 
-      if (sourceType === 'project') {
-        payload.projectId = selectedProjectId;
-      } else if (sourceType === 'document') {
+      if (sourceType === 'document') {
         payload.documentId = selectedDocId;
       } else {
         payload.title = customTopic || 'Custom Software Topic';
@@ -381,16 +364,6 @@ function VivaStudioContent() {
             {/* Source Mode Tabs */}
             <div className="flex items-center bg-slate-100 dark:bg-dark-bg p-1 rounded-xl border border-slate-200 dark:border-dark-border text-xs font-bold">
               <button
-                onClick={() => setSourceType('project')}
-                className={`px-3 py-1.5 rounded-lg transition-all ${
-                  sourceType === 'project'
-                    ? 'bg-white dark:bg-dark-surface text-purple-800 dark:text-brand-lavender shadow-sm'
-                    : 'text-slate-500 hover:text-slate-800'
-                }`}
-              >
-                From Project
-              </button>
-              <button
                 onClick={() => setSourceType('document')}
                 className={`px-3 py-1.5 rounded-lg transition-all ${
                   sourceType === 'document'
@@ -398,7 +371,7 @@ function VivaStudioContent() {
                     : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
-                From Document
+                From Saved Document
               </button>
               <button
                 onClick={() => setSourceType('custom')}
@@ -408,44 +381,16 @@ function VivaStudioContent() {
                     : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
-                Custom Topic
+                Custom Topic / Subject
               </button>
             </div>
           </div>
 
           {/* Source Input Picker */}
-          {sourceType === 'project' && (
-            <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                Select Software Project Package
-              </label>
-              {projects.length > 0 ? (
-                <select
-                  value={selectedProjectId}
-                  onChange={(e) => setSelectedProjectId(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl text-xs font-semibold text-slate-900 dark:text-white"
-                >
-                  {projects.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name} ({p.domain})
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 rounded-xl text-xs text-amber-800 dark:text-amber-300 flex items-center justify-between">
-                  <span>No saved projects found.</span>
-                  <button onClick={() => setSourceType('custom')} className="font-bold underline text-purple-700">
-                    Switch to Custom Topic
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-
           {sourceType === 'document' && (
             <div className="space-y-1.5">
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                Select Source Document
+                Select Source Document ({documents.length} Available)
               </label>
               {documents.length > 0 ? (
                 <select
@@ -460,8 +405,11 @@ function VivaStudioContent() {
                   ))}
                 </select>
               ) : (
-                <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 rounded-xl text-xs text-amber-800 dark:text-amber-300">
-                  No documents found. Please switch to Custom Topic mode.
+                <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 rounded-xl text-xs text-amber-800 dark:text-amber-300 flex items-center justify-between">
+                  <span>No saved documents found in workspace.</span>
+                  <button onClick={() => setSourceType('custom')} className="font-bold underline text-purple-700">
+                    Switch to Custom Topic
+                  </button>
                 </div>
               )}
             </div>

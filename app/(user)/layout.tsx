@@ -127,7 +127,6 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Generate AI', href: '/generate', icon: Sparkles },
-    { name: 'Project Studio', href: '/project-docs', icon: FolderGit2 },
     { name: 'Presentation Studio', href: '/presentation-studio', icon: Presentation },
     { name: 'Viva Studio', href: '/viva-studio', icon: HelpCircle },
     { name: 'Document Health', href: '/document-health', icon: Activity },

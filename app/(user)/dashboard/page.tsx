@@ -247,28 +247,7 @@ export default function UserDashboard() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Card 1: Project Documentation Generator */}
-          <div className="glass-panel p-6 rounded-2xl border border-slate-200 dark:border-dark-border hover:border-purple-500 transition-all flex flex-col justify-between space-y-4 group">
-            <div className="space-y-2">
-              <div className="w-10 h-10 rounded-2xl bg-purple-100 dark:bg-brand-amethyst text-purple-700 dark:text-brand-lavender flex items-center justify-center border border-purple-200 dark:border-brand-lavender/30">
-                <FolderGit2 className="w-5 h-5" />
-              </div>
-              <h4 className="font-display font-bold text-base text-slate-900 dark:text-white group-hover:text-purple-700 dark:group-hover:text-brand-lavender transition-colors">
-                Project Documentation
-              </h4>
-              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                Create complete software project documentation packages (SRS, Architecture, DB Design, API Docs, Test Cases) from your project details.
-              </p>
-            </div>
-            <Link
-              href="/project-docs"
-              className="inline-flex items-center justify-center space-x-2 bg-gradient-to-r from-purple-700 to-indigo-800 dark:from-brand-purple dark:to-brand-amethyst text-white font-bold text-xs py-2.5 px-4 rounded-xl shadow-sm hover:shadow-md transition-all"
-            >
-              <span>Create Project Documentation</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
 
           {/* Card 2: Document -> PPT */}
           <div className="glass-panel p-6 rounded-2xl border border-slate-200 dark:border-dark-border hover:border-purple-500 transition-all flex flex-col justify-between space-y-4 group">

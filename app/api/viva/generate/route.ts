@@ -14,29 +14,27 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { projectId, documentId, title, difficulty = 'Intermediate', questionCount = 8, categories } = body;
+    const { documentId, title, difficulty = 'Intermediate', questionCount = 8, categories } = body;
 
-    let targetTitle = title || 'Software Project';
+    let targetTitle = (title || '').trim();
     let contextText = '';
 
-    // If projectId is provided, gather project specs and documents
-    if (projectId) {
-      const proj = await prisma.project.findFirst({
-        where: { id: projectId, userId: profile.id },
-        include: { documents: true },
-      });
-      if (proj) {
-        targetTitle = proj.name;
-        contextText = `Project: ${proj.name}\nDomain: ${proj.domain}\nDescription: ${proj.description}\nModules: ${JSON.stringify(proj.modules)}\n${proj.documents.map((d: any) => `Document: ${d.title}\n${d.content.slice(0, 800)}`).join('\n\n')}`;
+    if (documentId) {
+      try {
+        const doc = await prisma.document.findFirst({
+          where: { id: documentId, userId: profile.id },
+        });
+        if (doc) {
+          targetTitle = doc.title;
+          contextText = doc.content;
+        }
+      } catch (dbErr) {
+        console.warn('Prisma document lookup for viva:', dbErr);
       }
-    } else if (documentId) {
-      const doc = await prisma.document.findFirst({
-        where: { id: documentId, userId: profile.id },
-      });
-      if (doc) {
-        targetTitle = doc.title;
-        contextText = doc.content;
-      }
+    }
+
+    if (!targetTitle) {
+      targetTitle = 'Software Architecture & System Design';
     }
 
     if (!contextText) {
@@ -47,24 +45,22 @@ export async function POST(req: Request) {
     const questions = await generateVivaQuestions({
       title: targetTitle,
       contextContent: contextText,
-      difficulty: difficulty as VivaDifficulty,
+      difficulty: (difficulty as VivaDifficulty) || 'Intermediate',
       questionCount: Number(questionCount) || 8,
       categories: categories as VivaCategory[],
     });
 
-    // 2. Persist in database
+    // 2. Persist session in database
     let createdSession: any = null;
     try {
       createdSession = await prisma.vivaSession.create({
         data: {
           userId: profile.id,
-          projectId: projectId || null,
           documentId: documentId || null,
           title: targetTitle,
           difficulty,
           questions: questions as any,
         },
-
       });
     } catch (dbErr) {
       console.warn('Prisma vivaSession create note:', dbErr);
