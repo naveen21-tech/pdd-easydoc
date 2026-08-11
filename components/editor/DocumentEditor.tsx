@@ -421,7 +421,6 @@ Additional User Instructions: ${aiInstruction || 'Improve readability, structure
           templateName,
           tone: selectedAiTone,
           instructions: prompt + `\n\nContent to refine:\n${content}`,
-          provider: 'gemini',
         }),
       });
 

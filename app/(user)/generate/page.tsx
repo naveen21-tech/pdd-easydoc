@@ -8,16 +8,13 @@ import {
   FileText,
   Copy,
   Check,
-  Bot,
   Zap,
-  Cpu,
   Loader2,
   FileCheck,
   AlertCircle,
   CheckCircle2,
   FileType,
 } from 'lucide-react';
-import { AIProvider } from '@/lib/types';
 import { downloadDocumentFile, ExportFormat } from '@/lib/download';
 
 export const dynamic = 'force-dynamic';
@@ -27,7 +24,6 @@ function GenerateFormAndPreview() {
 
   const [title, setTitle] = useState('');
   const [tone, setTone] = useState('Professional');
-  const [provider, setProvider] = useState<AIProvider>('gemini');
   const [instructions, setInstructions] = useState('');
   const [templateName, setTemplateName] = useState('');
   const [templateId, setTemplateId] = useState('');
@@ -71,7 +67,6 @@ function GenerateFormAndPreview() {
           templateName: templateName || undefined,
           tone,
           instructions,
-          provider,
         }),
       });
 
@@ -175,39 +170,6 @@ function GenerateFormAndPreview() {
               />
             </div>
 
-            {/* AI Provider Selector */}
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-200 mb-2">
-                AI Engine Provider
-              </label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {[
-                  { id: 'groq', name: 'Groq Llama-3', icon: Zap },
-                  { id: 'gemini', name: 'Google Gemini', icon: Sparkles },
-                  { id: 'openai', name: 'OpenAI GPT-4', icon: Bot },
-                  { id: 'anthropic', name: 'Claude 3.5', icon: Cpu },
-                ].map((p) => {
-                  const Icon = p.icon;
-                  const selected = provider === p.id;
-                  return (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => setProvider(p.id as AIProvider)}
-                      className={`p-2.5 rounded-xl border text-xs font-semibold flex flex-col items-center justify-center space-y-1 transition-all ${
-                        selected
-                          ? 'bg-purple-50 dark:bg-brand-amethyst border-purple-600 dark:border-brand-lavender text-purple-700 dark:text-brand-lavender ring-2 ring-purple-600/20'
-                          : 'bg-slate-50 dark:bg-dark-bg border-slate-200 dark:border-dark-border text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-dark-hover'
-                      }`}
-                    >
-                      <Icon className={`w-4.5 h-4.5 ${selected ? 'text-purple-600 dark:text-brand-lavender' : 'text-slate-400 dark:text-slate-500'}`} />
-                      <span className="text-[11px] truncate">{p.name}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
             {/* Tone Selector */}
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-200 mb-2">
@@ -291,7 +253,7 @@ function GenerateFormAndPreview() {
                   <Sparkles className="w-6 h-6 animate-spin" />
                 </div>
                 <div>
-                  <p className="font-display font-bold text-slate-900 dark:text-white text-base">Processing with {provider.toUpperCase()}...</p>
+                  <p className="font-display font-bold text-slate-900 dark:text-white text-base">Processing Document with EasyDoc AI...</p>
                   <p className="text-xs text-slate-500 dark:text-slate-400">Formatting sections, tables, and executive summary</p>
                 </div>
               </div>
@@ -299,7 +261,7 @@ function GenerateFormAndPreview() {
               <div className="space-y-4 text-slate-900 dark:text-white">
                 {responseTimeMs && (
                   <div className="text-[11px] font-mono text-slate-500 dark:text-slate-400 pb-2 border-b border-slate-200 dark:border-dark-border flex items-center justify-between">
-                    <span>Provider: {provider.toUpperCase()}</span>
+                    <span className="text-purple-600 dark:text-brand-lavender font-bold">EasyDoc AI Synthesis</span>
                     <span>Response Time: {responseTimeMs}ms</span>
                   </div>
                 )}

@@ -98,7 +98,6 @@ REQUIREMENTS:
           title: `${fullName} - ${targetTitle} (ATS Resume)`,
           tone: 'Professional & Impactful',
           instructions,
-          provider: 'gemini',
         }),
       });
 
