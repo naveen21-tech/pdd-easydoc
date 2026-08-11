@@ -33,6 +33,7 @@ import {
   Activity,
   ShieldCheck,
   GraduationCap,
+  MessageSquare,
 } from 'lucide-react';
 
 import { createClient } from '@/lib/supabase/client';
@@ -128,6 +129,7 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Generate AI', href: '/generate', icon: Sparkles },
+    { name: 'Document Chat', href: '/doc-chat', icon: MessageSquare },
     { name: 'Faculty Studio', href: '/faculty-studio', icon: GraduationCap },
     { name: 'Presentation Studio', href: '/presentation-studio', icon: Presentation },
     { name: 'Viva Studio', href: '/viva-studio', icon: HelpCircle },

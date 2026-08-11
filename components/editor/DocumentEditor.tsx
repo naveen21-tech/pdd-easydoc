@@ -60,10 +60,12 @@ import {
   Activity,
   QrCode,
   BookOpen,
+  MessageSquare,
 } from 'lucide-react';
 import { downloadDocumentFile, ExportFormat } from '@/lib/download';
 import { paginateDocument, PaginatedPage, insertOrUpdateTableOfContents } from '@/lib/export/pagination';
 import { HealthReportItem, HealthIssueItem } from '@/lib/types';
+import { DocChatDrawer } from '@/components/doc-chat/DocChatDrawer';
 
 export interface DocumentEditorProps {
   documentId: string;
@@ -135,6 +137,7 @@ export function DocumentEditor({
   // View & Zoom state
   const [zoom, setZoom] = useState(100);
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [showDocChatDrawer, setShowDocChatDrawer] = useState(false);
 
   // AI Assistant Action state
   const [aiProcessing, setAiProcessing] = useState(false);
@@ -582,6 +585,16 @@ Additional User Instructions: ${aiInstruction || 'Improve readability, structure
           >
             <FileType className="w-3.5 h-3.5 text-purple-400" />
             <span className="hidden lg:inline">Header/Footer</span>
+          </button>
+
+          {/* Chat with Document Button */}
+          <button
+            onClick={() => setShowDocChatDrawer(true)}
+            className="bg-gradient-to-r from-purple-700 to-indigo-800 hover:from-purple-600 hover:to-indigo-700 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 shadow-md"
+            title="Chat with Document (Grounded QA & RAG)"
+          >
+            <MessageSquare className="w-3.5 h-3.5 text-purple-200" />
+            <span className="hidden sm:inline">Chat with Doc</span>
           </button>
 
           {/* Document Health Diagnostics Button */}
@@ -1546,6 +1559,15 @@ Additional User Instructions: ${aiInstruction || 'Improve readability, structure
           </div>
         </div>
       )}
+
+      {/* Slide-over Document Chat Drawer */}
+      <DocChatDrawer
+        isOpen={showDocChatDrawer}
+        onClose={() => setShowDocChatDrawer(false)}
+        documentId={documentId}
+        documentTitle={title}
+        documentContent={content}
+      />
     </div>
   );
 }

@@ -341,3 +341,47 @@ export interface FacultyDocRequest {
   additionalDetails?: string;
 }
 
+// -------------------------------------------------------------
+// DOCUMENT CHAT / RAG TYPES
+// -------------------------------------------------------------
+export interface DocumentChunk {
+  id: string;
+  chunkIndex: number;
+  sectionTitle: string;
+  content: string;
+  wordCount: number;
+}
+
+export interface DocumentSourceReference {
+  chunkIndex: number;
+  sectionTitle: string;
+  snippet: string;
+  relevanceScore: number;
+}
+
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  sources?: DocumentSourceReference[];
+  timestamp: string;
+  isAvailable?: boolean;
+}
+
+export interface DocExtractResponse {
+  success: boolean;
+  documentTitle: string;
+  fileType: string;
+  totalWords: number;
+  chunkCount: number;
+  chunks: DocumentChunk[];
+  suggestedQuestions: string[];
+}
+
+export interface DocChatQueryResponse {
+  success: boolean;
+  answer: string;
+  relevantSources: DocumentSourceReference[];
+  isAvailable: boolean;
+}
+
