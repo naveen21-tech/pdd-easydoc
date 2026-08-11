@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import {
   Presentation,
   Sparkles,
@@ -196,7 +196,8 @@ function PresentationStudioContent() {
   const [currentDeckTitle, setCurrentDeckTitle] = useState<string>('EasyDoc Keynote Deck');
   const [savedPresentationId, setSavedPresentationId] = useState<string | null>(null);
 
-  // Status & UI States
+  const router = useRouter();
+  const [openingInEditor, setOpeningInEditor] = useState<boolean>(false);
   const [generating, setGenerating] = useState<boolean>(false);
   const [saving, setSaving] = useState<boolean>(false);
   const [enhancingSlide, setEnhancingSlide] = useState<boolean>(false);
@@ -442,6 +443,51 @@ function PresentationStudioContent() {
     }
   };
 
+  const handleOpenInDocumentEditor = async () => {
+    if (currentDeck.length === 0) return;
+    setOpeningInEditor(true);
+    try {
+      let markdownContent = `# ${currentDeckTitle}\n\n[TEMPLATE_BADGE] Keynote Presentation • ${selectedStyle}\n\n`;
+      currentDeck.forEach((s, idx) => {
+        markdownContent += `## Slide ${idx + 1}: ${s.title || 'Untitled Topic'}\n`;
+        if (s.subtitle) {
+          markdownContent += `*${s.subtitle}*\n\n`;
+        }
+        if (Array.isArray(s.bullets) && s.bullets.length > 0) {
+          s.bullets.forEach((b) => {
+            markdownContent += `- ${b}\n`;
+          });
+          markdownContent += '\n';
+        }
+        if (s.notes) {
+          markdownContent += `> **Presenter Notes:** ${s.notes}\n\n`;
+        }
+        markdownContent += '---\n\n';
+      });
+
+      const res = await fetch('/api/documents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: `${currentDeckTitle} (Document Edition)`,
+          content: markdownContent.trim(),
+        }),
+      });
+
+      if (res.ok) {
+        const doc = await res.json();
+        router.push(`/editor/${doc.id}`);
+      } else {
+        alert('Failed to create editable document from presentation.');
+      }
+    } catch (e: any) {
+      console.error(e);
+      alert('Error opening in editor: ' + (e?.message || 'Unknown error'));
+    } finally {
+      setOpeningInEditor(false);
+    }
+  };
+
   // Slide Deck Manipulation Helpers
   const activeSlide = currentDeck[activeSlideIndex] || null;
   const currentThemeConfig = PRESENTATION_STYLES.find((s) => s.id === selectedStyle) || PRESENTATION_STYLES[0];
@@ -571,6 +617,16 @@ function PresentationStudioContent() {
               >
                 {enrichingDeck ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
                 <span className="hidden sm:inline">AI Enrich All</span>
+              </button>
+
+              <button
+                onClick={handleOpenInDocumentEditor}
+                disabled={openingInEditor}
+                className="inline-flex items-center space-x-1.5 bg-purple-900/60 hover:bg-purple-800 border border-purple-600 text-purple-200 hover:text-white px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm"
+                title="Convert this slide deck into a full Word-Style document and open in editor"
+              >
+                {openingInEditor ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Edit3 className="w-3.5 h-3.5 text-purple-300" />}
+                <span className="hidden sm:inline">Open in Word Editor</span>
               </button>
 
               <button
@@ -864,20 +920,30 @@ function PresentationStudioContent() {
                 {/* Slide Toolbar */}
                 <div className="p-3 bg-slate-50 dark:bg-dark-bg/60 border-b border-slate-200 dark:border-dark-border flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center space-x-2">
-                    <span className="text-xs font-mono font-bold text-purple-700 dark:text-brand-lavender bg-purple-100 dark:bg-brand-amethyst px-2.5 py-0.5 rounded-md">
+                    <span className="text-xs font-mono font-bold text-purple-700 dark:text-brand-lavender bg-purple-100 dark:bg-brand-amethyst px-2.5 py-1 rounded-lg">
                       Slide {activeSlideIndex + 1} of {currentDeck.length}
                     </span>
-                    <span className="text-[10px] uppercase font-bold text-slate-400">
-                      Layout: {activeSlide.layout}
-                    </span>
+
+                    {/* Layout Selector */}
+                    <select
+                      value={activeSlide.layout || 'content'}
+                      onChange={(e) => updateActiveSlide('layout', e.target.value)}
+                      className="bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border text-slate-700 dark:text-slate-200 text-xs font-bold px-2 py-1 rounded-lg focus:outline-none cursor-pointer"
+                    >
+                      <option value="title">Title Layout</option>
+                      <option value="content">Content Layout</option>
+                      <option value="split">Split Columns</option>
+                      <option value="stats">Stats & Metrics</option>
+                      <option value="conclusion">Conclusion</option>
+                    </select>
                   </div>
 
-                  <div className="flex items-center space-x-1">
+                  <div className="flex items-center space-x-1.5">
                     {/* AI Auto-Fill / Enhance Active Slide */}
                     <button
                       onClick={handleEnhanceActiveSlide}
                       disabled={enhancingSlide}
-                      className="inline-flex items-center space-x-1 text-xs font-bold text-purple-700 dark:text-brand-lavender bg-purple-100 dark:bg-brand-amethyst/60 hover:bg-purple-200 px-3 py-1.5 rounded-lg border border-purple-200 dark:border-brand-lavender/30 transition-all mr-2"
+                      className="inline-flex items-center space-x-1 text-xs font-bold text-purple-700 dark:text-brand-lavender bg-purple-100 dark:bg-brand-amethyst/60 hover:bg-purple-200 px-3 py-1.5 rounded-lg border border-purple-200 dark:border-brand-lavender/30 transition-all mr-1"
                       title="Auto-generate detailed bullet points and speaker notes for this slide based on its title"
                     >
                       {enhancingSlide ? (
@@ -885,7 +951,17 @@ function PresentationStudioContent() {
                       ) : (
                         <Sparkles className="w-3.5 h-3.5 text-purple-600 dark:text-brand-lavender" />
                       )}
-                      <span>AI Auto-Fill Slide</span>
+                      <span>AI Auto-Fill</span>
+                    </button>
+
+                    <button
+                      onClick={handleOpenInDocumentEditor}
+                      disabled={openingInEditor}
+                      className="inline-flex items-center space-x-1 text-xs font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-dark-surface hover:bg-slate-100 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-dark-border transition-all mr-1"
+                      title="Edit slide contents in full Word Document Editor"
+                    >
+                      <Edit3 className="w-3.5 h-3.5 text-purple-500" />
+                      <span className="hidden sm:inline">Editor</span>
                     </button>
 
                     <button
@@ -951,21 +1027,22 @@ function PresentationStudioContent() {
                       )}
 
                       {/* Bullets List */}
-                      <div className="space-y-2 pt-1">
+                      <div className="space-y-2.5 pt-1">
                         {(activeSlide.bullets || []).map((b, bIdx) => (
                           <div key={bIdx} className="flex items-start space-x-2 group">
-                            <span className="text-purple-400 font-bold mt-0.5 shrink-0">•</span>
+                            <span className="text-purple-400 font-bold mt-1 shrink-0">•</span>
                             <textarea
-                              rows={1}
+                              rows={2}
                               value={b}
                               onChange={(e) => updateBulletPoint(bIdx, e.target.value)}
-                              className="flex-1 bg-transparent text-xs sm:text-sm text-slate-100 focus:outline-none border-b border-transparent focus:border-purple-400/50 resize-none"
+                              placeholder="Enter key technical takeaway or bullet point..."
+                              className="flex-1 bg-white/5 hover:bg-white/10 focus:bg-white/15 px-2.5 py-1.5 rounded-lg text-xs sm:text-sm text-slate-100 focus:outline-none border border-purple-500/20 focus:border-purple-400 transition-all resize-y"
                             />
                             <button
                               onClick={() => removeBulletPoint(bIdx)}
-                              className="opacity-0 group-hover:opacity-100 p-0.5 text-rose-400 hover:text-rose-300 transition-opacity shrink-0"
+                              className="opacity-0 group-hover:opacity-100 p-1 text-rose-400 hover:text-rose-300 transition-opacity shrink-0"
                             >
-                              <Trash2 className="w-3 h-3" />
+                              <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
                         ))}
@@ -974,7 +1051,7 @@ function PresentationStudioContent() {
                       <div className="flex items-center space-x-3 pt-1">
                         <button
                           onClick={addBulletPoint}
-                          className="inline-flex items-center space-x-1 text-[11px] font-bold text-purple-300 hover:text-white"
+                          className="inline-flex items-center space-x-1 text-xs font-bold text-purple-300 hover:text-white bg-white/10 px-2.5 py-1 rounded-lg transition-all"
                         >
                           <Plus className="w-3 h-3" />
                           <span>Add Bullet Point</span>
@@ -983,7 +1060,7 @@ function PresentationStudioContent() {
                         <button
                           onClick={handleEnhanceActiveSlide}
                           disabled={enhancingSlide}
-                          className="inline-flex items-center space-x-1 text-[11px] font-bold text-emerald-400 hover:text-emerald-300"
+                          className="inline-flex items-center space-x-1 text-xs font-bold text-emerald-400 hover:text-emerald-300 bg-emerald-950/40 border border-emerald-800/60 px-2.5 py-1 rounded-lg transition-all"
                         >
                           <Wand2 className="w-3 h-3" />
                           <span>AI Auto-Expand Points</span>

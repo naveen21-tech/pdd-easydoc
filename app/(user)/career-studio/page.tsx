@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   FileCheck2,
   Sparkles,
@@ -173,32 +174,37 @@ export default function CareerStudioPage() {
     }
   };
 
-  // Export Resume as Markdown Text / PDF
-  const handleExportResumeText = () => {
-    const rawResume = `# ${resume.personalInfo.fullName}
-${resume.personalInfo.email} | ${resume.personalInfo.phone} | ${resume.personalInfo.location}
-LinkedIn: ${resume.personalInfo.linkedIn} | GitHub: ${resume.personalInfo.gitHub}
+  const router = useRouter();
+  const [openingInEditor, setOpeningInEditor] = useState(false);
+  const [resumeMarkdown, setResumeMarkdown] = useState('');
+
+  const buildResumeMarkdown = (data: ResumeData) => {
+    return `# ${data.personalInfo.fullName}
+${data.personalInfo.email} | ${data.personalInfo.phone} | ${data.personalInfo.location}
+LinkedIn: ${data.personalInfo.linkedIn} | GitHub: ${data.personalInfo.gitHub}
+
+[TEMPLATE_BADGE] ATS Professional Resume • ${data.targetRole || 'Software Engineer'}
 
 ## PROFESSIONAL SUMMARY
-${resume.summary}
+${data.summary}
 
 ## CORE TECHNICAL SKILLS
-- Programming: ${resume.skills.programmingLanguages.join(', ')}
-- Frameworks: ${resume.skills.frameworks.join(', ')}
-- Databases: ${resume.skills.databases.join(', ')}
-- Tools: ${resume.skills.tools.join(', ')}
-- Soft Skills: ${resume.skills.softSkills.join(', ')}
+- Programming: ${data.skills.programmingLanguages.join(', ')}
+- Frameworks: ${data.skills.frameworks.join(', ')}
+- Databases: ${data.skills.databases.join(', ')}
+- Tools: ${data.skills.tools.join(', ')}
+- Soft Skills: ${data.skills.softSkills.join(', ')}
 
 ## PROFESSIONAL EXPERIENCE
-${resume.experience
+${data.experience
   .map(
     (e) => `### ${e.role} — ${e.company} (${e.startDate} - ${e.endDate})
 ${e.responsibilities.map((r) => `- ${r}`).join('\n')}`
   )
   .join('\n\n')}
 
-## PROJECTS
-${resume.projects
+## TECHNICAL PROJECTS
+${data.projects
   .map(
     (p) => `### ${p.name}
 Technologies: ${p.technologies.join(', ')}
@@ -208,12 +214,75 @@ ${p.achievements.map((a) => `- ${a}`).join('\n')}`
   .join('\n\n')}
 
 ## EDUCATION
-${resume.education.map((ed) => `- ${ed.degree}, ${ed.institution} (${ed.year}) — GPA: ${ed.gpaOrScore}`).join('\n')}
+${data.education.map((ed) => `- ${ed.degree}, ${ed.institution} (${ed.year}) — GPA: ${ed.gpaOrScore}`).join('\n')}
 
 ## CERTIFICATIONS
-${resume.certifications.map((c) => `- ${c}`).join('\n')}
+${data.certifications.map((c) => `- ${c}`).join('\n')}
 `;
+  };
 
+  useEffect(() => {
+    setResumeMarkdown(buildResumeMarkdown(resume));
+  }, [resume]);
+
+  // Open Resume in Full Document Editor
+  const handleOpenResumeInDocumentEditor = async () => {
+    setOpeningInEditor(true);
+    try {
+      const contentToSave = resumeMarkdown || buildResumeMarkdown(resume);
+      const res = await fetch('/api/documents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: `${resume.personalInfo.fullName} - ATS Resume`,
+          content: contentToSave.trim(),
+        }),
+      });
+
+      if (res.ok) {
+        const doc = await res.json();
+        router.push(`/editor/${doc.id}`);
+      } else {
+        alert('Failed to save resume into document editor.');
+      }
+    } catch (e: any) {
+      console.error(e);
+      alert('Error opening in editor: ' + (e?.message || 'Unknown error'));
+    } finally {
+      setOpeningInEditor(false);
+    }
+  };
+
+  // Open Any Career Document in Document Editor
+  const handleOpenCareerDocInEditor = async (docTitle: string, docContent: string) => {
+    setOpeningInEditor(true);
+    try {
+      const res = await fetch('/api/documents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: docTitle,
+          content: docContent.trim(),
+        }),
+      });
+
+      if (res.ok) {
+        const doc = await res.json();
+        router.push(`/editor/${doc.id}`);
+      } else {
+        alert('Failed to save document.');
+      }
+    } catch (e: any) {
+      console.error(e);
+      alert('Error opening in editor: ' + (e?.message || 'Unknown error'));
+    } finally {
+      setOpeningInEditor(false);
+    }
+  };
+
+  // Export Resume as Markdown Text
+  const handleExportResumeText = () => {
+    const rawResume = resumeMarkdown || buildResumeMarkdown(resume);
     const blob = new Blob([rawResume], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -248,10 +317,10 @@ ${resume.certifications.map((c) => `- ${c}`).join('\n')}
         </div>
 
         {/* Global Tab Navigation */}
-        <div className="flex items-center bg-white dark:bg-dark-surface p-1 rounded-2xl border border-slate-200 dark:border-dark-border text-xs font-bold shadow-sm">
+        <div className="flex flex-wrap items-center bg-white dark:bg-dark-surface p-1 rounded-2xl border border-slate-200 dark:border-dark-border text-xs font-bold shadow-sm gap-1">
           <button
             onClick={() => setActiveTab('builder')}
-            className={`px-4 py-2 rounded-xl transition-all ${
+            className={`px-3.5 py-2 rounded-xl transition-all ${
               activeTab === 'builder'
                 ? 'bg-purple-700 text-white shadow-md'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -260,8 +329,19 @@ ${resume.certifications.map((c) => `- ${c}`).join('\n')}
             ATS Resume Builder
           </button>
           <button
+            onClick={() => setActiveTab('preview')}
+            className={`px-3.5 py-2 rounded-xl transition-all flex items-center space-x-1.5 ${
+              activeTab === 'preview'
+                ? 'bg-purple-700 text-white shadow-md'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <Edit3 className="w-3.5 h-3.5" />
+            <span>Live Resume & Editor</span>
+          </button>
+          <button
             onClick={() => setActiveTab('analyzer')}
-            className={`px-4 py-2 rounded-xl transition-all ${
+            className={`px-3.5 py-2 rounded-xl transition-all ${
               activeTab === 'analyzer'
                 ? 'bg-purple-700 text-white shadow-md'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -271,7 +351,7 @@ ${resume.certifications.map((c) => `- ${c}`).join('\n')}
           </button>
           <button
             onClick={() => setActiveTab('documents')}
-            className={`px-4 py-2 rounded-xl transition-all ${
+            className={`px-3.5 py-2 rounded-xl transition-all ${
               activeTab === 'documents'
                 ? 'bg-purple-700 text-white shadow-md'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -680,27 +760,210 @@ ${resume.certifications.map((c) => `- ${c}`).join('\n')}
           {/* Generated Result Display */}
           {generatedDocResult && (
             <div className="bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-3xl p-6 sm:p-8 shadow-sm space-y-4 animate-scale-in">
-              <div className="flex items-center justify-between border-b border-slate-100 dark:border-dark-border pb-3">
-                <h3 className="font-display font-bold text-sm text-slate-900 dark:text-white">
-                  {generatedDocResult.title}
-                </h3>
+              <div className="flex flex-wrap items-center justify-between border-b border-slate-100 dark:border-dark-border pb-3 gap-2">
+                <div>
+                  <span className="text-[10px] font-bold uppercase text-purple-700 dark:text-brand-lavender">
+                    Generated Document
+                  </span>
+                  <h3 className="font-display font-bold text-base text-slate-900 dark:text-white">
+                    {generatedDocResult.title}
+                  </h3>
+                </div>
 
-                {generatedDocResult.documentId && (
-                  <Link
-                    href={`/editor/${generatedDocResult.documentId}`}
-                    className="inline-flex items-center space-x-1 text-xs font-bold text-purple-700 dark:text-brand-lavender hover:underline"
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(generatedDocResult.content);
+                      setToastMessage('Copied to clipboard!');
+                      setTimeout(() => setToastMessage(null), 2500);
+                    }}
+                    className="inline-flex items-center space-x-1.5 bg-slate-100 dark:bg-dark-bg text-slate-700 dark:text-slate-200 px-3 py-1.5 rounded-xl text-xs font-bold hover:bg-slate-200 transition-all border border-slate-200 dark:border-dark-border"
                   >
-                    <span>Edit in Word Editor</span>
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </Link>
-                )}
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>Copy</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleOpenCareerDocInEditor(generatedDocResult.title, generatedDocResult.content)}
+                    disabled={openingInEditor}
+                    className="inline-flex items-center space-x-1.5 bg-purple-700 hover:bg-purple-800 text-white px-4 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm"
+                  >
+                    {openingInEditor ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Edit3 className="w-3.5 h-3.5" />}
+                    <span>Open in Word Editor</span>
+                  </button>
+                </div>
               </div>
 
-              <div className="p-6 bg-slate-50 dark:bg-dark-bg/60 border border-slate-200 dark:border-dark-border rounded-2xl font-mono text-xs text-slate-800 dark:text-slate-200 whitespace-pre-wrap leading-relaxed">
-                {generatedDocResult.content}
+              <div className="space-y-2">
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+                  Document Content (Editable Markdown):
+                </label>
+                <textarea
+                  rows={12}
+                  value={generatedDocResult.content}
+                  onChange={(e) =>
+                    setGeneratedDocResult({
+                      ...generatedDocResult,
+                      content: e.target.value,
+                    })
+                  }
+                  className="w-full p-4 bg-slate-50 dark:bg-dark-bg/60 border border-slate-200 dark:border-dark-border rounded-2xl font-mono text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:border-purple-500 leading-relaxed custom-scrollbar"
+                />
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* 4. TAB: LIVE RESUME & MARKDOWN EDITOR */}
+      {activeTab === 'preview' && (
+        <div className="space-y-6 animate-scale-in">
+          <div className="bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-dark-border pb-4">
+              <div>
+                <span className="text-[10px] font-bold uppercase text-purple-700 dark:text-brand-lavender tracking-wider">
+                  Live Synchronization
+                </span>
+                <h2 className="font-display font-bold text-xl text-slate-900 dark:text-white flex items-center space-x-2">
+                  <Edit3 className="w-5 h-5 text-purple-600 dark:text-brand-lavender" />
+                  <span>Interactive Resume Editor & Formatted Preview</span>
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Edit resume markdown text directly on the left with live real-time ATS layout updates on the right.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={handleExportResumeText}
+                  className="inline-flex items-center space-x-1.5 bg-slate-100 dark:bg-dark-bg hover:bg-slate-200 text-slate-700 dark:text-slate-200 px-3.5 py-2 rounded-xl text-xs font-bold border border-slate-200 dark:border-dark-border transition-all"
+                >
+                  <Download className="w-3.5 h-3.5 text-purple-500" />
+                  <span>Download .MD</span>
+                </button>
+
+                <button
+                  onClick={handleOpenResumeInDocumentEditor}
+                  disabled={openingInEditor}
+                  className="inline-flex items-center space-x-2 bg-gradient-to-r from-purple-700 to-indigo-800 text-white px-5 py-2 rounded-xl text-xs font-bold shadow-md hover:scale-[1.02] transition-all disabled:opacity-50"
+                >
+                  {openingInEditor ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Edit3 className="w-4 h-4 text-purple-200" />
+                  )}
+                  <span>Open & Edit in Full Word Editor</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Split Editor / Preview Workspace */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+              {/* Left: Interactive Markdown Textarea */}
+              <div className="lg:col-span-6 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-purple-700 dark:text-brand-lavender uppercase tracking-wider flex items-center space-x-1">
+                    <FileText className="w-3.5 h-3.5" />
+                    <span>Raw Markdown Editor</span>
+                  </span>
+                  <span className="text-[10px] text-slate-400">Edits sync in real-time</span>
+                </div>
+
+                <textarea
+                  rows={26}
+                  value={resumeMarkdown}
+                  onChange={(e) => setResumeMarkdown(e.target.value)}
+                  className="w-full p-5 bg-slate-900 text-slate-100 border border-slate-800 rounded-2xl font-mono text-xs leading-relaxed focus:outline-none focus:border-purple-500 custom-scrollbar shadow-inner"
+                  placeholder="Type your markdown resume here..."
+                />
+              </div>
+
+              {/* Right: Live ATS Rendered Card */}
+              <div className="lg:col-span-6 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center space-x-1">
+                    <FileCheck2 className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>ATS Formatted Preview</span>
+                  </span>
+                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">Standard 1-Column ATS</span>
+                </div>
+
+                <div className="p-6 sm:p-8 bg-slate-50 dark:bg-dark-bg/80 border border-slate-200 dark:border-dark-border rounded-2xl shadow-sm text-xs font-sans text-slate-900 dark:text-slate-100 space-y-4 max-h-[580px] overflow-y-auto custom-scrollbar">
+                  {/* Header */}
+                  <div className="border-b border-slate-300 dark:border-slate-700 pb-3 text-center space-y-1">
+                    <h2 className="font-display font-black text-xl text-slate-900 dark:text-white uppercase tracking-tight">
+                      {resume.personalInfo.fullName}
+                    </h2>
+                    <p className="text-[11px] text-slate-600 dark:text-slate-400">
+                      {resume.personalInfo.email} • {resume.personalInfo.phone} • {resume.personalInfo.location}
+                    </p>
+                    <p className="text-[11px] text-purple-700 dark:text-brand-lavender font-medium">
+                      {resume.personalInfo.linkedIn} • {resume.personalInfo.gitHub}
+                    </p>
+                  </div>
+
+                  {/* Summary */}
+                  <div className="space-y-1">
+                    <h3 className="font-bold text-xs uppercase tracking-wider text-purple-800 dark:text-purple-300 border-b border-slate-200 dark:border-slate-800 pb-0.5">
+                      Professional Summary
+                    </h3>
+                    <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+                      {resume.summary}
+                    </p>
+                  </div>
+
+                  {/* Skills */}
+                  <div className="space-y-1">
+                    <h3 className="font-bold text-xs uppercase tracking-wider text-purple-800 dark:text-purple-300 border-b border-slate-200 dark:border-slate-800 pb-0.5">
+                      Technical Skills
+                    </h3>
+                    <ul className="space-y-0.5 text-xs text-slate-700 dark:text-slate-300">
+                      <li>• <strong>Languages:</strong> {resume.skills.programmingLanguages.join(', ')}</li>
+                      <li>• <strong>Frameworks:</strong> {resume.skills.frameworks.join(', ')}</li>
+                      <li>• <strong>Databases:</strong> {resume.skills.databases.join(', ')}</li>
+                      <li>• <strong>Tools & Cloud:</strong> {resume.skills.tools.join(', ')}</li>
+                    </ul>
+                  </div>
+
+                  {/* Experience */}
+                  <div className="space-y-2">
+                    <h3 className="font-bold text-xs uppercase tracking-wider text-purple-800 dark:text-purple-300 border-b border-slate-200 dark:border-slate-800 pb-0.5">
+                      Experience
+                    </h3>
+                    {resume.experience.map((exp, idx) => (
+                      <div key={idx} className="space-y-1">
+                        <div className="flex justify-between font-bold text-xs text-slate-900 dark:text-white">
+                          <span>{exp.role} — {exp.company}</span>
+                          <span className="text-slate-500 font-normal">{exp.startDate} - {exp.endDate}</span>
+                        </div>
+                        <ul className="space-y-0.5 text-xs text-slate-600 dark:text-slate-300">
+                          {exp.responsibilities.map((r, rIdx) => (
+                            <li key={rIdx} className="flex items-start space-x-1.5">
+                              <span>•</span>
+                              <span>{r}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Education */}
+                  <div className="space-y-1">
+                    <h3 className="font-bold text-xs uppercase tracking-wider text-purple-800 dark:text-purple-300 border-b border-slate-200 dark:border-slate-800 pb-0.5">
+                      Education
+                    </h3>
+                    {resume.education.map((ed, idx) => (
+                      <div key={idx} className="flex justify-between text-xs text-slate-700 dark:text-slate-300">
+                        <span><strong>{ed.degree}</strong>, {ed.institution}</span>
+                        <span>{ed.year} ({ed.gpaOrScore})</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
