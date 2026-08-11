@@ -32,7 +32,6 @@ import {
   HelpCircle,
   Activity,
   ShieldCheck,
-  GraduationCap,
   MessageSquare,
 } from 'lucide-react';
 
@@ -130,7 +129,6 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Generate AI', href: '/generate', icon: Sparkles },
     { name: 'Document Chat', href: '/doc-chat', icon: MessageSquare },
-    { name: 'Faculty Studio', href: '/faculty-studio', icon: GraduationCap },
     { name: 'Presentation Studio', href: '/presentation-studio', icon: Presentation },
     { name: 'Viva Studio', href: '/viva-studio', icon: HelpCircle },
     { name: 'Document Health', href: '/document-health', icon: Activity },
