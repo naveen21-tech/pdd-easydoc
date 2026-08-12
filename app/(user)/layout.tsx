@@ -130,7 +130,7 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
     { name: 'Generate AI', href: '/generate', icon: Sparkles },
     { name: 'Document Chat', href: '/doc-chat', icon: MessageSquare },
     { name: 'Presentation Studio', href: '/presentation-studio', icon: Presentation },
-    { name: 'Viva Studio', href: '/viva-studio', icon: HelpCircle },
+    { name: 'MCQ Studio', href: '/viva-studio', icon: HelpCircle },
     { name: 'Document Health', href: '/document-health', icon: Activity },
     { name: 'Career Studio', href: '/career-studio', icon: FileCheck2 },
     { name: 'Templates', href: '/templates', icon: FileText },

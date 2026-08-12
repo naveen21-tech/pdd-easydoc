@@ -14,7 +14,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { documentId, title, difficulty = 'Intermediate', questionCount = 8, categories } = body;
+    const { documentId, title, difficulty = 'Intermediate', questionCount = 25, categories } = body;
 
     let targetTitle = (title || '').trim();
     let contextText = '';

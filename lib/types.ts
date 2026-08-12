@@ -147,9 +147,12 @@ export interface PresentationItem {
 }
 
 // -------------------------------------------------------------
-// FEATURE 3: VIVA STUDIO TYPES
+// -------------------------------------------------------------
+// FEATURE 3: MCQ & VIVA STUDIO TYPES
 // -------------------------------------------------------------
 export type VivaDifficulty = 'Basic' | 'Intermediate' | 'Advanced' | 'Expert';
+export type MCQDifficulty = VivaDifficulty;
+
 export type VivaCategory =
   | 'General'
   | 'Technical'
@@ -160,14 +163,19 @@ export type VivaCategory =
   | 'Testing'
   | 'Deployment'
   | 'Project-specific';
+export type MCQCategory = VivaCategory;
 
 export interface VivaQuestionItem {
   id: string;
   question: string;
+  options?: string[]; // Multiple choice options [A, B, C, D]
+  correctOptionIndex?: number; // 0, 1, 2, 3
+  explanation?: string; // Concept and reasoning breakdown
   answer: string;
   difficulty: VivaDifficulty;
   category: VivaCategory;
   userAnswer?: string;
+  userSelectedOption?: number;
   score?: number;
   evaluation?: {
     score: number;
@@ -176,6 +184,8 @@ export interface VivaQuestionItem {
     suggestedImprovements: string[];
   };
 }
+
+export type MCQQuestionItem = VivaQuestionItem;
 
 export interface VivaSessionItem {
   id: string;
