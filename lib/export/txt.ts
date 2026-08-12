@@ -4,7 +4,7 @@ export function generatePlainText(title: string, markdownContent: string): strin
   const dateStr = new Date().toLocaleDateString();
   const header = `================================================================================
 ${title.toUpperCase()}
-EasyDoc Export | Date: ${dateStr}
+StudentDoc Export | Date: ${dateStr}
 ================================================================================
 
 `;
@@ -24,7 +24,7 @@ export function generateMarkdownText(title: string, markdownContent: string): st
   const dateStr = new Date().toLocaleDateString();
   const header = `<!--
 Document: ${title}
-Exported via EasyDoc on ${dateStr}
+Exported via StudentDoc on ${dateStr}
 -->
 
 `;

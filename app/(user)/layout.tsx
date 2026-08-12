@@ -153,15 +153,15 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
         <div className="p-4 border-b border-slate-200 dark:border-dark-border flex items-center justify-between">
           <Link href="/dashboard" className="flex items-center space-x-3 overflow-hidden">
             <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-700 via-purple-600 to-indigo-600 dark:from-brand-purple dark:via-brand-lavender dark:to-brand-amethyst flex items-center justify-center font-display font-extrabold text-xl text-white shadow-md shrink-0">
-              E
+              S
             </div>
             {!isCollapsed && (
               <div className="truncate">
                 <span className="font-display font-extrabold text-lg tracking-tight text-slate-900 dark:text-white block">
-                  Easy<span className="text-purple-600 dark:text-brand-lavender">Doc</span>
+                  Student<span className="text-purple-600 dark:text-brand-lavender">Doc</span>
                 </span>
                 <span className="text-[10px] uppercase font-bold tracking-wider text-purple-700 dark:text-brand-lavender/80 block">
-                  Cyber AI Studio
+                  Academic & AI Studio
                 </span>
               </div>
             )}

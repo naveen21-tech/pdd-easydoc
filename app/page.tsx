@@ -9,10 +9,10 @@ export default function Home() {
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 rounded-xl bg-brand-600 flex items-center justify-center text-white font-display font-bold text-xl shadow-md">
-              E
+              S
             </div>
             <span className="font-display text-2xl font-bold text-ink">
-              Easy<span className="text-brand-600">Doc</span>
+              Student<span className="text-brand-600">Doc</span>
             </span>
           </div>
 
@@ -100,7 +100,7 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="border-t border-border bg-white py-8 px-6 text-center text-xs text-slate-500">
-        EasyDoc &copy; {new Date().getFullYear()} — Production-Ready AI Document Generator. Built with Supabase & Vercel.
+        StudentDoc &copy; {new Date().getFullYear()} — Production-Ready AI Document Generator. Built with Supabase & Vercel.
       </footer>
     </div>
   );

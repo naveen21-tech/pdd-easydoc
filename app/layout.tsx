@@ -22,8 +22,8 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'EasyDoc — AI Document Generation Platform',
-  description: 'Instant, professional document generation powered by multi-provider AI.',
+  title: 'StudentDoc — AI Document Generation Platform',
+  description: 'Instant, professional academic, technical, and engineering document generation powered by StudentDoc AI.',
 };
 
 export default function RootLayout({

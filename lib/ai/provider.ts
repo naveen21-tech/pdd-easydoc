@@ -26,7 +26,7 @@ export async function generateDocument(
   const currentTemplate = templateName || 'Official Report';
   const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
-  const systemPrompt = `You are EasyDoc AI, an expert professional document generator and typesetter.
+  const systemPrompt = `You are StudentDoc AI, an expert professional document generator and typesetter.
 Generate a structured, beautifully formatted, comprehensive multi-page document based on the user request.
 Follow these document structure rules:
 1. ALWAYS start with the template badge on line 1: [TEMPLATE_BADGE] ${currentTemplate}
@@ -177,7 +177,7 @@ ${instructions.split('\n').map((line) => `- **${line.trim()}**`).join('\n')}
 | Phase | Deliverable | Responsibility | Status |
 | :--- | :--- | :--- | :--- |
 | **Phase 1** | Requirement Analysis & Architecture | Project Team | Completed |
-| **Phase 2** | AI Content Synthesis & Formatting | EasyDoc Engine | In Progress |
+| **Phase 2** | AI Content Synthesis & Formatting | StudentDoc Engine | In Progress |
 | **Phase 3** | Export (PDF / DOCX) & Distribution | User | Scheduled |
 
 ---

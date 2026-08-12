@@ -123,7 +123,7 @@ export default function UserDashboard() {
             Workspace Overview
           </h1>
           <p className="text-xs font-semibold text-slate-600 dark:text-brand-lavender/90 mt-1">
-            Welcome to your EasyDoc Cyber Studio
+            Welcome to your StudentDoc Cyber Studio
           </p>
         </div>
 

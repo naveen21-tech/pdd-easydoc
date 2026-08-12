@@ -372,7 +372,7 @@ export async function generateDocxBuffer(
               new Paragraph({
                 children: [
                   new TextRun({
-                    text: `EasyDoc • ${title}`,
+                    text: `StudentDoc • ${title}`,
                     size: 18, // 9pt
                     color: '7C3AED',
                     bold: true,

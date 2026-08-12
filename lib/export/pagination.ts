@@ -272,7 +272,7 @@ export function renderBlocksToHtml(blocks: DocumentBlock[], isFrontTitlePage = f
               ${formatInlineText(block.content)}
             </h1>
             <div style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: #64748B; font-weight: 600;">
-              <span>OFFICIAL EASYDOC REPORT</span>
+              <span>OFFICIAL STUDENTDOC REPORT</span>
               <span>•</span>
               <span style="color: #7C3AED;">VERIFIED & FORMATTED</span>
             </div>

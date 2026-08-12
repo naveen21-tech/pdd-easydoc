@@ -45,8 +45,8 @@ export function generateStyledHtmlDocument(
         <!-- Running Header -->
         <header class="page-header">
           <div class="header-brand">
-            <span class="brand-badge">E</span>
-            <span class="brand-title">EasyDoc</span>
+            <span class="brand-badge">S</span>
+            <span class="brand-title">StudentDoc</span>
           </div>
           <div class="header-meta">
             <span class="doc-title">${escapeHtml(title)}</span>
@@ -79,7 +79,7 @@ export function generateStyledHtmlDocument(
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${escapeHtml(title)} - EasyDoc Multi-Page Document</title>
+  <title>${escapeHtml(title)} - StudentDoc Multi-Page Document</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
