@@ -67,7 +67,6 @@ import {
 import { downloadDocumentFile, ExportFormat } from '@/lib/download';
 import { paginateDocument, PaginatedPage, insertOrUpdateTableOfContents } from '@/lib/export/pagination';
 import { HealthReportItem, HealthIssueItem } from '@/lib/types';
-import { DocChatDrawer } from '@/components/doc-chat/DocChatDrawer';
 
 export interface DocumentEditorProps {
   documentId: string;
@@ -139,7 +138,6 @@ export function DocumentEditor({
   // View & Zoom state
   const [zoom, setZoom] = useState(100);
   const [isFullScreen, setIsFullScreen] = useState(false);
-  const [showDocChatDrawer, setShowDocChatDrawer] = useState(false);
   const [showDocToolsMenu, setShowDocToolsMenu] = useState(false);
 
   // AI Assistant Action state
@@ -566,15 +564,6 @@ Additional User Instructions: ${aiInstruction || 'Improve readability, structure
 
         {/* Right Segment: Action Tools & Export */}
         <div className="flex items-center space-x-2 shrink-0">
-          {/* Chat with Document Button */}
-          <button
-            onClick={() => setShowDocChatDrawer(true)}
-            className="bg-gradient-to-r from-purple-700 to-indigo-800 hover:from-purple-600 hover:to-indigo-700 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 shadow-md hover:scale-[1.02] border border-purple-400/30"
-            title="Chat with Document (Grounded QA & RAG)"
-          >
-            <MessageSquare className="w-3.5 h-3.5 text-purple-200" />
-            <span className="hidden sm:inline">Chat with Doc</span>
-          </button>
 
           {/* Doc Tools Dropdown */}
           <div className="relative">
@@ -1574,14 +1563,6 @@ Additional User Instructions: ${aiInstruction || 'Improve readability, structure
         </div>
       )}
 
-      {/* Slide-over Document Chat Drawer */}
-      <DocChatDrawer
-        isOpen={showDocChatDrawer}
-        onClose={() => setShowDocChatDrawer(false)}
-        documentId={documentId}
-        documentTitle={title}
-        documentContent={content}
-      />
     </div>
   );
 }

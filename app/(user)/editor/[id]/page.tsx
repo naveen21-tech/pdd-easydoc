@@ -81,14 +81,6 @@ export default function DocumentEditorPage() {
           <ArrowLeft className="w-4 h-4" />
           <span>Back to History</span>
         </Link>
-
-        <Link
-          href={`/doc-chat`}
-          className="inline-flex items-center space-x-1.5 text-xs font-bold bg-purple-100 dark:bg-brand-amethyst text-purple-800 dark:text-brand-lavender px-3 py-1.5 rounded-xl border border-purple-200 dark:border-brand-lavender/30 hover:bg-purple-200 transition-all"
-        >
-          <MessageSquare className="w-3.5 h-3.5" />
-          <span>Document Chat Studio</span>
-        </Link>
       </div>
 
       <DocumentEditor
