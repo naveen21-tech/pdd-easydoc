@@ -86,7 +86,7 @@ export default function CareerStudioPage() {
     projects: [
       {
         name: 'EasyDoc AI — Document Generation Studio',
-        description: 'Multi-model document synthesis engine supporting OpenAI, Groq, and Gemini inference.',
+        description: 'Multi-model document synthesis engine supporting high-performance Gemini AI inference.',
         technologies: ['Next.js', 'TypeScript', 'Tailwind CSS', 'PostgreSQL', 'Prisma'],
         achievements: ['Achieved sub-second AI streaming throughput with 100% test automation pass rate.'],
         url: 'https://github.com/organization/easydoc',

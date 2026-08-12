@@ -5,7 +5,6 @@ import Link from 'next/link';
 import {
   FileText,
   Sparkles,
-  Zap,
   TrendingUp,
   ArrowRight,
   Clock,
@@ -149,7 +148,7 @@ export default function UserDashboard() {
             Transform Ideas into <span className="text-purple-200 dark:text-gradient-lavender">Executive Documents</span>
           </h2>
           <p className="text-purple-100 text-sm leading-relaxed font-medium">
-            Create proposals, technical specs, academic papers, and ATS resumes in seconds with Groq & Gemini AI.
+            Create proposals, technical specs, academic papers, and ATS resumes in seconds with Gemini AI.
           </p>
 
           <div className="flex flex-wrap items-center gap-3 pt-2">
@@ -178,7 +177,7 @@ export default function UserDashboard() {
       </div>
 
       {/* 2. STATISTICS METRIC CARDS WITH DUAL-MODE CONTRAST */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="glass-card p-6 flex flex-col justify-between border-t-4 border-t-purple-600 dark:border-t-brand-purple">
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-bold uppercase tracking-wider text-purple-700 dark:text-brand-lavender">
@@ -219,19 +218,6 @@ export default function UserDashboard() {
           </div>
           <p className="font-display text-4xl font-black text-slate-900 dark:text-gradient-purple">{templates.length}</p>
           <span className="text-xs font-semibold text-slate-500 dark:text-slate-300 mt-2 block">Curated categories</span>
-        </div>
-
-        <div className="glass-card p-6 flex flex-col justify-between border-t-4 border-t-amber-500">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">
-              Inference Speed
-            </span>
-            <div className="w-10 h-10 rounded-2xl bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-400 flex items-center justify-center border border-amber-200 dark:border-amber-800">
-              <Zap className="w-5 h-5" />
-            </div>
-          </div>
-          <p className="font-display text-3xl font-black text-amber-600 dark:text-gradient-gold">Groq 70B</p>
-          <span className="text-xs text-amber-600 dark:text-amber-400 font-bold mt-2 block">Sub-Second Processing</span>
         </div>
       </div>
 

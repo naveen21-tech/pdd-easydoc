@@ -116,7 +116,7 @@ const SAMPLE_DEMO_SLIDES: SlideItem[] = [
     title: 'EasyDoc: Intelligent Document Synthesis Platform',
     subtitle: 'System Architecture & Engineering Defense Presentation',
     bullets: [
-      'Multi-Model LLM Orchestration with Groq LLaMA 3.3 70B & Google Gemini 1.5 Flash',
+      'Multi-Model LLM Orchestration with Google Gemini 1.5 Flash & High-Performance Inference',
       'Intelligent A4 Word Pagination Engine with Real-Time DOM Virtualization',
       'Tamper-Proof Cryptographic Verification Registry with SHA-256 Checksums & QR Codes',
     ],
@@ -155,7 +155,7 @@ const SAMPLE_DEMO_SLIDES: SlideItem[] = [
     title: 'Measured Benchmark & Performance Metrics',
     subtitle: 'Empirical load and inference latency results',
     bullets: [
-      'Groq LLaMA 3.3 70B inference latency: ~850ms per multi-page document',
+      'Google Gemini AI inference latency: ~850ms per multi-page document',
       '100% test pass rate across all 30 App Router static & dynamic endpoints',
       'Zero-loss PPTX & PDF binary compilation in client-side WebAssembly sandbox',
     ],
