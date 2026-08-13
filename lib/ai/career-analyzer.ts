@@ -67,7 +67,7 @@ ${resumeText.slice(0, 5000)}`;
 
   // 1. Try Groq AI
   const groqKey = process.env.GROQ_API_KEY;
-  if (groqKey && groqKey !== 'mock-key' && !groqKey.includes('your-groq-key')) {
+  if (groqKey && !groqKey.toLowerCase().includes('mock') && !groqKey.includes('your-groq-key')) {
     try {
       const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
@@ -101,7 +101,7 @@ ${resumeText.slice(0, 5000)}`;
 
   // 2. Try Gemini AI
   const geminiKey = process.env.GEMINI_API_KEY;
-  if (geminiKey && geminiKey !== 'mock-key' && !geminiKey.includes('your-gemini-key')) {
+  if (geminiKey && !geminiKey.toLowerCase().includes('mock') && !geminiKey.includes('your-gemini-key')) {
     try {
       const ai = new GoogleGenerativeAI(geminiKey);
       const model = ai.getGenerativeModel({ model: 'gemini-1.5-flash' });
@@ -143,7 +143,7 @@ Experience: ${resume.experience?.map((e) => `${e.role} at ${e.company}`).join(';
 
   // 1. Try Groq AI
   const groqKey = process.env.GROQ_API_KEY;
-  if (groqKey && groqKey !== 'mock-key' && !groqKey.includes('your-groq-key')) {
+  if (groqKey && !groqKey.toLowerCase().includes('mock') && !groqKey.includes('your-groq-key')) {
     try {
       const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
@@ -174,7 +174,7 @@ Experience: ${resume.experience?.map((e) => `${e.role} at ${e.company}`).join(';
 
   // 2. Try Gemini AI
   const geminiKey = process.env.GEMINI_API_KEY;
-  if (geminiKey && geminiKey !== 'mock-key' && !geminiKey.includes('your-gemini-key')) {
+  if (geminiKey && !geminiKey.toLowerCase().includes('mock') && !geminiKey.includes('your-gemini-key')) {
     try {
       const ai = new GoogleGenerativeAI(geminiKey);
       const model = ai.getGenerativeModel({ model: 'gemini-1.5-flash' });

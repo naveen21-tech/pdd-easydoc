@@ -49,7 +49,7 @@ ${instructions}`;
 
     // 1. Primary AI: Groq (Ultra-Fast Llama-3.3 70B Inference)
     const groqKey = process.env.GROQ_API_KEY;
-    if (groqKey && groqKey !== 'mock-key' && !groqKey.includes('your-groq-key')) {
+    if (groqKey && !groqKey.toLowerCase().includes('mock') && !groqKey.includes('your-groq-key')) {
       if (provider === 'groq' || !generatedText) {
         try {
           const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -86,7 +86,7 @@ ${instructions}`;
     // 2. Secondary AI: Google Gemini AI
     if (!generatedText) {
       const geminiKey = process.env.GEMINI_API_KEY;
-      if (geminiKey && geminiKey !== 'mock-key' && !geminiKey.includes('your-gemini-key')) {
+      if (geminiKey && !geminiKey.toLowerCase().includes('mock') && !geminiKey.includes('your-gemini-key')) {
         try {
           const ai = new GoogleGenerativeAI(geminiKey);
           const model = ai.getGenerativeModel({ model: 'gemini-1.5-flash' });
