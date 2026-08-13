@@ -1,0 +1,42 @@
+name: StudentDoc Unit Tests CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  unit-tests:
+    name: Execute Vitest Unit Test Suite
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 1. Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 2. Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: 3. Install Dependencies
+        run: npm ci || npm install
+
+      - name: 4. Run Vitest Unit Tests with Coverage
+        run: npm run test:coverage
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: "https://mock-supabase.supabase.co"
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: "mock-anon-key"
+          GROQ_API_KEY: "mock-groq-key"
+          OPENAI_API_KEY: "mock-openai-key"
+          ANTHROPIC_API_KEY: "mock-anthropic-key"
+          GEMINI_API_KEY: "mock-gemini-key"
+
+      - name: 5. Verify Next.js Production Build
+        run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: "https://mock-supabase.supabase.co"
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: "mock-anon-key"
+          GROQ_API_KEY: "mock-groq-key"
