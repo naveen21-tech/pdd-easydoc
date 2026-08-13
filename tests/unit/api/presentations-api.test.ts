@@ -15,6 +15,9 @@ vi.mock('@/lib/prisma', () => ({
     presentation: {
       create: vi.fn().mockResolvedValue({ id: 'pres-123' }),
     },
+    notification: {
+      create: vi.fn().mockResolvedValue({ id: 'notif-123' }),
+    },
   },
 }));
 
