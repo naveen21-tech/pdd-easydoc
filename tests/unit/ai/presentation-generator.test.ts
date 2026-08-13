@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { generatePresentationSlides, enhanceSlideContent } from '@/lib/ai/presentation-generator';
+import { PresentationStyle } from '@/lib/types';
 
 describe('Presentation Generator Service (lib/ai/presentation-generator.ts)', () => {
   it('should generate structured slide deck within 4 to 15 slides', async () => {
@@ -7,7 +8,7 @@ describe('Presentation Generator Service (lib/ai/presentation-generator.ts)', ()
       documentTitle: 'Next.js Scalable Architecture',
       documentContent: 'Next.js App Router, SSR, Server Components, and Edge Runtime caching strategies.',
       slideCount: 8,
-      style: 'Executive',
+      style: 'Technical',
     });
 
     expect(Array.isArray(slides)).toBe(true);
@@ -17,12 +18,13 @@ describe('Presentation Generator Service (lib/ai/presentation-generator.ts)', ()
     expect(Array.isArray(slides[0].bullets)).toBe(true);
   });
 
-  it('should support various presentation styles (Academic, Cyber, Minimal, Creative)', async () => {
-    const styles = ['Academic', 'Executive', 'Cyber', 'Minimal', 'Creative'] as const;
+  it('should support various presentation styles (Academic, Corporate, Minimal, Technical, Project Viva)', async () => {
+    const styles: PresentationStyle[] = ['Academic', 'Corporate', 'Minimal', 'Technical', 'Project Viva'];
 
     for (const style of styles) {
       const slides = await generatePresentationSlides({
         documentTitle: `Testing ${style} Style`,
+        documentContent: `Comprehensive overview of project features for ${style} presentation.`,
         slideCount: 6,
         style,
       });
@@ -36,7 +38,7 @@ describe('Presentation Generator Service (lib/ai/presentation-generator.ts)', ()
     const enhanced = await enhanceSlideContent({
       deckTitle: 'Zero-Trust Cybersecurity Architecture',
       slideTitle: 'Identity Verification & Cryptographic Attestation',
-      style: 'Cyber',
+      style: 'Technical',
     });
 
     expect(enhanced).toBeDefined();
