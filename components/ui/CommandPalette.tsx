@@ -17,6 +17,7 @@ import {
   BookOpen,
   Briefcase,
   Building,
+  Users,
 } from 'lucide-react';
 
 interface CommandPaletteProps {
@@ -50,6 +51,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
 
   const actions = [
     { name: 'Dashboard', category: 'Navigation', href: '/dashboard', icon: LayoutDashboard },
+    { name: 'StudentDoc Groups (Classrooms)', category: 'Collaboration', href: '/groups', icon: Users },
     { name: 'AI Document Studio', category: 'Creation', href: '/generate', icon: Sparkles },
     { name: '100+ Template Gallery', category: 'Navigation', href: '/templates', icon: FileText },
     { name: 'ATS Resume Builder', category: 'Creation', href: '/resume-builder', icon: FileCheck2 },

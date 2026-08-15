@@ -35,6 +35,9 @@ model Profile {
   careerProfiles CareerProfile[]
   aiRequests    AIRequest[]
   notifications Notification[]
+  createdGroups  Group[]         @relation("GroupCreator")
+  groupMemberships GroupMember[]
+  groupDocuments GroupDocument[]
 }
 
 model Document {
@@ -171,4 +174,52 @@ model Notification {
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
 }
+
+enum GroupRole {
+  ADMIN
+  MEMBER
+}
+
+model Group {
+  id          String          @id @default(uuid())
+  name        String
+  description String?
+  joinCode    String          @unique
+  createdBy   String
+  creator     Profile         @relation("GroupCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+  members     GroupMember[]
+  documents   GroupDocument[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+model GroupMember {
+  id        String    @id @default(uuid())
+  groupId   String
+  group     Group     @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  userId    String
+  user      Profile   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      GroupRole @default(MEMBER)
+  joinedAt  DateTime  @default(now())
+
+  @@unique([groupId, userId])
+}
+
+model GroupDocument {
+  id          String    @id @default(uuid())
+  groupId     String
+  group       Group     @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  uploadedBy  String
+  uploader    Profile   @relation(fields: [uploadedBy], references: [id], onDelete: Cascade)
+  title       String
+  fileName    String
+  fileUrl     String?
+  content     String?
+  fileType    String    @default("document")
+  fileSize    Int?
+  documentId  String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
 

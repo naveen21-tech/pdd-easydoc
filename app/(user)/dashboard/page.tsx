@@ -30,6 +30,7 @@ import {
   HelpCircle,
   ShieldCheck,
   MessageSquare,
+  Users,
 } from 'lucide-react';
 import { downloadDocumentFile } from '@/lib/download';
 
@@ -321,6 +322,28 @@ export default function UserDashboard() {
               className="inline-flex items-center justify-center space-x-2 bg-gradient-to-r from-purple-700 to-indigo-800 dark:from-brand-purple dark:to-brand-amethyst text-white font-bold text-xs py-2.5 px-4 rounded-xl shadow-sm hover:shadow-md transition-all"
             >
               <span>Launch Career Studio</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          {/* Card 6: StudentDoc Groups & Classrooms */}
+          <div className="glass-panel p-6 rounded-2xl border border-slate-200 dark:border-dark-border hover:border-purple-500 transition-all flex flex-col justify-between space-y-4 group">
+            <div className="space-y-2">
+              <div className="w-10 h-10 rounded-2xl bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400 flex items-center justify-center border border-indigo-200 dark:border-indigo-800">
+                <Users className="w-5 h-5" />
+              </div>
+              <h4 className="font-display font-bold text-base text-slate-900 dark:text-white group-hover:text-purple-700 dark:group-hover:text-brand-lavender transition-colors">
+                Classroom Groups
+              </h4>
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                Create & join collaborative classrooms, share study notes, upload assignments, and manage student groups.
+              </p>
+            </div>
+            <Link
+              href="/groups"
+              className="inline-flex items-center justify-center space-x-2 bg-gradient-to-r from-purple-700 to-indigo-800 dark:from-brand-purple dark:to-brand-amethyst text-white font-bold text-xs py-2.5 px-4 rounded-xl shadow-sm hover:shadow-md transition-all"
+            >
+              <span>Open Classrooms</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>

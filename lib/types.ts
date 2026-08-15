@@ -365,3 +365,66 @@ export interface DocChatQueryResponse {
   isAvailable: boolean;
 }
 
+// -------------------------------------------------------------
+// FEATURE: STUDENTDOC GROUPS & CLASSROOMS
+// -------------------------------------------------------------
+export type GroupRole = 'ADMIN' | 'MEMBER';
+
+export interface GroupItem {
+  id: string;
+  name: string;
+  description?: string | null;
+  joinCode: string;
+  createdBy: string;
+  creator?: {
+    id: string;
+    name: string;
+    email: string;
+    avatarUrl?: string | null;
+  } | null;
+  memberCount?: number;
+  documentCount?: number;
+  role?: GroupRole; // Role of current user in this group
+  members?: GroupMemberItem[];
+  documents?: GroupDocumentItem[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GroupMemberItem {
+  id: string;
+  groupId: string;
+  userId: string;
+  role: GroupRole;
+  joinedAt: string;
+  user?: {
+    id: string;
+    name: string;
+    email: string;
+    avatarUrl?: string | null;
+    role?: string;
+  } | null;
+}
+
+export interface GroupDocumentItem {
+  id: string;
+  groupId: string;
+  uploadedBy: string;
+  title: string;
+  fileName: string;
+  fileUrl?: string | null;
+  content?: string | null;
+  fileType: string;
+  fileSize?: number | null;
+  documentId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  uploader?: {
+    id: string;
+    name: string;
+    email: string;
+    avatarUrl?: string | null;
+  } | null;
+}
+
+
