@@ -17,13 +17,32 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { data: docs, error: docErr } = await supabase
+    // Fetch Group & Membership to determine role
+    const { data: group } = await supabase.from('Group').select('id, createdBy').eq('id', groupId).single();
+    if (!group) return NextResponse.json({ error: 'Group not found' }, { status: 404 });
+
+    const { data: member } = await supabase
+      .from('GroupMember')
+      .select('role')
+      .eq('groupId', groupId)
+      .eq('userId', user.id)
+      .maybeSingle();
+
+    const isAdmin = group.createdBy === user.id || member?.role === 'ADMIN';
+
+    const { data: docs } = await supabase
       .from('GroupDocument')
       .select('*, uploader:Profile!uploadedBy(id, name, email, avatarUrl)')
       .eq('groupId', groupId)
       .order('createdAt', { ascending: false });
 
-    return NextResponse.json({ documents: docs || [] });
+    // Privacy Filter: Teachers see everything; Students see teacher notes + only their own submissions
+    const filteredDocs = (docs || []).filter((doc: any) => {
+      if (isAdmin) return true;
+      return doc.uploadedBy === group.createdBy || doc.uploadedBy === user.id;
+    });
+
+    return NextResponse.json({ documents: filteredDocs });
   } catch (err: any) {
     return NextResponse.json({ documents: [] });
   }

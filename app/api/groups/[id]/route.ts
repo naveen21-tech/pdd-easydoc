@@ -56,22 +56,29 @@ export async function GET(
       .eq('groupId', groupId)
       .order('joinedAt', { ascending: true });
 
-    // 4. Fetch Documents
-    const { data: documentsData } = await supabase
+    // 4. Fetch Documents (Teacher sees all; Student sees teacher materials + only their own submissions)
+    const { data: allDocs } = await supabase
       .from('GroupDocument')
       .select('*, uploader:Profile!uploadedBy(id, name, email, avatarUrl)')
       .eq('groupId', groupId)
       .order('createdAt', { ascending: false });
+
+    const isAdmin = myRole === 'ADMIN';
+    const documentsData = (allDocs || []).filter((doc: any) => {
+      if (isAdmin) return true; // Teacher sees all documents and student submissions
+      // Students see teacher/admin materials + only their own submissions
+      return doc.uploadedBy === group.createdBy || doc.uploadedBy === user.id;
+    });
 
     return NextResponse.json({
       group: {
         ...group,
         role: myRole,
         memberCount: membersData?.length || 1,
-        documentCount: documentsData?.length || 0,
+        documentCount: documentsData.length,
       },
       members: membersData || [],
-      documents: documentsData || [],
+      documents: documentsData,
       myRole,
     });
   } catch (err: any) {
