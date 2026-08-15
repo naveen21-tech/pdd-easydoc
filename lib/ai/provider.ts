@@ -7,6 +7,8 @@ export interface GenerateDocOptions {
   templateName?: string;
   tone: string;
   instructions: string;
+  referenceContent?: string;
+  referenceFileName?: string;
 }
 
 export interface GenerateDocResult {
@@ -21,7 +23,7 @@ export async function generateDocument(
   options: GenerateDocOptions
 ): Promise<GenerateDocResult> {
   const startTime = Date.now();
-  const { provider, title, templateName, tone, instructions } = options;
+  const { provider, title, templateName, tone, instructions, referenceContent, referenceFileName } = options;
 
   const currentTemplate = templateName || 'Official Report';
   const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -35,11 +37,13 @@ Follow these document structure rules:
 4. Add a clean page break on its own line: [PAGE BREAK]
 5. Begin the document body on Page 2 with clear section headings (## 1. Executive Summary, ## 2. Core Analysis, ## 3. Detailed Specifications, ## 4. Implementation Timeline, etc.).
 6. Use rich Markdown formatting: **bold** key terms, *italicize* notes, create tables with | columns |, and use structured bullet points.
-7. Output ONLY the document markdown content without conversational chatter like "Here is your document:".`;
+7. If imported source / reference material is attached, thoroughly synthesize, structure, explain, and expand on the imported facts, notes, or code to produce a polished academic document.
+8. Output ONLY the document markdown content without conversational chatter like "Here is your document:".`;
 
   const userPrompt = `Document Title: ${title}
 Template Format: ${currentTemplate}
 Tone of Voice: ${tone}
+${referenceContent ? `\n--- ATTACHED SOURCE / IMPORTED CLASSROOM DOCUMENT (${referenceFileName || 'Imported File'}) ---\n${referenceContent.slice(0, 15000)}\n--- END OF ATTACHED SOURCE MATERIAL ---\n\nPlease synthesize, format, and structure the above imported reference material into this complete document according to the guidelines below.\n` : ''}
 Specific Instructions / Key Points:
 ${instructions}`;
 

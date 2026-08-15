@@ -14,6 +14,8 @@ const generateSchema = z.object({
   tone: z.string().default('Professional'),
   instructions: z.string().min(5, 'Instructions are required'),
   provider: z.enum(['openai', 'anthropic', 'gemini', 'groq']).default('groq'),
+  referenceContent: z.string().optional(),
+  referenceFileName: z.string().optional(),
 });
 
 export async function POST(request: Request) {
@@ -35,7 +37,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { title, templateId, templateName, tone, instructions, provider } = parsed.data;
+    const { title, templateId, templateName, tone, instructions, provider, referenceContent, referenceFileName } = parsed.data;
 
     // Call AI provider service
     const aiResult = await generateDocument({
@@ -44,6 +46,8 @@ export async function POST(request: Request) {
       templateName,
       tone,
       instructions,
+      referenceContent,
+      referenceFileName,
     });
 
     let documentRecord: any = null;
