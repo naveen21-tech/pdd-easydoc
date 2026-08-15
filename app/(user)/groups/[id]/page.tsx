@@ -30,8 +30,25 @@ import {
   FileSpreadsheet,
   FileCheck2,
   BookOpen,
+  HelpCircle,
+  Award,
+  BarChart3,
+  Play,
+  CheckCircle2,
+  XCircle,
+  AlertTriangle,
+  Sparkles,
 } from 'lucide-react';
-import { GroupItem, GroupMemberItem, GroupDocumentItem, DocumentItem } from '@/lib/types';
+import {
+  GroupItem,
+  GroupMemberItem,
+  GroupDocumentItem,
+  DocumentItem,
+  McqTestItem,
+  McqQuestionItem,
+  McqAttemptItem,
+  McqResultAnalytics,
+} from '@/lib/types';
 
 export default function GroupDetailsPage({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -40,12 +57,13 @@ export default function GroupDetailsPage({ params }: { params: { id: string } })
   const [group, setGroup] = useState<GroupItem | null>(null);
   const [members, setMembers] = useState<GroupMemberItem[]>([]);
   const [documents, setDocuments] = useState<GroupDocumentItem[]>([]);
+  const [mcqTests, setMcqTests] = useState<McqTestItem[]>([]);
   const [myRole, setMyRole] = useState<'ADMIN' | 'MEMBER'>('MEMBER');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Active Tab: 'documents' | 'members'
-  const [activeTab, setActiveTab] = useState<'documents' | 'members'>('documents');
+  // Active Tab: 'documents' | 'mcq-tests' | 'members'
+  const [activeTab, setActiveTab] = useState<'documents' | 'mcq-tests' | 'members'>('documents');
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 
@@ -68,8 +86,56 @@ export default function GroupDetailsPage({ params }: { params: { id: string } })
   const [searchDocQuery, setSearchDocQuery] = useState('');
   const [docFilter, setDocFilter] = useState<'all' | 'teacher' | 'student'>('all');
 
+  // -------------------------------------------------------------
+  // MCQ TEST STATE & MODALS
+  // -------------------------------------------------------------
+  const [showCreateTestModal, setShowCreateTestModal] = useState(false);
+  const [testTitle, setTestTitle] = useState('');
+  const [testDescription, setTestDescription] = useState('');
+  const [testDuration, setTestDuration] = useState(20);
+  const [testPassingMarks, setTestPassingMarks] = useState(4);
+  const [creatingTest, setCreatingTest] = useState(false);
+  const [testError, setTestError] = useState<string | null>(null);
+
+  const [questionsList, setQuestionsList] = useState<
+    Array<{
+      question: string;
+      optionA: string;
+      optionB: string;
+      optionC: string;
+      optionD: string;
+      correctOption: 'A' | 'B' | 'C' | 'D';
+      marks: number;
+    }>
+  >([
+    {
+      question: 'What is the primary characteristic of cloud computing elasticity?',
+      optionA: 'Fixed compute capacity',
+      optionB: 'Dynamically allocating and releasing compute resources on demand',
+      optionC: 'Permanent storage encryption',
+      optionD: 'Physical datacenter isolation',
+      correctOption: 'B',
+      marks: 1,
+    },
+    {
+      question: 'Which HTTP method is idempotent and used for replacing resources?',
+      optionA: 'POST',
+      optionB: 'PUT',
+      optionC: 'PATCH',
+      optionD: 'CONNECT',
+      correctOption: 'B',
+      marks: 1,
+    },
+  ]);
+
+  // Faculty Results Modal
+  const [analyticsTest, setAnalyticsTest] = useState<McqTestItem | null>(null);
+  const [analyticsData, setAnalyticsData] = useState<any | null>(null);
+  const [loadingAnalytics, setLoadingAnalytics] = useState(false);
+
   useEffect(() => {
     fetchGroupDetails();
+    fetchMcqTests();
   }, [groupId]);
 
   const fetchGroupDetails = async () => {
@@ -92,6 +158,18 @@ export default function GroupDetailsPage({ params }: { params: { id: string } })
       setError(e?.message || 'Network error loading classroom');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchMcqTests = async () => {
+    try {
+      const res = await fetch(`/api/groups/${groupId}/tests`);
+      if (res.ok) {
+        const data = await res.json();
+        setMcqTests(data.tests || []);
+      }
+    } catch (e) {
+      console.error('Fetch tests error:', e);
     }
   };
 
@@ -261,6 +339,129 @@ export default function GroupDetailsPage({ params }: { params: { id: string } })
       }
     } catch (e) {
       alert('Network error deleting group');
+    }
+  };
+
+  // -------------------------------------------------------------
+  // MCQ HANDLERS
+  // -------------------------------------------------------------
+  const handleAddQuestion = () => {
+    setQuestionsList((prev) => [
+      ...prev,
+      {
+        question: '',
+        optionA: '',
+        optionB: '',
+        optionC: '',
+        optionD: '',
+        correctOption: 'A',
+        marks: 1,
+      },
+    ]);
+  };
+
+  const handleRemoveQuestion = (idx: number) => {
+    if (questionsList.length <= 1) {
+      alert('Tests must have at least 1 question.');
+      return;
+    }
+    setQuestionsList((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const handleQuestionFieldChange = (idx: number, field: string, value: any) => {
+    setQuestionsList((prev) => {
+      const copy = [...prev];
+      copy[idx] = { ...copy[idx], [field]: value };
+      return copy;
+    });
+  };
+
+  const handleCreateTest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!testTitle.trim()) {
+      setTestError('Please enter a test title');
+      return;
+    }
+
+    // Validate questions
+    for (let i = 0; i < questionsList.length; i++) {
+      const q = questionsList[i];
+      if (!q.question.trim() || !q.optionA.trim() || !q.optionB.trim() || !q.optionC.trim() || !q.optionD.trim()) {
+        setTestError(`Please fill in all options for Question ${i + 1}`);
+        return;
+      }
+    }
+
+    try {
+      setCreatingTest(true);
+      setTestError(null);
+
+      const res = await fetch(`/api/groups/${groupId}/tests`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: testTitle.trim(),
+          description: testDescription.trim() || undefined,
+          duration: Number(testDuration) || 20,
+          passingMarks: Number(testPassingMarks) || 4,
+          questions: questionsList,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setTestError(data.error || 'Failed to create test');
+        return;
+      }
+
+      setShowCreateTestModal(false);
+      setTestTitle('');
+      setTestDescription('');
+      fetchMcqTests();
+    } catch (e: any) {
+      setTestError(e?.message || 'Network error creating test');
+    } finally {
+      setCreatingTest(false);
+    }
+  };
+
+  const handleDeleteTest = async (testId: string, title: string) => {
+    if (!confirm(`Are you sure you want to delete the test "${title}"?`)) return;
+
+    try {
+      const res = await fetch(`/api/groups/${groupId}/tests/${testId}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        setMcqTests((prev) => prev.filter((t) => t.id !== testId));
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Failed to delete test');
+      }
+    } catch (e) {
+      alert('Network error deleting test');
+    }
+  };
+
+  const openTestAnalytics = async (testItem: McqTestItem) => {
+    try {
+      setAnalyticsTest(testItem);
+      setLoadingAnalytics(true);
+      setAnalyticsData(null);
+
+      const res = await fetch(`/api/groups/${groupId}/tests/${testItem.id}/results`);
+      if (res.ok) {
+        const data = await res.json();
+        setAnalyticsData(data);
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Failed to load class analytics');
+      }
+    } catch (e) {
+      alert('Network error fetching analytics');
+    } finally {
+      setLoadingAnalytics(false);
     }
   };
 
@@ -470,6 +671,18 @@ export default function GroupDetailsPage({ params }: { params: { id: string } })
         >
           <FileText className="w-4 h-4" />
           <span>Shared Documents & Assignments ({documents.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('mcq-tests')}
+          className={`flex items-center space-x-2 pb-3 px-4 text-xs font-bold border-b-2 transition-all ${
+            activeTab === 'mcq-tests'
+              ? 'border-purple-600 dark:border-brand-lavender text-purple-700 dark:text-brand-lavender'
+              : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white'
+          }`}
+        >
+          <HelpCircle className="w-4 h-4" />
+          <span>MCQ Examination Tests ({mcqTests.length})</span>
         </button>
 
         <button
@@ -691,7 +904,183 @@ export default function GroupDetailsPage({ params }: { params: { id: string } })
         </div>
       )}
 
-      {/* 5. TAB 2: MEMBERS LIST */}
+      {/* 5. TAB 2: MCQ TESTS MODULE */}
+      {activeTab === 'mcq-tests' && (
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div>
+              <h3 className="font-display font-bold text-lg text-slate-900 dark:text-white">
+                Classroom MCQ Examination Tests
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Timed online quizzes, practice tests, and scored academic evaluations
+              </p>
+            </div>
+
+            {isAdmin && (
+              <button
+                onClick={() => {
+                  setTestTitle('');
+                  setTestDescription('');
+                  setTestError(null);
+                  setShowCreateTestModal(true);
+                }}
+                className="flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-purple-700 dark:bg-brand-purple text-white font-bold text-xs shadow-md hover:shadow-lg transition-all shrink-0"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Create MCQ Test</span>
+              </button>
+            )}
+          </div>
+
+          {mcqTests.length === 0 ? (
+            <div className="glass-card p-12 text-center rounded-3xl border border-slate-200 dark:border-dark-border space-y-4 max-w-md mx-auto">
+              <div className="w-14 h-14 rounded-2xl bg-purple-100 dark:bg-purple-950 text-purple-600 dark:text-brand-lavender flex items-center justify-center mx-auto border border-purple-200 dark:border-purple-800">
+                <HelpCircle className="w-7 h-7" />
+              </div>
+              <div>
+                <h3 className="font-display font-bold text-base text-slate-900 dark:text-white">
+                  No MCQ Tests Scheduled Yet
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  {isAdmin
+                    ? 'Create your first MCQ quiz with custom questions, marks, and timer.'
+                    : 'Your instructor has not published any tests yet.'}
+                </p>
+              </div>
+              {isAdmin && (
+                <button
+                  onClick={() => setShowCreateTestModal(true)}
+                  className="px-4 py-2.5 rounded-xl bg-purple-700 dark:bg-brand-purple text-white font-bold text-xs inline-flex items-center space-x-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Create First Test</span>
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {mcqTests.map((t) => {
+                const isCompleted = !!t.myAttempt;
+                const myScore = t.myAttempt?.score;
+                const myPercentage = t.myAttempt?.percentage;
+                const passed = t.myAttempt?.passed;
+
+                return (
+                  <div
+                    key={t.id}
+                    className="glass-card p-5 rounded-2xl border border-slate-200 dark:border-dark-border hover:border-purple-400 dark:hover:border-purple-500 transition-all flex flex-col justify-between space-y-4 shadow-sm"
+                  >
+                    <div className="space-y-3">
+                      {/* Top Badges */}
+                      <div className="flex items-center justify-between">
+                        <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-brand-lavender border border-purple-200 dark:border-purple-800">
+                          <Clock className="w-3 h-3" />
+                          <span>{t.duration} Minutes</span>
+                        </span>
+
+                        {isCompleted ? (
+                          <span
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                              passed
+                                ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400'
+                                : 'bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-400'
+                            }`}
+                          >
+                            {passed ? 'PASSED' : 'COMPLETED'}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400">
+                            AVAILABLE
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Title & Description */}
+                      <div>
+                        <h4 className="font-display font-bold text-base text-slate-900 dark:text-white line-clamp-1">
+                          {t.title}
+                        </h4>
+                        {t.description && (
+                          <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 mt-0.5">
+                            {t.description}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Score or Specs Info */}
+                      {isCompleted ? (
+                        <div className="p-3 rounded-xl bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border text-center space-y-1">
+                          <span className="text-[10px] uppercase font-bold text-slate-400">Your Exam Score</span>
+                          <p className="text-base font-black text-purple-700 dark:text-brand-lavender">
+                            {myScore} / {t.totalMarks} Marks ({myPercentage}%)
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between text-xs text-slate-500 font-medium pt-1">
+                          <div className="flex items-center space-x-1">
+                            <HelpCircle className="w-3.5 h-3.5 text-purple-500" />
+                            <span>{t.questionCount || 0} Questions</span>
+                          </div>
+                          <div>
+                            <span>Total: {t.totalMarks} Marks</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Bottom Actions */}
+                    <div className="pt-3 border-t border-slate-100 dark:border-dark-border/60 flex items-center justify-between gap-2">
+                      {isAdmin ? (
+                        <>
+                          <button
+                            onClick={() => openTestAnalytics(t)}
+                            className="flex-1 py-2 px-3 rounded-xl bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-brand-lavender text-xs font-bold flex items-center justify-center space-x-1.5 hover:bg-purple-200 transition-colors"
+                          >
+                            <BarChart3 className="w-3.5 h-3.5" />
+                            <span>Results ({t.attemptCount || 0})</span>
+                          </button>
+
+                          <button
+                            onClick={() => handleDeleteTest(t.id, t.title)}
+                            className="p-2 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl transition-colors"
+                            title="Delete MCQ Test"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </>
+                      ) : (
+                        <Link
+                          href={`/groups/${groupId}/tests/${t.id}`}
+                          className={`w-full py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center space-x-1.5 shadow-sm transition-all ${
+                            isCompleted
+                              ? 'bg-slate-100 dark:bg-dark-surface border border-slate-200 dark:border-dark-border text-purple-700 dark:text-brand-lavender hover:bg-purple-50'
+                              : 'bg-gradient-to-r from-purple-700 to-indigo-800 dark:from-brand-purple dark:to-brand-amethyst text-white hover:shadow-md'
+                          }`}
+                        >
+                          {isCompleted ? (
+                            <>
+                              <Eye className="w-3.5 h-3.5" />
+                              <span>View My Result & Solutions</span>
+                            </>
+                          ) : (
+                            <>
+                              <Play className="w-3.5 h-3.5" />
+                              <span>Start MCQ Test</span>
+                            </>
+                          )}
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 6. TAB 3: MEMBERS LIST */}
       {activeTab === 'members' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
@@ -699,7 +1088,8 @@ export default function GroupDetailsPage({ params }: { params: { id: string } })
               Enrolled Members ({members.length})
             </h3>
             <span className="text-xs text-slate-500">
-              Students can join using the Join Code: <strong className="font-mono text-purple-700 dark:text-brand-lavender">{group.joinCode}</strong>
+              Students can join using the Join Code:{' '}
+              <strong className="font-mono text-purple-700 dark:text-brand-lavender">{group.joinCode}</strong>
             </span>
           </div>
 
@@ -713,7 +1103,10 @@ export default function GroupDetailsPage({ params }: { params: { id: string } })
               });
 
               return (
-                <div key={mem.id} className="p-4 flex items-center justify-between gap-4 hover:bg-slate-50/50 dark:hover:bg-dark-surface/40 transition-colors">
+                <div
+                  key={mem.id}
+                  className="p-4 flex items-center justify-between gap-4 hover:bg-slate-50/50 dark:hover:bg-dark-surface/40 transition-colors"
+                >
                   <div className="flex items-center space-x-3">
                     <div className="w-10 h-10 rounded-2xl bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-brand-lavender flex items-center justify-center font-bold text-sm border border-purple-200 dark:border-purple-800">
                       {mem.user?.name ? mem.user.name[0].toUpperCase() : 'U'}
@@ -744,7 +1137,6 @@ export default function GroupDetailsPage({ params }: { params: { id: string } })
                       Joined {formattedDate}
                     </span>
 
-                    {/* Admin can remove member (except creator) */}
                     {isAdmin && mem.userId !== group.createdBy && (
                       <button
                         onClick={() => handleRemoveMember(mem.id, mem.user?.name || 'this student')}
@@ -762,7 +1154,7 @@ export default function GroupDetailsPage({ params }: { params: { id: string } })
         </div>
       )}
 
-      {/* 6. UPLOAD DOCUMENT MODAL */}
+      {/* 7. UPLOAD DOCUMENT MODAL */}
       {showUploadModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl relative">
@@ -835,7 +1227,6 @@ export default function GroupDetailsPage({ params }: { params: { id: string } })
                 />
               </div>
 
-              {/* File Input OR Library Select */}
               {uploadSource === 'file' ? (
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
@@ -920,7 +1311,338 @@ export default function GroupDetailsPage({ params }: { params: { id: string } })
         </div>
       )}
 
-      {/* 7. DOCUMENT PREVIEW MODAL */}
+      {/* 8. CREATE MCQ TEST MODAL (FACULTY) */}
+      {showCreateTestModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-fade-in overflow-y-auto">
+          <div className="bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-3xl p-6 sm:p-8 max-w-3xl w-full shadow-2xl relative my-8 max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-dark-border pb-4 mb-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-2xl bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-brand-lavender flex items-center justify-center border border-purple-200 dark:border-purple-800">
+                  <HelpCircle className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-display font-bold text-lg text-slate-900 dark:text-white">
+                    Create MCQ Examination
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Add unlimited questions with 4 choices, custom marks, and live countdown timer.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowCreateTestModal(false)}
+                className="p-1.5 rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-dark-hover transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {testError && (
+              <div className="p-3 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 rounded-xl text-xs font-semibold mb-4">
+                {testError}
+              </div>
+            )}
+
+            <form onSubmit={handleCreateTest} className="space-y-6 flex-1 overflow-y-auto pr-1">
+              {/* Test Meta Info */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5 sm:col-span-2">
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                    Test Title *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={testTitle}
+                    onChange={(e) => setTestTitle(e.target.value)}
+                    placeholder="e.g. Mid-Term Cloud Computing Quiz"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:border-purple-500"
+                  />
+                </div>
+
+                <div className="space-y-1.5 sm:col-span-2">
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                    Description & Instructions (Optional)
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={testDescription}
+                    onChange={(e) => setTestDescription(e.target.value)}
+                    placeholder="e.g. Total 20 questions. Each question carries 1 mark. No negative marking."
+                    className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:border-purple-500 resize-none"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                    Duration (Minutes) *
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={180}
+                    required
+                    value={testDuration}
+                    onChange={(e) => setTestDuration(parseInt(e.target.value) || 20)}
+                    className="w-full px-3.5 py-2 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl text-xs text-slate-900 dark:text-white"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                    Passing Marks Threshold *
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    required
+                    value={testPassingMarks}
+                    onChange={(e) => setTestPassingMarks(parseInt(e.target.value) || 4)}
+                    className="w-full px-3.5 py-2 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl text-xs text-slate-900 dark:text-white"
+                  />
+                </div>
+              </div>
+
+              {/* Question Builder */}
+              <div className="space-y-4 border-t border-slate-200 dark:border-dark-border pt-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-display font-bold text-sm text-slate-900 dark:text-white">
+                    Questions ({questionsList.length})
+                  </h4>
+                  <button
+                    type="button"
+                    onClick={handleAddQuestion}
+                    className="flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-brand-lavender text-xs font-bold hover:bg-purple-200 transition-colors"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add Question</span>
+                  </button>
+                </div>
+
+                <div className="space-y-5">
+                  {questionsList.map((q, idx) => (
+                    <div
+                      key={idx}
+                      className="p-5 rounded-2xl border border-slate-200 dark:border-dark-border bg-slate-50/70 dark:bg-dark-bg/60 space-y-4 relative"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-purple-700 dark:text-brand-lavender">
+                          Question {idx + 1}
+                        </span>
+
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveQuestion(idx)}
+                          className="p-1 rounded-lg text-rose-500 hover:bg-rose-100 dark:hover:bg-rose-950/50 transition-colors"
+                          title="Delete Question"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      {/* Question Text */}
+                      <input
+                        type="text"
+                        required
+                        value={q.question}
+                        onChange={(e) => handleQuestionFieldChange(idx, 'question', e.target.value)}
+                        placeholder={`e.g. Enter question text ${idx + 1}`}
+                        className="w-full px-3.5 py-2 bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-xl text-xs text-slate-900 dark:text-white"
+                      />
+
+                      {/* 4 Choices Grid */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {(['A', 'B', 'C', 'D'] as const).map((optKey) => {
+                          const field = `option${optKey}` as 'optionA' | 'optionB' | 'optionC' | 'optionD';
+                          const isCorrect = q.correctOption === optKey;
+
+                          return (
+                            <div key={optKey} className="flex items-center space-x-2">
+                              <button
+                                type="button"
+                                onClick={() => handleQuestionFieldChange(idx, 'correctOption', optKey)}
+                                className={`w-7 h-7 rounded-xl font-mono font-bold text-xs shrink-0 flex items-center justify-center border transition-all ${
+                                  isCorrect
+                                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                                    : 'bg-white dark:bg-dark-surface border-slate-300 text-slate-600 hover:border-emerald-500'
+                                }`}
+                                title="Click to set as correct answer"
+                              >
+                                {optKey}
+                              </button>
+                              <input
+                                type="text"
+                                required
+                                value={q[field]}
+                                onChange={(e) => handleQuestionFieldChange(idx, field, e.target.value)}
+                                placeholder={`Option ${optKey}`}
+                                className={`w-full px-3 py-1.5 bg-white dark:bg-dark-surface border rounded-xl text-xs ${
+                                  isCorrect
+                                    ? 'border-emerald-500 ring-1 ring-emerald-500/30'
+                                    : 'border-slate-200 dark:border-dark-border'
+                                }`}
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="pt-4 flex items-center justify-end space-x-3 border-t border-slate-200 dark:border-dark-border">
+                <button
+                  type="button"
+                  onClick={() => setShowCreateTestModal(false)}
+                  className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-dark-border text-slate-600 dark:text-slate-400 font-bold text-xs"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={creatingTest}
+                  className="px-5 py-2.5 rounded-xl bg-purple-700 dark:bg-brand-purple text-white font-bold text-xs shadow-md hover:shadow-lg transition-all flex items-center space-x-2 disabled:opacity-50"
+                >
+                  {creatingTest && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  <span>{creatingTest ? 'Publishing Test...' : 'Publish Test to Classroom'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 9. FACULTY RESULTS & ANALYTICS MODAL */}
+      {analyticsTest && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-3xl p-6 sm:p-8 max-w-3xl w-full shadow-2xl relative max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-dark-border pb-4 mb-4">
+              <div>
+                <h3 className="font-display font-bold text-lg text-slate-900 dark:text-white">
+                  {analyticsTest.title} — Examination Results
+                </h3>
+                <p className="text-xs text-slate-500 font-mono">
+                  Duration: {analyticsTest.duration}m • Total Marks: {analyticsTest.totalMarks} • Passing Threshold: {analyticsTest.passingMarks}
+                </p>
+              </div>
+
+              <button
+                onClick={() => setAnalyticsTest(null)}
+                className="p-1.5 rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-dark-hover transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {loadingAnalytics ? (
+              <div className="flex flex-col items-center justify-center py-20 space-y-3">
+                <Loader2 className="w-8 h-8 text-purple-600 dark:text-brand-lavender animate-spin" />
+                <p className="text-xs text-slate-500 font-medium">Computing student scores and analytics...</p>
+              </div>
+            ) : analyticsData ? (
+              <div className="space-y-6 flex-1 overflow-y-auto pr-1">
+                {/* Analytics Metrics Cards */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="p-3.5 rounded-2xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 text-center">
+                    <span className="text-[10px] font-bold uppercase text-purple-700 dark:text-brand-lavender">Attempted</span>
+                    <p className="text-xl font-black text-purple-900 dark:text-white">
+                      {analyticsData.analytics.attemptedCount} / {analyticsData.analytics.totalStudents}
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-center">
+                    <span className="text-[10px] font-bold uppercase text-emerald-700 dark:text-emerald-400">Pass Rate</span>
+                    <p className="text-xl font-black text-emerald-600">
+                      {analyticsData.analytics.passPercentage}%
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 text-center">
+                    <span className="text-[10px] font-bold uppercase text-indigo-700 dark:text-indigo-400">Class Average</span>
+                    <p className="text-xl font-black text-indigo-900 dark:text-white">
+                      {analyticsData.analytics.averageScore}%
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-center">
+                    <span className="text-[10px] font-bold uppercase text-amber-700 dark:text-amber-400">Highest Score</span>
+                    <p className="text-xl font-black text-amber-600">
+                      {analyticsData.analytics.highestScore}%
+                    </p>
+                  </div>
+                </div>
+
+                {/* Submissions Table */}
+                <div className="space-y-3">
+                  <h4 className="font-display font-bold text-sm text-slate-900 dark:text-white">
+                    Student Submissions ({analyticsData.submissions.length})
+                  </h4>
+
+                  {analyticsData.submissions.length === 0 ? (
+                    <p className="text-xs text-slate-500 py-4 text-center">
+                      No students have submitted this test yet.
+                    </p>
+                  ) : (
+                    <div className="rounded-2xl border border-slate-200 dark:border-dark-border divide-y divide-slate-100 dark:divide-dark-border overflow-hidden">
+                      {analyticsData.submissions.map((sub: any) => {
+                        const isPassed = sub.passed;
+                        const subTime = new Date(sub.submittedAt).toLocaleString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        });
+
+                        return (
+                          <div
+                            key={sub.id}
+                            className="p-3.5 flex items-center justify-between gap-4 hover:bg-slate-50 dark:hover:bg-dark-surface/50 transition-colors"
+                          >
+                            <div className="flex items-center space-x-3">
+                              <div className="w-8 h-8 rounded-xl bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-brand-lavender font-bold text-xs flex items-center justify-center">
+                                {sub.user?.name ? sub.user.name[0].toUpperCase() : 'S'}
+                              </div>
+                              <div>
+                                <span className="font-bold text-xs text-slate-900 dark:text-white block">
+                                  {sub.user?.name || 'Student'}
+                                </span>
+                                <span className="text-[10px] text-slate-400">
+                                  {sub.user?.email || 'email'} • {subTime}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center space-x-3">
+                              <span className="font-mono font-black text-xs text-purple-700 dark:text-brand-lavender">
+                                {sub.score} / {sub.totalMarks} ({sub.percentage}%)
+                              </span>
+
+                              <span
+                                className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                  isPassed
+                                    ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400'
+                                    : 'bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-400'
+                                }`}
+                              >
+                                {isPassed ? 'PASS' : 'FAIL'}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      )}
+
+      {/* 10. DOCUMENT PREVIEW MODAL */}
       {previewDoc && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-fade-in">
           <div className="bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-3xl p-6 sm:p-8 max-w-2xl w-full shadow-2xl relative max-h-[85vh] flex flex-col">
@@ -940,7 +1662,6 @@ export default function GroupDetailsPage({ params }: { params: { id: string } })
               </button>
             </div>
 
-            {/* Document Content View */}
             <div className="flex-1 overflow-y-auto p-4 bg-slate-50 dark:bg-dark-bg rounded-2xl border border-slate-200 dark:border-dark-border text-xs text-slate-800 dark:text-slate-200 leading-relaxed font-sans whitespace-pre-wrap">
               {previewDoc.content || 'Document preview is not directly available as plain text.'}
             </div>

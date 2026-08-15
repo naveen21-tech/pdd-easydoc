@@ -38,6 +38,8 @@ model Profile {
   createdGroups  Group[]         @relation("GroupCreator")
   groupMemberships GroupMember[]
   groupDocuments GroupDocument[]
+  createdMcqTests GroupMcqTest[]
+  mcqAttempts     GroupMcqAttempt[]
 }
 
 model Document {
@@ -189,6 +191,8 @@ model Group {
   creator     Profile         @relation("GroupCreator", fields: [createdBy], references: [id], onDelete: Cascade)
   members     GroupMember[]
   documents   GroupDocument[]
+  mcqTests    GroupMcqTest[]
+  mcqAttempts GroupMcqAttempt[]
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 }
@@ -221,5 +225,67 @@ model GroupDocument {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }
+
+model GroupMcqTest {
+  id           String             @id @default(uuid())
+  groupId      String
+  group        Group              @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  createdBy    String
+  creator      Profile            @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  title        String
+  description  String?
+  duration     Int                @default(20) // in minutes
+  totalMarks   Int                @default(10)
+  passingMarks Int                @default(4)
+  startTime    DateTime?
+  endTime      DateTime?
+  isPublished  Boolean            @default(true)
+  questions    GroupMcqQuestion[]
+  attempts     GroupMcqAttempt[]
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+}
+
+model GroupMcqQuestion {
+  id            String       @id @default(uuid())
+  testId        String
+  test          GroupMcqTest @relation(fields: [testId], references: [id], onDelete: Cascade)
+  question      String
+  optionA       String
+  optionB       String
+  optionC       String
+  optionD       String
+  correctOption String       // "A" | "B" | "C" | "D"
+  marks         Int          @default(1)
+  orderIndex    Int          @default(0)
+  createdAt     DateTime     @default(now())
+}
+
+model GroupMcqAttempt {
+  id              String       @id @default(uuid())
+  testId          String
+  test            GroupMcqTest @relation(fields: [testId], references: [id], onDelete: Cascade)
+  groupId         String
+  group           Group        @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  userId          String
+  user            Profile      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  score           Int          @default(0)
+  totalMarks      Int          @default(0)
+  percentage      Float        @default(0.0)
+  passed          Boolean      @default(false)
+  totalQuestions  Int          @default(0)
+  correctCount    Int          @default(0)
+  wrongCount      Int          @default(0)
+  unansweredCount Int          @default(0)
+  startedAt       DateTime     @default(now())
+  submittedAt     DateTime     @default(now())
+  status          String       @default("SUBMITTED") // "SUBMITTED" | "AUTO_SUBMITTED"
+  answers         Json         // { [questionId]: "A" | "B" | "C" | "D" }
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@unique([testId, userId])
+}
+
 
 

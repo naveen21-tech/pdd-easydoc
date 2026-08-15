@@ -427,4 +427,79 @@ export interface GroupDocumentItem {
   } | null;
 }
 
+// -------------------------------------------------------------
+// FEATURE: CLASSROOM MCQ TESTING MODULE
+// -------------------------------------------------------------
+export interface McqQuestionItem {
+  id: string;
+  testId?: string;
+  question: string;
+  optionA: string;
+  optionB: string;
+  optionC: string;
+  optionD: string;
+  correctOption?: string; // 'A' | 'B' | 'C' | 'D' (Hidden from students during exam)
+  marks: number;
+  orderIndex: number;
+}
+
+export interface McqTestItem {
+  id: string;
+  groupId: string;
+  createdBy: string;
+  title: string;
+  description?: string | null;
+  duration: number; // in minutes
+  totalMarks: number;
+  passingMarks: number;
+  startTime?: string | null;
+  endTime?: string | null;
+  isPublished: boolean;
+  questionCount?: number;
+  questions?: McqQuestionItem[];
+  attemptCount?: number;
+  myAttempt?: McqAttemptItem | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface McqAttemptItem {
+  id: string;
+  testId: string;
+  groupId: string;
+  userId: string;
+  score: number;
+  totalMarks: number;
+  percentage: number;
+  passed: boolean;
+  totalQuestions: number;
+  correctCount: number;
+  wrongCount: number;
+  unansweredCount: number;
+  startedAt: string;
+  submittedAt?: string;
+  status: 'SUBMITTED' | 'AUTO_SUBMITTED';
+  answers: Record<string, string>; // { [questionId]: 'A' | 'B' | 'C' | 'D' }
+  user?: {
+    id: string;
+    name: string;
+    email: string;
+    avatarUrl?: string | null;
+  } | null;
+  test?: McqTestItem | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface McqResultAnalytics {
+  totalStudents: number;
+  attemptedCount: number;
+  notAttemptedCount: number;
+  averageScore: number;
+  highestScore: number;
+  lowestScore: number;
+  passPercentage: number;
+}
+
+
 
