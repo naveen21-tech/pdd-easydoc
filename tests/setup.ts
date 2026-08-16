@@ -4,22 +4,28 @@ import { vi } from 'vitest';
 // Set mock environment variables for unit tests
 process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://mock-supabase.supabase.co';
 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'mock-anon-key';
-process.env.GROQ_API_KEY = 'mock-key';
-process.env.OPENAI_API_KEY = 'mock-key';
-process.env.ANTHROPIC_API_KEY = 'mock-key';
-process.env.GEMINI_API_KEY = 'mock-key';
+process.env.OLLAMA_BASE_URL = 'http://localhost:11434';
+process.env.OLLAMA_MODEL_DOCUMENT = 'llama3.2';
+process.env.OLLAMA_MODEL_MCQ = 'qwen2.5';
 process.env.NEXT_PUBLIC_SITE_URL = 'http://localhost:3000';
 
 // Global fetch mock to prevent real network calls
 const originalFetch = global.fetch;
 global.fetch = vi.fn(async (url: any, options: any) => {
   const urlStr = typeof url === 'string' ? url : url?.toString() || '';
-  if (urlStr.includes('api.groq.com') || urlStr.includes('googleapis.com') || urlStr.includes('api.openai.com') || urlStr.includes('api.anthropic.com')) {
+  if (
+    urlStr.includes('api.groq.com') ||
+    urlStr.includes('googleapis.com') ||
+    urlStr.includes('api.openai.com') ||
+    urlStr.includes('api.anthropic.com') ||
+    urlStr.includes('11434') ||
+    urlStr.includes('ollama')
+  ) {
     return {
       ok: false,
-      status: 401,
-      json: async () => ({ error: 'Mocked API error for unit testing' }),
-      text: async () => 'Mocked API error',
+      status: 503,
+      json: async () => ({ error: 'Mocked Ollama/AI API offline for unit testing' }),
+      text: async () => 'Mocked Ollama/AI API offline',
     } as any;
   }
   if (originalFetch) {

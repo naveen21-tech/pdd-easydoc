@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { generateWithOllama, getOllamaConfig } from '@/lib/ai/ollama';
 import { SlideItem, PresentationStyle, AIProvider } from '@/lib/types';
 
 export interface GeneratePresentationOptions {
@@ -67,54 +67,22 @@ Target Slide Count: ${count}
 Source Document / Context:
 ${content.slice(0, 8000)}`;
 
-  // 1. Try Groq AI
-  const groqKey = process.env.GROQ_API_KEY;
-  if (groqKey && !groqKey.toLowerCase().includes('mock') && !groqKey.includes('your-groq-key')) {
-    try {
-      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${groqKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userPrompt },
-          ],
-          temperature: 0.5,
-          max_tokens: 3500,
-        }),
-      });
+  // Call Centralized Ollama Service with llama3.2
+  const config = getOllamaConfig();
+  const ollamaRes = await generateWithOllama({
+    task: 'document',
+    model: config.documentModel,
+    system: systemPrompt,
+    prompt: userPrompt,
+    temperature: 0.5,
+    maxTokens: 3500,
+    jsonFormat: true,
+  });
 
-      if (res.ok) {
-        const data = await res.json();
-        const raw = data.choices?.[0]?.message?.content || '';
-        const parsed = extractSlidesJson(raw);
-        if (parsed && parsed.length > 0) {
-          return sanitizeSlides(parsed, title, style, count);
-        }
-      }
-    } catch (e) {
-      console.warn('Groq presentation parsing fallback:', e);
-    }
-  }
-
-  // 2. Try Gemini AI
-  const geminiKey = process.env.GEMINI_API_KEY;
-  if (geminiKey && !geminiKey.toLowerCase().includes('mock') && !geminiKey.includes('your-gemini-key')) {
-    try {
-      const ai = new GoogleGenerativeAI(geminiKey);
-      const model = ai.getGenerativeModel({ model: 'gemini-1.5-flash' });
-      const res = await model.generateContent(`${systemPrompt}\n\n${userPrompt}`);
-      const rawText = res.response.text();
-      const parsed = extractSlidesJson(rawText);
-      if (parsed && parsed.length > 0) {
-        return sanitizeSlides(parsed, title, style, count);
-      }
-    } catch (e) {
-      console.warn('Gemini presentation parsing fallback:', e);
+  if (ollamaRes.success && ollamaRes.text) {
+    const parsed = extractSlidesJson(ollamaRes.text);
+    if (parsed && parsed.length > 0) {
+      return sanitizeSlides(parsed, title, style, count);
     }
   }
 
@@ -140,41 +108,34 @@ Output ONLY valid JSON:
   "notes": "Speaker notes for the presenter"
 }`;
 
-  const groqKey = process.env.GROQ_API_KEY;
-  if (groqKey && !groqKey.toLowerCase().includes('mock') && !groqKey.includes('your-groq-key')) {
-    try {
-      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${groqKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
-          messages: [{ role: 'system', content: systemPrompt }],
-          temperature: 0.5,
-          max_tokens: 1000,
-        }),
-      });
+  // Call Centralized Ollama Service with llama3.2
+  const config = getOllamaConfig();
+  const ollamaRes = await generateWithOllama({
+    task: 'document',
+    model: config.documentModel,
+    system: systemPrompt,
+    prompt: `Enhance slide for "${slideTitle}" in deck "${deckTitle}". Output JSON with title, subtitle, bullets array, notes.`,
+    temperature: 0.5,
+    maxTokens: 1000,
+    jsonFormat: true,
+  });
 
-      if (res.ok) {
-        const data = await res.json();
-        const raw = data.choices?.[0]?.message?.content || '';
-        const match = raw.match(/\{[\s\S]*\}/);
-        if (match) {
-          const parsed = JSON.parse(match[0]);
-          if (Array.isArray(parsed.bullets) && parsed.bullets.length > 0) {
-            return {
-              title: parsed.title || slideTitle,
-              subtitle: parsed.subtitle || 'Technical Overview',
-              bullets: parsed.bullets,
-              notes: parsed.notes || `Key discussion points for ${slideTitle}.`,
-            };
-          }
+  if (ollamaRes.success && ollamaRes.text) {
+    const match = ollamaRes.text.match(/\{[\s\S]*\}/);
+    if (match) {
+      try {
+        const parsed = JSON.parse(match[0]);
+        if (Array.isArray(parsed.bullets) && parsed.bullets.length > 0) {
+          return {
+            title: parsed.title || slideTitle,
+            subtitle: parsed.subtitle || 'Technical Overview',
+            bullets: parsed.bullets,
+            notes: parsed.notes || `Key discussion points for ${slideTitle}.`,
+          };
         }
+      } catch (e) {
+        console.warn('Ollama enhance slide parse error:', e);
       }
-    } catch (e) {
-      console.warn('Groq enhance slide error:', e);
     }
   }
 

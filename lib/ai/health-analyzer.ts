@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { generateWithOllama, getOllamaConfig } from '@/lib/ai/ollama';
 import { HealthReportItem, HealthIssueItem, AIProvider } from '@/lib/types';
 
 export interface AnalyzeHealthOptions {
@@ -50,64 +50,33 @@ Return ONLY raw JSON.`;
 Document Content:
 ${content.slice(0, 7000)}`;
 
-  // 1. Try Groq AI
-  const groqKey = process.env.GROQ_API_KEY;
-  if (groqKey && !groqKey.toLowerCase().includes('mock') && !groqKey.includes('your-groq-key')) {
-    try {
-      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${groqKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userPrompt },
-          ],
-          temperature: 0.3,
-          max_tokens: 3000,
-        }),
-      });
+  // Call Centralized Ollama Service with llama3.2
+  const config = getOllamaConfig();
+  const ollamaRes = await generateWithOllama({
+    task: 'document',
+    model: config.documentModel,
+    system: systemPrompt,
+    prompt: userPrompt,
+    temperature: 0.3,
+    maxTokens: 3000,
+    jsonFormat: true,
+  });
 
-      if (res.ok) {
-        const data = await res.json();
-        const raw = data.choices?.[0]?.message?.content?.replace(/```json|```/g, '').trim();
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (typeof parsed.overallScore === 'number') {
-            return {
-              ...parsed,
-              calculatedAt: new Date().toISOString(),
-            };
-          }
-        }
-      }
-    } catch (e) {
-      console.warn('Groq health analyzer fallback:', e);
-    }
-  }
-
-  // 2. Try Gemini AI
-  const geminiKey = process.env.GEMINI_API_KEY;
-  if (geminiKey && !geminiKey.toLowerCase().includes('mock') && !geminiKey.includes('your-gemini-key')) {
-    try {
-      const ai = new GoogleGenerativeAI(geminiKey);
-      const model = ai.getGenerativeModel({ model: 'gemini-1.5-flash' });
-      const res = await model.generateContent(`${systemPrompt}\n\n${userPrompt}`);
-      const raw = res.response.text().replace(/```json|```/g, '').trim();
-      if (raw) {
-        const parsed = JSON.parse(raw);
+  if (ollamaRes.success && ollamaRes.text) {
+    const raw = ollamaRes.text.replace(/```json|```/g, '').trim();
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (match) {
+      try {
+        const parsed = JSON.parse(match[0]);
         if (typeof parsed.overallScore === 'number') {
           return {
             ...parsed,
             calculatedAt: new Date().toISOString(),
           };
         }
+      } catch (e) {
+        console.warn('Ollama health report parse error:', e);
       }
-    } catch (e) {
-      console.warn('Gemini health analyzer fallback:', e);
     }
   }
 

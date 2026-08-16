@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { generateWithOllama, getOllamaConfig } from '@/lib/ai/ollama';
 import { ResumeData, ATSAnalysisResult, AIProvider } from '@/lib/types';
 
 export interface AnalyzeJDOptions {
@@ -65,54 +65,28 @@ ${jobDescription.slice(0, 5000)}
 CANDIDATE RESUME:
 ${resumeText.slice(0, 5000)}`;
 
-  // 1. Try Groq AI
-  const groqKey = process.env.GROQ_API_KEY;
-  if (groqKey && !groqKey.toLowerCase().includes('mock') && !groqKey.includes('your-groq-key')) {
-    try {
-      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${groqKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userPrompt },
-          ],
-          temperature: 0.3,
-          max_tokens: 2500,
-        }),
-      });
+  // Call Centralized Ollama Service with llama3.2
+  const config = getOllamaConfig();
+  const ollamaRes = await generateWithOllama({
+    task: 'document',
+    model: config.documentModel,
+    system: systemPrompt,
+    prompt: userPrompt,
+    temperature: 0.3,
+    maxTokens: 2500,
+    jsonFormat: true,
+  });
 
-      if (res.ok) {
-        const data = await res.json();
-        const raw = data.choices?.[0]?.message?.content?.replace(/```json|```/g, '').trim();
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (typeof parsed.atsScore === 'number') return parsed;
-        }
-      }
-    } catch (e) {
-      console.warn('Groq ATS analyzer fallback:', e);
-    }
-  }
-
-  // 2. Try Gemini AI
-  const geminiKey = process.env.GEMINI_API_KEY;
-  if (geminiKey && !geminiKey.toLowerCase().includes('mock') && !geminiKey.includes('your-gemini-key')) {
-    try {
-      const ai = new GoogleGenerativeAI(geminiKey);
-      const model = ai.getGenerativeModel({ model: 'gemini-1.5-flash' });
-      const res = await model.generateContent(`${systemPrompt}\n\n${userPrompt}`);
-      const raw = res.response.text().replace(/```json|```/g, '').trim();
-      if (raw) {
-        const parsed = JSON.parse(raw);
+  if (ollamaRes.success && ollamaRes.text) {
+    const raw = ollamaRes.text.replace(/```json|```/g, '').trim();
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (match) {
+      try {
+        const parsed = JSON.parse(match[0]);
         if (typeof parsed.atsScore === 'number') return parsed;
+      } catch (e) {
+        console.warn('Ollama ATS result parse error:', e);
       }
-    } catch (e) {
-      console.warn('Gemini ATS analyzer fallback:', e);
     }
   }
 
@@ -141,49 +115,19 @@ Skills: ${[...(resume.skills?.programmingLanguages || []), ...(resume.skills?.fr
 Summary: ${resume.summary || ''}
 Experience: ${resume.experience?.map((e) => `${e.role} at ${e.company}`).join('; ') || ''}`;
 
-  // 1. Try Groq AI
-  const groqKey = process.env.GROQ_API_KEY;
-  if (groqKey && !groqKey.toLowerCase().includes('mock') && !groqKey.includes('your-groq-key')) {
-    try {
-      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${groqKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userPrompt },
-          ],
-          temperature: 0.6,
-          max_tokens: 2500,
-        }),
-      });
+  // Call Centralized Ollama Service with llama3.2
+  const config = getOllamaConfig();
+  const ollamaRes = await generateWithOllama({
+    task: 'document',
+    model: config.documentModel,
+    system: systemPrompt,
+    prompt: userPrompt,
+    temperature: 0.6,
+    maxTokens: 2500,
+  });
 
-      if (res.ok) {
-        const data = await res.json();
-        const text = data.choices?.[0]?.message?.content;
-        if (text) return text;
-      }
-    } catch (e) {
-      console.warn('Groq career doc generation fallback:', e);
-    }
-  }
-
-  // 2. Try Gemini AI
-  const geminiKey = process.env.GEMINI_API_KEY;
-  if (geminiKey && !geminiKey.toLowerCase().includes('mock') && !geminiKey.includes('your-gemini-key')) {
-    try {
-      const ai = new GoogleGenerativeAI(geminiKey);
-      const model = ai.getGenerativeModel({ model: 'gemini-1.5-flash' });
-      const res = await model.generateContent(`${systemPrompt}\n\n${userPrompt}`);
-      const text = res.response.text();
-      if (text) return text;
-    } catch (e) {
-      console.warn('Gemini career doc fallback:', e);
-    }
+  if (ollamaRes.success && ollamaRes.text) {
+    return ollamaRes.text;
   }
 
   // Fallback Template
