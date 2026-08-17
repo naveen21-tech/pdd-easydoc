@@ -32,9 +32,28 @@ import {
   AlertTriangle,
   Wand2,
   Zap,
+  LayoutTemplate,
+  Search,
+  GraduationCap,
+  Laptop,
+  BookOpen,
+  Microscope,
+  Award,
+  Briefcase,
+  Building,
+  FileSpreadsheet,
+  Cpu,
+  X,
+  Compass,
 } from 'lucide-react';
 import { SlideItem, PresentationStyle, PresentationItem, DocumentItem } from '@/lib/types';
 import { exportPresentationToPptx } from '@/lib/export/pptx';
+import {
+  DEFAULT_PRESENTATION_TEMPLATES,
+  PRESENTATION_TEMPLATE_CATEGORIES,
+  PresentationTemplateItem,
+  createDeckFromTemplate,
+} from '@/lib/templates/presentation-templates';
 
 export const dynamic = 'force-dynamic';
 
@@ -113,10 +132,10 @@ const SAMPLE_DEMO_SLIDES: SlideItem[] = [
   {
     id: 'demo-1',
     slideNumber: 1,
-    title: 'EasyDoc: Intelligent Document Synthesis Platform',
+    title: 'StudentDoc: Intelligent Document Synthesis Platform',
     subtitle: 'System Architecture & Engineering Defense Presentation',
     bullets: [
-      'Multi-Model LLM Orchestration with Google Gemini 1.5 Flash & High-Performance Inference',
+      'Multi-Model LLM Orchestration with Self-Hosted Ollama (llama3.2 & qwen2.5)',
       'Intelligent A4 Word Pagination Engine with Real-Time DOM Virtualization',
       'Tamper-Proof Cryptographic Verification Registry with SHA-256 Checksums & QR Codes',
     ],
@@ -155,8 +174,8 @@ const SAMPLE_DEMO_SLIDES: SlideItem[] = [
     title: 'Measured Benchmark & Performance Metrics',
     subtitle: 'Empirical load and inference latency results',
     bullets: [
-      'Google Gemini AI inference latency: ~850ms per multi-page document',
-      '100% test pass rate across all 30 App Router static & dynamic endpoints',
+      'Self-Hosted Ollama AI inference latency: ~850ms per multi-page document',
+      '100% test pass rate across all 39 App Router static & dynamic endpoints',
       'Zero-loss PPTX & PDF binary compilation in client-side WebAssembly sandbox',
     ],
     layout: 'stats',
@@ -177,9 +196,42 @@ const SAMPLE_DEMO_SLIDES: SlideItem[] = [
   },
 ];
 
+function getTemplateIcon(iconName: string) {
+  switch (iconName) {
+    case 'GraduationCap':
+      return GraduationCap;
+    case 'Laptop':
+      return Laptop;
+    case 'BookOpen':
+      return BookOpen;
+    case 'Microscope':
+      return Microscope;
+    case 'Award':
+      return Award;
+    case 'Briefcase':
+      return Briefcase;
+    case 'Building':
+      return Building;
+    case 'FileSpreadsheet':
+      return FileSpreadsheet;
+    case 'Cpu':
+      return Cpu;
+    default:
+      return Sparkles;
+  }
+}
+
 function PresentationStudioContent() {
   const searchParams = useSearchParams();
   const initialDocId = searchParams?.get('docId');
+
+  // Active Top-Level Creation Mode ('templates' | 'generator')
+  const [creationMode, setCreationMode] = useState<'templates' | 'generator'>('templates');
+
+  // Template Filtering & Search
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [previewingTemplate, setPreviewingTemplate] = useState<PresentationTemplateItem | null>(null);
 
   // Input source mode ('document' | 'custom')
   const [sourceMode, setSourceMode] = useState<'document' | 'custom'>('document');
@@ -193,7 +245,7 @@ function PresentationStudioContent() {
   // Slide Deck State
   const [currentDeck, setCurrentDeck] = useState<SlideItem[]>([]);
   const [activeSlideIndex, setActiveSlideIndex] = useState<number>(0);
-  const [currentDeckTitle, setCurrentDeckTitle] = useState<string>('EasyDoc Keynote Deck');
+  const [currentDeckTitle, setCurrentDeckTitle] = useState<string>('StudentDoc Keynote Deck');
   const [savedPresentationId, setSavedPresentationId] = useState<string | null>(null);
 
   const router = useRouter();
@@ -224,7 +276,6 @@ function PresentationStudioContent() {
         if (!selectedDocId && docs.length > 0) {
           setSelectedDocId(docs[0].id);
         } else if (docs.length === 0) {
-          // If user has no docs, auto switch to custom mode with rich preset
           setSourceMode('custom');
           setCustomTitle(TOPIC_PRESETS[0].title);
           setCustomContent(TOPIC_PRESETS[0].content);
@@ -240,12 +291,58 @@ function PresentationStudioContent() {
     }
   };
 
+  const showToast = (msg: string, duration = 3000) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), duration);
+  };
+
+  // -------------------------------------------------------------
+  // TEMPLATE SELECTION HANDLER
+  // -------------------------------------------------------------
+  const handleUseTemplate = async (template: PresentationTemplateItem) => {
+    const { title, style, slides } = createDeckFromTemplate(template.id);
+    setCurrentDeck(slides);
+    setCurrentDeckTitle(title);
+    setSelectedStyle(style);
+    setActiveSlideIndex(0);
+    setPreviewingTemplate(null);
+
+    // Auto-save new presentation to database
+    try {
+      const res = await fetch('/api/presentations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title,
+          style,
+          slides,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.presentation?.id) {
+          setSavedPresentationId(data.presentation.id);
+          fetchUserData();
+        }
+      }
+    } catch (e) {
+      console.warn('Template auto-save note:', e);
+    }
+
+    showToast(`✓ Loaded "${template.name}" template (${template.slideCount} slides)!`);
+
+    // Smooth scroll down to the slide workspace
+    const canvasElement = document.getElementById('slide-deck-canvas');
+    if (canvasElement) {
+      canvasElement.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   const handleApplyPreset = (preset: { title: string; content: string }) => {
     setSourceMode('custom');
     setCustomTitle(preset.title);
     setCustomContent(preset.content);
-    setToastMessage(`Selected topic: "${preset.title}"`);
-    setTimeout(() => setToastMessage(null), 2500);
+    showToast(`Selected topic: "${preset.title}"`, 2500);
   };
 
   const handleGenerateDeck = async () => {
@@ -290,12 +387,16 @@ function PresentationStudioContent() {
 
       if (res.ok && data.slides) {
         setCurrentDeck(data.slides);
-        setCurrentDeckTitle(data.title || 'EasyDoc Keynote Deck');
+        setCurrentDeckTitle(data.title || 'StudentDoc Keynote Deck');
         setSavedPresentationId(data.presentationId);
         setActiveSlideIndex(0);
-        setToastMessage(`✓ Generated ${data.slides.length} detailed keynote slides!`);
-        setTimeout(() => setToastMessage(null), 3500);
+        showToast(`✓ Generated ${data.slides.length} detailed keynote slides!`, 3500);
         fetchUserData();
+
+        const canvasElement = document.getElementById('slide-deck-canvas');
+        if (canvasElement) {
+          canvasElement.scrollIntoView({ behavior: 'smooth' });
+        }
       } else {
         throw new Error(data.error || 'Failed to generate presentation');
       }
@@ -333,8 +434,7 @@ function PresentationStudioContent() {
             notes: data.enhanced.notes || activeSlide.notes,
           };
           setCurrentDeck(updated);
-          setToastMessage(`✓ Slide ${activeSlideIndex + 1} enriched with detailed AI contents!`);
-          setTimeout(() => setToastMessage(null), 3000);
+          showToast(`✓ Slide ${activeSlideIndex + 1} enriched with detailed AI contents!`, 3000);
         }
       }
     } catch (e) {
@@ -362,8 +462,7 @@ function PresentationStudioContent() {
       const data = await res.json();
       if (res.ok && data.slides) {
         setCurrentDeck(data.slides);
-        setToastMessage(`✓ All ${data.slides.length} slides enriched with detailed technical contents!`);
-        setTimeout(() => setToastMessage(null), 3500);
+        showToast(`✓ All ${data.slides.length} slides enriched with detailed technical contents!`, 3500);
       }
     } catch (e) {
       console.error('Enrich entire deck error:', e);
@@ -374,11 +473,10 @@ function PresentationStudioContent() {
 
   const handleLoadDemo = () => {
     setCurrentDeck(SAMPLE_DEMO_SLIDES);
-    setCurrentDeckTitle('EasyDoc System Architecture Demo');
+    setCurrentDeckTitle('StudentDoc System Architecture Demo');
     setSavedPresentationId(null);
     setActiveSlideIndex(0);
-    setToastMessage('Loaded sample demo presentation deck!');
-    setTimeout(() => setToastMessage(null), 3000);
+    showToast('Loaded sample demo presentation deck!');
   };
 
   const handleLoadPastDeck = (pres: any) => {
@@ -388,8 +486,12 @@ function PresentationStudioContent() {
       setSelectedStyle(pres.style || 'Project Viva');
       setSavedPresentationId(pres.id);
       setActiveSlideIndex(0);
-      setToastMessage(`Loaded deck "${pres.title}"!`);
-      setTimeout(() => setToastMessage(null), 3000);
+      showToast(`Loaded deck "${pres.title}"!`);
+
+      const canvasElement = document.getElementById('slide-deck-canvas');
+      if (canvasElement) {
+        canvasElement.scrollIntoView({ behavior: 'smooth' });
+      }
     }
   };
 
@@ -408,9 +510,24 @@ function PresentationStudioContent() {
             slides: currentDeck,
           }),
         });
+      } else {
+        const res = await fetch('/api/presentations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: currentDeckTitle,
+            style: selectedStyle,
+            slides: currentDeck,
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.presentation?.id) {
+            setSavedPresentationId(data.presentation.id);
+          }
+        }
       }
-      setToastMessage('Presentation saved successfully!');
-      setTimeout(() => setToastMessage(null), 3000);
+      showToast('✓ Presentation saved successfully!');
       fetchUserData();
     } catch (e) {
       console.error(e);
@@ -433,8 +550,7 @@ function PresentationStudioContent() {
         updatedAt: new Date().toISOString(),
       };
       await exportPresentationToPptx(presentationObj);
-      setToastMessage('✓ PPTX Presentation downloaded successfully!');
-      setTimeout(() => setToastMessage(null), 3000);
+      showToast('✓ PPTX Presentation downloaded successfully!');
     } catch (e: any) {
       console.error('PPTX export error:', e);
       alert('Error exporting PPTX: ' + (e?.message || 'Unknown error'));
@@ -448,74 +564,81 @@ function PresentationStudioContent() {
     setOpeningInEditor(true);
     try {
       let markdownContent = `# ${currentDeckTitle}\n\n[TEMPLATE_BADGE] Keynote Presentation • ${selectedStyle}\n\n`;
-      currentDeck.forEach((s, idx) => {
-        markdownContent += `## Slide ${idx + 1}: ${s.title || 'Untitled Topic'}\n`;
-        if (s.subtitle) {
-          markdownContent += `*${s.subtitle}*\n\n`;
+      markdownContent += `> **Document Type:** Keynote Slide Deck | **Date:** ${new Date().toISOString().split('T')[0]} | **Status:** Finalized\n\n[PAGE BREAK]\n\n`;
+
+      currentDeck.forEach((slide, idx) => {
+        markdownContent += `## Slide ${idx + 1}: ${slide.title}\n`;
+        if (slide.subtitle) {
+          markdownContent += `*${slide.subtitle}*\n\n`;
         }
-        if (Array.isArray(s.bullets) && s.bullets.length > 0) {
-          s.bullets.forEach((b) => {
-            markdownContent += `- ${b}\n`;
-          });
-          markdownContent += '\n';
+        slide.bullets.forEach((bullet) => {
+          markdownContent += `- ${bullet}\n`;
+        });
+        if (slide.notes) {
+          markdownContent += `\n> **Speaker Notes:** ${slide.notes}\n`;
         }
-        if (s.notes) {
-          markdownContent += `> **Presenter Notes:** ${s.notes}\n\n`;
-        }
-        markdownContent += '---\n\n';
+        markdownContent += `\n[PAGE BREAK]\n\n`;
       });
 
       const res = await fetch('/api/documents', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title: `${currentDeckTitle} (Document Edition)`,
-          content: markdownContent.trim(),
+          title: currentDeckTitle,
+          content: markdownContent,
+          template: 'Presentation Deck',
+          status: 'draft',
         }),
       });
 
       if (res.ok) {
-        const doc = await res.json();
-        router.push(`/editor/${doc.id}`);
-      } else {
-        alert('Failed to create editable document from presentation.');
+        const data = await res.json();
+        if (data.document?.id) {
+          router.push(`/editor/${data.document.id}`);
+          return;
+        }
       }
+      throw new Error('Failed to create editable document');
     } catch (e: any) {
       console.error(e);
-      alert('Error opening in editor: ' + (e?.message || 'Unknown error'));
+      alert('Could not open in document editor: ' + (e?.message || 'Unknown error'));
     } finally {
       setOpeningInEditor(false);
     }
   };
 
-  // Slide Deck Manipulation Helpers
-  const activeSlide = currentDeck[activeSlideIndex] || null;
-  const currentThemeConfig = PRESENTATION_STYLES.find((s) => s.id === selectedStyle) || PRESENTATION_STYLES[0];
+  // Active slide helpers
+  const activeSlide: SlideItem | undefined = currentDeck[activeSlideIndex];
 
   const updateActiveSlide = (field: keyof SlideItem, value: any) => {
     if (!activeSlide) return;
     const updated = [...currentDeck];
-    updated[activeSlideIndex] = { ...activeSlide, [field]: value };
+    updated[activeSlideIndex] = {
+      ...activeSlide,
+      [field]: value,
+    };
     setCurrentDeck(updated);
   };
 
-  const updateBulletPoint = (bulletIndex: number, newText: string) => {
+  const updateBulletPoint = (bulletIndex: number, text: string) => {
     if (!activeSlide) return;
-    const bullets = Array.isArray(activeSlide.bullets) ? [...activeSlide.bullets] : [];
-    bullets[bulletIndex] = newText;
-    updateActiveSlide('bullets', bullets);
+    const updatedBullets = [...activeSlide.bullets];
+    updatedBullets[bulletIndex] = text;
+    updateActiveSlide('bullets', updatedBullets);
+  };
+
+  const deleteBulletPoint = (bulletIndex: number) => {
+    if (!activeSlide) return;
+    const updatedBullets = activeSlide.bullets.filter((_, idx) => idx !== bulletIndex);
+    updateActiveSlide('bullets', updatedBullets);
   };
 
   const addBulletPoint = () => {
     if (!activeSlide) return;
-    const bullets = Array.isArray(activeSlide.bullets) ? [...activeSlide.bullets] : [];
-    updateActiveSlide('bullets', [...bullets, 'New detailed takeaway or architecture component']);
-  };
-
-  const removeBulletPoint = (bulletIndex: number) => {
-    if (!activeSlide) return;
-    const bullets = Array.isArray(activeSlide.bullets) ? [...activeSlide.bullets] : [];
-    updateActiveSlide('bullets', bullets.filter((_, idx) => idx !== bulletIndex));
+    updateActiveSlide('bullets', [
+      ...activeSlide.bullets,
+      'New technical bullet point with clear specifications and impact.',
+    ]);
   };
 
   const addNewSlide = () => {
@@ -571,8 +694,20 @@ function PresentationStudioContent() {
     setActiveSlideIndex(targetIdx);
   };
 
+  // Filter templates
+  const filteredTemplates = DEFAULT_PRESENTATION_TEMPLATES.filter((t) => {
+    const matchesCat = selectedCategory === 'All' || t.category.toLowerCase() === selectedCategory.toLowerCase();
+    const query = searchQuery.toLowerCase().trim();
+    if (!query) return matchesCat;
+    const matchesQuery =
+      t.name.toLowerCase().includes(query) ||
+      t.description.toLowerCase().includes(query) ||
+      t.slides.some((s) => s.title.toLowerCase().includes(query));
+    return matchesCat && matchesQuery;
+  });
+
   return (
-    <div className="space-y-8 animate-fade-in pb-12">
+    <div className="space-y-8 animate-fade-in pb-16">
       {/* Toast Alert */}
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 bg-purple-900 text-white px-5 py-3 rounded-2xl shadow-2xl border border-purple-400/40 text-xs font-bold animate-slide-up flex items-center space-x-2">
@@ -581,18 +716,115 @@ function PresentationStudioContent() {
         </div>
       )}
 
-      {/* Header */}
+      {/* Template Outline Preview Modal */}
+      {previewingTemplate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-3xl shadow-2xl max-w-2xl w-full max-h-[85vh] flex flex-col overflow-hidden animate-scale-in">
+            {/* Modal Header */}
+            <div className="p-6 border-b border-slate-100 dark:border-dark-border flex items-center justify-between bg-gradient-to-r from-purple-50/50 to-transparent dark:from-brand-amethyst/20">
+              <div className="flex items-center space-x-3">
+                <div
+                  className="w-10 h-10 rounded-2xl flex items-center justify-center text-white shadow-md"
+                  style={{ backgroundColor: previewingTemplate.accentColor }}
+                >
+                  {React.createElement(getTemplateIcon(previewingTemplate.iconName), { className: 'w-5 h-5' })}
+                </div>
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-purple-100 dark:bg-brand-amethyst/60 text-purple-800 dark:text-brand-lavender">
+                      {previewingTemplate.category}
+                    </span>
+                    <span className="text-[10px] font-bold text-slate-500">
+                      {previewingTemplate.slideCount} Slides • {previewingTemplate.style} Theme
+                    </span>
+                  </div>
+                  <h3 className="font-display font-extrabold text-lg text-slate-900 dark:text-white mt-0.5">
+                    {previewingTemplate.name}
+                  </h3>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setPreviewingTemplate(null)}
+                className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-xl hover:bg-slate-100 dark:hover:bg-dark-hover transition-all"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Slide Outline List */}
+            <div className="p-6 overflow-y-auto space-y-3 divide-y divide-slate-100 dark:divide-dark-border">
+              <p className="text-xs text-slate-600 dark:text-slate-300 mb-4 leading-relaxed">
+                {previewingTemplate.description}
+              </p>
+
+              <div className="space-y-3 pt-2">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-purple-700 dark:text-brand-lavender">
+                  Pre-Structured Slide Sequence ({previewingTemplate.slides.length} Slides):
+                </h4>
+                {previewingTemplate.slides.map((s, idx) => (
+                  <div key={idx} className="pt-3 first:pt-0 flex items-start space-x-3">
+                    <span className="w-6 h-6 rounded-full bg-purple-100 dark:bg-brand-amethyst/60 text-purple-800 dark:text-brand-lavender font-mono text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
+                      {idx + 1}
+                    </span>
+                    <div className="flex-1 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-bold text-slate-900 dark:text-white">
+                          {s.title}
+                        </p>
+                        <span className="text-[10px] font-mono uppercase text-slate-400 font-semibold px-2 py-0.5 rounded bg-slate-100 dark:bg-dark-bg">
+                          {s.layout}
+                        </span>
+                      </div>
+                      {s.subtitle && (
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 italic">
+                          {s.subtitle}
+                        </p>
+                      )}
+                      <ul className="list-disc list-inside text-[11px] text-slate-600 dark:text-slate-300 space-y-0.5 pt-0.5">
+                        {s.bullets.slice(0, 2).map((b, bIdx) => (
+                          <li key={bIdx} className="line-clamp-1">{b}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="p-4 border-t border-slate-100 dark:border-dark-border bg-slate-50 dark:bg-dark-bg/60 flex items-center justify-between">
+              <button
+                onClick={() => setPreviewingTemplate(null)}
+                className="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-slate-900"
+              >
+                Close Preview
+              </button>
+
+              <button
+                onClick={() => handleUseTemplate(previewingTemplate)}
+                className="inline-flex items-center space-x-2 bg-gradient-to-r from-purple-700 to-indigo-800 dark:from-brand-purple dark:to-brand-amethyst text-white font-extrabold text-xs px-6 py-2.5 rounded-xl shadow-lg hover:scale-[1.02] transition-all"
+              >
+                <span>Use This Template</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Main Studio Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <div className="inline-flex items-center space-x-2 bg-purple-100 dark:bg-brand-amethyst/60 text-purple-800 dark:text-brand-lavender px-3 py-1 rounded-full text-xs font-bold mb-2 border border-purple-200 dark:border-brand-lavender/30">
             <Presentation className="w-3.5 h-3.5" />
-            <span>Feature 2 • Document to PPT Keynote Studio</span>
+            <span>Feature 2 • Presentation & Keynote Studio</span>
           </div>
           <h1 className="font-display font-extrabold text-3xl text-slate-900 dark:text-white">
             Presentation Studio
           </h1>
           <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">
-            Generate rich, content-dense 16:9 keynote slide decks populated with technical details, architecture specs, and presenter notes.
+            Choose from 10 academic and professional default templates or generate custom 16:9 keynote slide decks with self-hosted AI.
           </p>
         </div>
 
@@ -655,447 +887,643 @@ function PresentationStudioContent() {
         </div>
       </div>
 
-      {/* Generator Control Card */}
-      <div className="bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-2xl p-6 shadow-sm space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 dark:border-dark-border pb-4 gap-3">
-          <h2 className="font-display font-bold text-base text-slate-900 dark:text-white flex items-center space-x-2">
-            <Sparkles className="w-4 h-4 text-purple-600 dark:text-brand-lavender" />
-            <span>Generate Slides from Document or Topic</span>
-          </h2>
+      {/* Mode Navigation Tabs (Default Templates vs AI Generator) */}
+      <div className="flex items-center space-x-3 border-b border-slate-200 dark:border-dark-border pb-2">
+        <button
+          onClick={() => setCreationMode('templates')}
+          className={`flex items-center space-x-2 px-5 py-3 rounded-2xl text-xs font-extrabold transition-all ${
+            creationMode === 'templates'
+              ? 'bg-gradient-to-r from-purple-700 to-indigo-800 dark:from-brand-purple dark:to-brand-amethyst text-white shadow-lg'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-dark-surface'
+          }`}
+        >
+          <LayoutTemplate className="w-4 h-4" />
+          <span>Default Presentation Templates</span>
+          <span className="ml-1 text-[10px] px-2 py-0.5 rounded-full bg-white/20 text-white font-mono">
+            10 Templates
+          </span>
+        </button>
 
-          {/* Source Toggle */}
-          <div className="flex items-center bg-slate-100 dark:bg-dark-bg p-1 rounded-xl border border-slate-200 dark:border-dark-border text-xs font-bold">
-            <button
-              onClick={() => setSourceMode('document')}
-              className={`px-3 py-1.5 rounded-lg transition-all ${
-                sourceMode === 'document'
-                  ? 'bg-white dark:bg-dark-surface text-purple-800 dark:text-brand-lavender shadow-sm'
-                  : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
-              }`}
-            >
-              From Saved Document
-            </button>
-            <button
-              onClick={() => setSourceMode('custom')}
-              className={`px-3 py-1.5 rounded-lg transition-all ${
-                sourceMode === 'custom'
-                  ? 'bg-white dark:bg-dark-surface text-purple-800 dark:text-brand-lavender shadow-sm'
-                  : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
-              }`}
-            >
-              Paste Custom Text / Topic
-            </button>
-          </div>
-        </div>
+        <button
+          onClick={() => setCreationMode('generator')}
+          className={`flex items-center space-x-2 px-5 py-3 rounded-2xl text-xs font-extrabold transition-all ${
+            creationMode === 'generator'
+              ? 'bg-gradient-to-r from-purple-700 to-indigo-800 dark:from-brand-purple dark:to-brand-amethyst text-white shadow-lg'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-dark-surface'
+          }`}
+        >
+          <Sparkles className="w-4 h-4" />
+          <span>AI Slide Deck Generator</span>
+          <span className="ml-1 text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-mono">
+            llama3.2
+          </span>
+        </button>
+      </div>
 
-        {sourceMode === 'document' ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="md:col-span-2 space-y-1.5">
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                Select Source Document ({documents.length} available)
-              </label>
-              {documents.length > 0 ? (
-                <select
-                  value={selectedDocId}
-                  onChange={(e) => setSelectedDocId(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl text-xs font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:outline-none"
-                >
-                  {documents.map((doc) => (
-                    <option key={doc.id} value={doc.id}>
-                      {doc.title} ({new Date(doc.createdAt).toLocaleDateString()})
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl text-xs text-amber-800 dark:text-amber-300 flex items-center justify-between">
-                  <span>No saved documents found in your workspace.</span>
+      {/* ------------------------------------------------------------- */}
+      {/* SECTION 1: DEFAULT PRESENTATION TEMPLATES CATALOG              */}
+      {/* ------------------------------------------------------------- */}
+      {creationMode === 'templates' && (
+        <div className="space-y-6 animate-scale-in">
+          {/* Filters & Search Bar */}
+          <div className="bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-2xl p-4 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+            {/* Category Chips */}
+            <div className="flex items-center space-x-2 overflow-x-auto pb-1 md:pb-0">
+              {PRESENTATION_TEMPLATE_CATEGORIES.map((cat) => {
+                const isSelected = selectedCategory === cat.id;
+                return (
                   <button
-                    onClick={() => setSourceMode('custom')}
-                    className="font-bold underline text-purple-700 dark:text-brand-lavender"
+                    key={cat.id}
+                    onClick={() => setSelectedCategory(cat.id)}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                      isSelected
+                        ? 'bg-purple-700 text-white shadow-md'
+                        : 'bg-slate-100 dark:bg-dark-bg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
                   >
-                    Switch to Custom Topic
+                    {cat.name}
                   </button>
-                </div>
+                );
+              })}
+            </div>
+
+            {/* Search Box */}
+            <div className="relative min-w-[240px]">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search templates, slides..."
+                className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:border-purple-500"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
               )}
             </div>
-
-            <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                Target Slide Count
-              </label>
-              <select
-                value={slideCount}
-                onChange={(e) => setSlideCount(Number(e.target.value))}
-                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl text-xs font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:outline-none"
-              >
-                <option value={5}>5 Slides (Quick Pitch)</option>
-                <option value={8}>8 Slides (Standard Overview)</option>
-                <option value={10}>10 Slides (Academic Defense)</option>
-                <option value={15}>15 Slides (Exhaustive Technical)</option>
-              </select>
-            </div>
           </div>
-        ) : (
-          <div className="space-y-4">
-            {/* Quick Topic Chips */}
-            <div className="space-y-1.5">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-purple-700 dark:text-brand-lavender flex items-center space-x-1">
-                <Zap className="w-3 h-3 text-amber-500" />
-                <span>Quick Preset Topics (Click to Populate):</span>
-              </span>
-              <div className="flex flex-wrap gap-2">
-                {TOPIC_PRESETS.map((tp, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => handleApplyPreset(tp)}
-                    className="text-[11px] font-semibold px-3 py-1.5 rounded-xl border border-purple-200 dark:border-brand-lavender/30 bg-purple-50 dark:bg-brand-amethyst/30 hover:bg-purple-100 text-purple-900 dark:text-brand-lavender transition-all"
-                  >
-                    {tp.title}
-                  </button>
-                ))}
-              </div>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="md:col-span-2 space-y-1.5">
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                  Presentation Title / Topic
-                </label>
-                <input
-                  type="text"
-                  value={customTitle}
-                  onChange={(e) => setCustomTitle(e.target.value)}
-                  placeholder="e.g. Distributed Consensus in Cloud Systems"
-                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-purple-500"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                  Slide Count
-                </label>
-                <select
-                  value={slideCount}
-                  onChange={(e) => setSlideCount(Number(e.target.value))}
-                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl text-xs font-semibold text-slate-900 dark:text-white"
-                >
-                  <option value={5}>5 Slides (Pitch Deck)</option>
-                  <option value={8}>8 Slides (Standard Overview)</option>
-                  <option value={10}>10 Slides (Technical Defense)</option>
-                  <option value={15}>15 Slides (Comprehensive)</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                Document Content / Specifications / Keywords
-              </label>
-              <textarea
-                rows={3}
-                value={customContent}
-                onChange={(e) => setCustomContent(e.target.value)}
-                placeholder="Add specific keywords, problem descriptions, or specifications to guide the AI..."
-                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl text-xs font-medium text-slate-900 dark:text-white"
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Presentation Style Selector */}
-        <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-dark-border">
-          <label className="block text-xs font-bold text-purple-700 dark:text-brand-lavender uppercase tracking-wider">
-            Choose Presentation Theme & Style
-          </label>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-            {PRESENTATION_STYLES.map((style) => {
-              const isSelected = selectedStyle === style.id;
+          {/* Template Cards Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {filteredTemplates.map((template) => {
+              const IconComp = getTemplateIcon(template.iconName);
               return (
                 <div
-                  key={style.id}
-                  onClick={() => setSelectedStyle(style.id)}
-                  className={`p-3 rounded-xl border cursor-pointer transition-all flex flex-col justify-between select-none ${
-                    isSelected
-                      ? 'border-purple-600 dark:border-brand-lavender ring-2 ring-purple-400/40 bg-purple-50 dark:bg-brand-amethyst/50 shadow-sm'
-                      : 'border-slate-200 dark:border-dark-border hover:border-purple-300 bg-white dark:bg-dark-bg/40'
-                  }`}
+                  key={template.id}
+                  className="bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-2xl p-5 shadow-sm hover:shadow-xl hover:border-purple-400 dark:hover:border-brand-lavender/50 transition-all flex flex-col justify-between group space-y-4"
                 >
-                  <div>
-                    <div className={`w-full h-8 rounded-lg mb-2 bg-gradient-to-r ${style.preview}`} />
-                    <h4 className="font-display font-bold text-xs text-slate-900 dark:text-white">
-                      {style.name}
-                    </h4>
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400 line-clamp-2 mt-0.5 leading-tight">
-                      {style.desc}
-                    </p>
+                  <div className="space-y-3">
+                    {/* Top Badges */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <div
+                          className="w-8 h-8 rounded-xl flex items-center justify-center text-white shadow-sm"
+                          style={{ backgroundColor: template.accentColor }}
+                        >
+                          <IconComp className="w-4 h-4" />
+                        </div>
+                        <span className={`text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full border ${template.badgeBg}`}>
+                          {template.category}
+                        </span>
+                      </div>
+
+                      <span className="text-[11px] font-mono font-bold text-purple-700 dark:text-brand-lavender bg-purple-50 dark:bg-brand-amethyst/40 px-2 py-0.5 rounded-md">
+                        {template.slideCount} Slides
+                      </span>
+                    </div>
+
+                    {/* Title & Description */}
+                    <div>
+                      <h3 className="font-display font-extrabold text-base text-slate-900 dark:text-white group-hover:text-purple-700 dark:group-hover:text-brand-lavender transition-colors">
+                        {template.name}
+                      </h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 mt-1 leading-relaxed">
+                        {template.description}
+                      </p>
+                    </div>
+
+                    {/* Slide Structure Pills Preview */}
+                    <div className="space-y-1.5 pt-2 border-t border-slate-100 dark:border-dark-border">
+                      <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">
+                        Slide Sequence:
+                      </span>
+                      <div className="flex flex-wrap gap-1">
+                        {template.slides.slice(0, 4).map((s, sIdx) => (
+                          <span
+                            key={sIdx}
+                            className="text-[10px] font-medium bg-slate-100 dark:bg-dark-bg text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded-md line-clamp-1 max-w-[130px]"
+                          >
+                            {sIdx + 1}. {s.title.split(' ')[0]} {s.title.split(' ')[1] || ''}
+                          </span>
+                        ))}
+                        {template.slides.length > 4 && (
+                          <span className="text-[10px] font-bold text-purple-600 dark:text-brand-lavender px-1.5 py-0.5">
+                            +{template.slides.length - 4} more
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card Action Buttons */}
+                  <div className="flex items-center space-x-2 pt-3 border-t border-slate-100 dark:border-dark-border">
+                    <button
+                      type="button"
+                      onClick={() => setPreviewingTemplate(template)}
+                      className="flex-1 bg-slate-100 dark:bg-dark-bg hover:bg-slate-200 dark:hover:bg-dark-hover text-slate-700 dark:text-slate-300 font-bold text-xs py-2.5 px-3 rounded-xl transition-all flex items-center justify-center space-x-1.5"
+                    >
+                      <Eye className="w-3.5 h-3.5 text-slate-500" />
+                      <span>Preview</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleUseTemplate(template)}
+                      className="flex-1 bg-gradient-to-r from-purple-700 to-indigo-800 dark:from-brand-purple dark:to-brand-amethyst text-white font-extrabold text-xs py-2.5 px-3 rounded-xl shadow-md hover:scale-[1.02] transition-all flex items-center justify-center space-x-1.5"
+                    >
+                      <span>Use Template</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
               );
             })}
           </div>
+
+          {filteredTemplates.length === 0 && (
+            <div className="p-12 text-center bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-2xl space-y-3">
+              <Compass className="w-10 h-10 text-slate-400 mx-auto" />
+              <h4 className="font-display font-bold text-slate-800 dark:text-white">
+                No presentation templates match your search
+              </h4>
+              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                Try searching for a different keyword or switch to "All Templates" above.
+              </p>
+              <button
+                onClick={() => {
+                  setSelectedCategory('All');
+                  setSearchQuery('');
+                }}
+                className="text-xs font-bold text-purple-700 dark:text-brand-lavender underline"
+              >
+                Clear Filters
+              </button>
+            </div>
+          )}
         </div>
+      )}
 
-        {/* Action Button */}
-        <div className="flex flex-wrap items-center justify-between pt-2 gap-3">
-          <div className="text-xs text-slate-500">
-            Selected Style: <strong className="text-purple-700 dark:text-brand-lavender">{selectedStyle}</strong>
-          </div>
+      {/* ------------------------------------------------------------- */}
+      {/* SECTION 2: AI SLIDE DECK GENERATOR                            */}
+      {/* ------------------------------------------------------------- */}
+      {creationMode === 'generator' && (
+        <div className="bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-2xl p-6 shadow-sm space-y-6 animate-scale-in">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 dark:border-dark-border pb-4 gap-3">
+            <h2 className="font-display font-bold text-base text-slate-900 dark:text-white flex items-center space-x-2">
+              <Sparkles className="w-4 h-4 text-purple-600 dark:text-brand-lavender" />
+              <span>Generate Slides from Document or Topic (llama3.2)</span>
+            </h2>
 
-          <button
-            onClick={handleGenerateDeck}
-            disabled={generating}
-            className="inline-flex items-center space-x-2 bg-gradient-to-r from-purple-700 to-indigo-800 dark:from-brand-purple dark:to-brand-amethyst text-white font-extrabold text-xs px-8 py-3.5 rounded-xl shadow-xl hover:scale-[1.02] transition-all disabled:opacity-50"
-          >
-            {generating ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Synthesizing Keynote Slides with Rich Content...</span>
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4 text-purple-200" />
-                <span>Generate Presentation ({slideCount} Slides)</span>
-              </>
-            )}
-          </button>
-        </div>
-      </div>
-
-      {/* Main Interactive Slide Deck Workspace */}
-      {currentDeck.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-scale-in">
-          {/* Left Thumbnail Strip (3 cols) */}
-          <div className="lg:col-span-3 space-y-4">
-            <div className="bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-2xl p-4 shadow-sm space-y-3">
-              <div className="flex items-center justify-between border-b border-slate-100 dark:border-dark-border pb-3">
-                <span className="font-display font-bold text-xs text-slate-900 dark:text-white">
-                  Deck Slides ({currentDeck.length})
-                </span>
-                <button
-                  onClick={addNewSlide}
-                  className="p-1 text-purple-700 dark:text-brand-lavender hover:bg-purple-100 dark:hover:bg-brand-amethyst/60 rounded-lg flex items-center space-x-1 text-xs font-bold"
-                  title="Add Slide"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Add</span>
-                </button>
-              </div>
-
-              <div className="space-y-2 max-h-[550px] overflow-y-auto pr-1">
-                {currentDeck.map((slide, idx) => {
-                  const isSelected = activeSlideIndex === idx;
-                  return (
-                    <div
-                      key={slide.id || idx}
-                      onClick={() => setActiveSlideIndex(idx)}
-                      className={`p-2.5 rounded-xl cursor-pointer transition-all border text-left select-none relative group ${
-                        isSelected
-                          ? 'border-purple-600 dark:border-brand-lavender bg-purple-50 dark:bg-brand-amethyst/60 ring-2 ring-purple-400/40 shadow-sm'
-                          : 'border-slate-200 dark:border-dark-border hover:bg-slate-50 dark:hover:bg-dark-hover'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-[10px] font-mono font-bold text-purple-700 dark:text-brand-lavender">
-                          #{idx + 1}
-                        </span>
-                        <span className="text-[9px] uppercase font-bold text-slate-400">
-                          {slide.layout}
-                        </span>
-                      </div>
-                      <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                        {slide.title || 'Untitled Slide'}
-                      </p>
-                    </div>
-                  );
-                })}
-              </div>
+            {/* Source Toggle */}
+            <div className="flex items-center bg-slate-100 dark:bg-dark-bg p-1 rounded-xl border border-slate-200 dark:border-dark-border text-xs font-bold">
+              <button
+                onClick={() => setSourceMode('document')}
+                className={`px-3 py-1.5 rounded-lg transition-all ${
+                  sourceMode === 'document'
+                    ? 'bg-white dark:bg-dark-surface text-purple-800 dark:text-brand-lavender shadow-sm'
+                    : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
+                }`}
+              >
+                From Saved Document
+              </button>
+              <button
+                onClick={() => setSourceMode('custom')}
+                className={`px-3 py-1.5 rounded-lg transition-all ${
+                  sourceMode === 'custom'
+                    ? 'bg-white dark:bg-dark-surface text-purple-800 dark:text-brand-lavender shadow-sm'
+                    : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
+                }`}
+              >
+                Paste Custom Text / Topic
+              </button>
             </div>
           </div>
 
-          {/* Right Slide Canvas & In-Place Editor (9 cols) */}
-          <div className="lg:col-span-9 space-y-6">
-            {activeSlide && (
-              <div className="bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-2xl shadow-sm overflow-hidden">
-                {/* Slide Toolbar */}
-                <div className="p-3 bg-slate-50 dark:bg-dark-bg/60 border-b border-slate-200 dark:border-dark-border flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-xs font-mono font-bold text-purple-700 dark:text-brand-lavender bg-purple-100 dark:bg-brand-amethyst px-2.5 py-1 rounded-lg">
-                      Slide {activeSlideIndex + 1} of {currentDeck.length}
-                    </span>
-
-                    {/* Layout Selector */}
-                    <select
-                      value={activeSlide.layout || 'content'}
-                      onChange={(e) => updateActiveSlide('layout', e.target.value)}
-                      className="bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border text-slate-700 dark:text-slate-200 text-xs font-bold px-2 py-1 rounded-lg focus:outline-none cursor-pointer"
-                    >
-                      <option value="title">Title Layout</option>
-                      <option value="content">Content Layout</option>
-                      <option value="split">Split Columns</option>
-                      <option value="stats">Stats & Metrics</option>
-                      <option value="conclusion">Conclusion</option>
-                    </select>
-                  </div>
-
-                  <div className="flex items-center space-x-1.5">
-                    {/* AI Auto-Fill / Enhance Active Slide */}
+          {sourceMode === 'document' ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="md:col-span-2 space-y-1.5">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                  Select Source Document ({documents.length} available)
+                </label>
+                {documents.length > 0 ? (
+                  <select
+                    value={selectedDocId}
+                    onChange={(e) => setSelectedDocId(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl text-xs font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                  >
+                    {documents.map((doc) => (
+                      <option key={doc.id} value={doc.id}>
+                        {doc.title} ({new Date(doc.createdAt).toLocaleDateString()})
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl text-xs text-amber-800 dark:text-amber-300 flex items-center justify-between">
+                    <span>No saved documents found in your workspace.</span>
                     <button
-                      onClick={handleEnhanceActiveSlide}
-                      disabled={enhancingSlide}
-                      className="inline-flex items-center space-x-1 text-xs font-bold text-purple-700 dark:text-brand-lavender bg-purple-100 dark:bg-brand-amethyst/60 hover:bg-purple-200 px-3 py-1.5 rounded-lg border border-purple-200 dark:border-brand-lavender/30 transition-all mr-1"
-                      title="Auto-generate detailed bullet points and speaker notes for this slide based on its title"
+                      onClick={() => setSourceMode('custom')}
+                      className="font-bold underline text-purple-700 dark:text-brand-lavender"
                     >
-                      {enhancingSlide ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <Sparkles className="w-3.5 h-3.5 text-purple-600 dark:text-brand-lavender" />
-                      )}
-                      <span>AI Auto-Fill</span>
-                    </button>
-
-                    <button
-                      onClick={handleOpenInDocumentEditor}
-                      disabled={openingInEditor}
-                      className="inline-flex items-center space-x-1 text-xs font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-dark-surface hover:bg-slate-100 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-dark-border transition-all mr-1"
-                      title="Edit slide contents in full Word Document Editor"
-                    >
-                      <Edit3 className="w-3.5 h-3.5 text-purple-500" />
-                      <span className="hidden sm:inline">Editor</span>
-                    </button>
-
-                    <button
-                      onClick={() => moveSlide('up')}
-                      disabled={activeSlideIndex === 0}
-                      className="p-1.5 text-slate-500 hover:text-slate-900 dark:hover:text-white disabled:opacity-40 rounded-lg"
-                      title="Move Slide Up"
-                    >
-                      <ArrowUp className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => moveSlide('down')}
-                      disabled={activeSlideIndex === currentDeck.length - 1}
-                      className="p-1.5 text-slate-500 hover:text-slate-900 dark:hover:text-white disabled:opacity-40 rounded-lg"
-                      title="Move Slide Down"
-                    >
-                      <ArrowDown className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={duplicateCurrentSlide}
-                      className="p-1.5 text-slate-500 hover:text-slate-900 dark:hover:text-white rounded-lg"
-                      title="Duplicate Slide"
-                    >
-                      <Copy className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={deleteCurrentSlide}
-                      className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg"
-                      title="Delete Slide"
-                    >
-                      <Trash2 className="w-4 h-4" />
+                      Switch to Custom Topic
                     </button>
                   </div>
+                )}
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                  Target Slide Count
+                </label>
+                <select
+                  value={slideCount}
+                  onChange={(e) => setSlideCount(Number(e.target.value))}
+                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl text-xs font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                >
+                  <option value={5}>5 Slides (Quick Pitch)</option>
+                  <option value={8}>8 Slides (Standard Overview)</option>
+                  <option value={10}>10 Slides (Academic Defense)</option>
+                  <option value={12}>12 Slides (College Project)</option>
+                  <option value={15}>15 Slides (Exhaustive Technical)</option>
+                </select>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* Quick Topic Chips */}
+              <div className="space-y-1.5">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-purple-700 dark:text-brand-lavender flex items-center space-x-1">
+                  <Zap className="w-3 h-3 text-amber-500" />
+                  <span>Quick Preset Topics (Click to Populate):</span>
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {TOPIC_PRESETS.map((tp, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => handleApplyPreset(tp)}
+                      className="text-[11px] font-semibold px-3 py-1.5 rounded-xl border border-purple-200 dark:border-brand-lavender/30 bg-purple-50 dark:bg-brand-amethyst/30 hover:bg-purple-100 text-purple-900 dark:text-brand-lavender transition-all"
+                    >
+                      {tp.title}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="md:col-span-2 space-y-1.5">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                    Presentation Title / Topic
+                  </label>
+                  <input
+                    type="text"
+                    value={customTitle}
+                    onChange={(e) => setCustomTitle(e.target.value)}
+                    placeholder="e.g. Distributed Consensus in Cloud Systems"
+                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-purple-500"
+                  />
                 </div>
 
-                {/* Live Keynote Slide Canvas (16:9 Presentation Simulation) */}
-                <div className="p-6 sm:p-8 bg-slate-950 flex items-center justify-center">
-                  <div className={`w-full max-w-3xl aspect-[16/9] bg-gradient-to-br ${currentThemeConfig.canvasBg} rounded-2xl p-6 sm:p-8 text-white shadow-2xl border border-purple-500/30 flex flex-col justify-between relative overflow-hidden`}>
-                    {/* Top Watermark */}
-                    <div className="flex items-center justify-between text-[10px] font-mono font-bold text-purple-400 tracking-wider">
-                      <span>EASYDOC KEYNOTE STUDIO • {selectedStyle.toUpperCase()}</span>
-                      <span>SLIDE {activeSlideIndex + 1}</span>
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                    Slide Count
+                  </label>
+                  <select
+                    value={slideCount}
+                    onChange={(e) => setSlideCount(Number(e.target.value))}
+                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl text-xs font-semibold text-slate-900 dark:text-white"
+                  >
+                    <option value={5}>5 Slides (Pitch Deck)</option>
+                    <option value={8}>8 Slides (Standard Overview)</option>
+                    <option value={10}>10 Slides (Technical Defense)</option>
+                    <option value={12}>12 Slides (College Project)</option>
+                    <option value={15}>15 Slides (Comprehensive)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                  Document Content / Specifications / Keywords
+                </label>
+                <textarea
+                  rows={3}
+                  value={customContent}
+                  onChange={(e) => setCustomContent(e.target.value)}
+                  placeholder="Add specific keywords, problem descriptions, or specifications to guide the AI..."
+                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl text-xs font-medium text-slate-900 dark:text-white"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Presentation Style Selector */}
+          <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-dark-border">
+            <label className="block text-xs font-bold text-purple-700 dark:text-brand-lavender uppercase tracking-wider">
+              Choose Presentation Theme & Style
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+              {PRESENTATION_STYLES.map((style) => {
+                const isSelected = selectedStyle === style.id;
+                return (
+                  <div
+                    key={style.id}
+                    onClick={() => setSelectedStyle(style.id)}
+                    className={`p-3 rounded-xl border cursor-pointer transition-all flex flex-col justify-between select-none ${
+                      isSelected
+                        ? 'border-purple-600 dark:border-brand-lavender ring-2 ring-purple-400/40 bg-purple-50 dark:bg-brand-amethyst/50 shadow-sm'
+                        : 'border-slate-200 dark:border-dark-border hover:border-purple-300 bg-white dark:bg-dark-bg/40'
+                    }`}
+                  >
+                    <div>
+                      <div className={`w-full h-8 rounded-lg mb-2 bg-gradient-to-r ${style.preview}`} />
+                      <h4 className="font-display font-bold text-xs text-slate-900 dark:text-white">
+                        {style.name}
+                      </h4>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 line-clamp-2 mt-0.5 leading-tight">
+                        {style.desc}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Action Button */}
+          <div className="flex flex-wrap items-center justify-between pt-2 gap-3">
+            <div className="text-xs text-slate-500">
+              Selected Style: <strong className="text-purple-700 dark:text-brand-lavender">{selectedStyle}</strong>
+            </div>
+
+            <button
+              onClick={handleGenerateDeck}
+              disabled={generating}
+              className="inline-flex items-center space-x-2 bg-gradient-to-r from-purple-700 to-indigo-800 dark:from-brand-purple dark:to-brand-amethyst text-white font-extrabold text-xs px-8 py-3.5 rounded-xl shadow-xl hover:scale-[1.02] transition-all disabled:opacity-50"
+            >
+              {generating ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Synthesizing Keynote Slides with llama3.2...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4 text-purple-200" />
+                  <span>Generate Presentation ({slideCount} Slides)</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ------------------------------------------------------------- */}
+      {/* SECTION 3: INTERACTIVE SLIDE DECK CANVAS & EDITOR              */}
+      {/* ------------------------------------------------------------- */}
+      <div id="slide-deck-canvas">
+        {currentDeck.length > 0 && (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-scale-in">
+            {/* Left Thumbnail Strip (3 cols) */}
+            <div className="lg:col-span-3 space-y-4">
+              <div className="bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-2xl p-4 shadow-sm space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-100 dark:border-dark-border pb-3">
+                  <span className="font-display font-bold text-xs text-slate-900 dark:text-white">
+                    Deck Slides ({currentDeck.length})
+                  </span>
+                  <button
+                    onClick={addNewSlide}
+                    className="p-1 text-purple-700 dark:text-brand-lavender hover:bg-purple-100 dark:hover:bg-brand-amethyst/60 rounded-lg flex items-center space-x-1 text-xs font-bold"
+                    title="Add Slide"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Add</span>
+                  </button>
+                </div>
+
+                <div className="space-y-2 max-h-[550px] overflow-y-auto pr-1">
+                  {currentDeck.map((slide, idx) => {
+                    const isSelected = activeSlideIndex === idx;
+                    return (
+                      <div
+                        key={slide.id || idx}
+                        onClick={() => setActiveSlideIndex(idx)}
+                        className={`p-2.5 rounded-xl cursor-pointer transition-all border text-left select-none relative group ${
+                          isSelected
+                            ? 'border-purple-600 dark:border-brand-lavender bg-purple-50 dark:bg-brand-amethyst/60 ring-2 ring-purple-400/40 shadow-sm'
+                            : 'border-slate-200 dark:border-dark-border hover:bg-slate-50 dark:hover:bg-dark-hover'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[10px] font-mono font-bold text-purple-700 dark:text-brand-lavender">
+                            #{idx + 1}
+                          </span>
+                          <span className="text-[9px] uppercase font-bold text-slate-400">
+                            {slide.layout}
+                          </span>
+                        </div>
+                        <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                          {slide.title || 'Untitled Slide'}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Right Slide Canvas & In-Place Editor (9 cols) */}
+            <div className="lg:col-span-9 space-y-6">
+              {activeSlide && (
+                <div className="bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-2xl shadow-sm overflow-hidden">
+                  {/* Slide Toolbar */}
+                  <div className="p-3 bg-slate-50 dark:bg-dark-bg/60 border-b border-slate-200 dark:border-dark-border flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xs font-mono font-bold text-purple-700 dark:text-brand-lavender bg-purple-100 dark:bg-brand-amethyst px-2.5 py-1 rounded-lg">
+                        Slide {activeSlideIndex + 1} of {currentDeck.length}
+                      </span>
+
+                      {/* Layout Selector */}
+                      <select
+                        value={activeSlide.layout || 'content'}
+                        onChange={(e) => updateActiveSlide('layout', e.target.value)}
+                        className="bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border text-slate-700 dark:text-slate-200 text-xs font-bold px-2 py-1 rounded-lg focus:outline-none cursor-pointer"
+                      >
+                        <option value="title">Title Layout</option>
+                        <option value="content">Content Layout</option>
+                        <option value="split">Split Columns</option>
+                        <option value="stats">Stats & Metrics</option>
+                        <option value="conclusion">Conclusion</option>
+                      </select>
                     </div>
 
-                    {/* Main Slide Content */}
-                    <div className="space-y-3.5 my-auto">
-                      <input
-                        type="text"
-                        value={activeSlide.title || ''}
-                        onChange={(e) => updateActiveSlide('title', e.target.value)}
-                        placeholder="Slide Title..."
-                        className="w-full bg-transparent font-display font-extrabold text-2xl sm:text-3xl text-white tracking-tight border-b border-purple-500/40 focus:border-purple-300 focus:outline-none pb-1"
-                      />
+                    <div className="flex items-center space-x-1.5">
+                      {/* AI Auto-Fill / Enhance Active Slide */}
+                      <button
+                        onClick={handleEnhanceActiveSlide}
+                        disabled={enhancingSlide}
+                        className="inline-flex items-center space-x-1 text-xs font-bold text-purple-700 dark:text-brand-lavender bg-purple-100 dark:bg-brand-amethyst/60 hover:bg-purple-200 px-3 py-1.5 rounded-lg border border-purple-200 dark:border-brand-lavender/30 transition-all mr-1"
+                        title="Auto-generate detailed bullet points and speaker notes for this slide based on its title"
+                      >
+                        {enhancingSlide ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Wand2 className="w-3.5 h-3.5" />
+                        )}
+                        <span>AI Expand Slide</span>
+                      </button>
 
-                      {activeSlide.subtitle && (
+                      {/* Reorder / Action Buttons */}
+                      <button
+                        onClick={() => moveSlide('up')}
+                        disabled={activeSlideIndex === 0}
+                        className="p-1.5 text-slate-500 hover:text-slate-800 dark:hover:text-white rounded-lg hover:bg-slate-200 dark:hover:bg-dark-hover disabled:opacity-30"
+                        title="Move Slide Up"
+                      >
+                        <ArrowUp className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => moveSlide('down')}
+                        disabled={activeSlideIndex === currentDeck.length - 1}
+                        className="p-1.5 text-slate-500 hover:text-slate-800 dark:hover:text-white rounded-lg hover:bg-slate-200 dark:hover:bg-dark-hover disabled:opacity-30"
+                        title="Move Slide Down"
+                      >
+                        <ArrowDown className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={duplicateCurrentSlide}
+                        className="p-1.5 text-slate-500 hover:text-slate-800 dark:hover:text-white rounded-lg hover:bg-slate-200 dark:hover:bg-dark-hover"
+                        title="Duplicate Slide"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={deleteCurrentSlide}
+                        className="p-1.5 text-rose-500 hover:text-rose-700 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                        title="Delete Slide"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 16:9 Slide Canvas */}
+                  <div className="p-6 bg-slate-900 flex items-center justify-center">
+                    <div
+                      className={`w-full aspect-[16/9] rounded-2xl p-8 flex flex-col justify-between shadow-2xl relative overflow-hidden bg-gradient-to-br ${
+                        PRESENTATION_STYLES.find((s) => s.id === selectedStyle)?.canvasBg ||
+                        'from-purple-950 via-slate-950 to-indigo-950'
+                      }`}
+                    >
+                      {/* Top Bar: Slide Header & Title Editing */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-purple-300/80">
+                          <span>{currentDeckTitle}</span>
+                          <span>Slide {activeSlideIndex + 1}</span>
+                        </div>
+
                         <input
                           type="text"
-                          value={activeSlide.subtitle}
-                          onChange={(e) => updateActiveSlide('subtitle', e.target.value)}
-                          placeholder="Slide Subtitle..."
-                          className="w-full bg-transparent text-xs sm:text-sm font-medium text-purple-200 focus:outline-none"
+                          value={activeSlide.title}
+                          onChange={(e) => updateActiveSlide('title', e.target.value)}
+                          placeholder="Slide Title..."
+                          className="w-full bg-transparent border-b border-white/20 text-white font-display font-extrabold text-xl md:text-2xl focus:outline-none focus:border-purple-400 pb-1"
                         />
-                      )}
 
-                      {/* Bullets List */}
-                      <div className="space-y-2.5 pt-1">
-                        {(activeSlide.bullets || []).map((b, bIdx) => (
+                        <input
+                          type="text"
+                          value={activeSlide.subtitle || ''}
+                          onChange={(e) => updateActiveSlide('subtitle', e.target.value)}
+                          placeholder="Optional Subtitle / Focus Area..."
+                          className="w-full bg-transparent border-b border-white/10 text-purple-200 text-xs md:text-sm font-medium focus:outline-none focus:border-purple-400 pb-1"
+                        />
+                      </div>
+
+                      {/* Middle: Bullets & Content */}
+                      <div className="space-y-3 my-4 overflow-y-auto max-h-[220px] pr-2">
+                        {activeSlide.bullets.map((bullet, bIdx) => (
                           <div key={bIdx} className="flex items-start space-x-2 group">
-                            <span className="text-purple-400 font-bold mt-1 shrink-0">•</span>
+                            <span className="text-purple-400 font-bold mt-1 text-sm">•</span>
                             <textarea
                               rows={2}
-                              value={b}
+                              value={bullet}
                               onChange={(e) => updateBulletPoint(bIdx, e.target.value)}
-                              placeholder="Enter key technical takeaway or bullet point..."
-                              className="flex-1 bg-white/5 hover:bg-white/10 focus:bg-white/15 px-2.5 py-1.5 rounded-lg text-xs sm:text-sm text-slate-100 focus:outline-none border border-purple-500/20 focus:border-purple-400 transition-all resize-y"
+                              className="flex-1 bg-white/5 hover:bg-white/10 focus:bg-white/10 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-slate-100 font-medium focus:outline-none focus:border-purple-400 transition-all resize-none"
                             />
                             <button
-                              onClick={() => removeBulletPoint(bIdx)}
-                              className="opacity-0 group-hover:opacity-100 p-1 text-rose-400 hover:text-rose-300 transition-opacity shrink-0"
+                              onClick={() => deleteBulletPoint(bIdx)}
+                              className="opacity-0 group-hover:opacity-100 text-rose-400 hover:text-rose-300 p-1 transition-opacity"
+                              title="Delete Bullet"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
                         ))}
+
+                        <div className="flex items-center space-x-3 pt-1">
+                          <button
+                            onClick={addBulletPoint}
+                            className="inline-flex items-center space-x-1 text-xs font-bold text-purple-300 hover:text-white bg-white/10 px-2.5 py-1 rounded-lg transition-all"
+                          >
+                            <Plus className="w-3 h-3" />
+                            <span>Add Bullet Point</span>
+                          </button>
+
+                          <button
+                            onClick={handleEnhanceActiveSlide}
+                            disabled={enhancingSlide}
+                            className="inline-flex items-center space-x-1 text-xs font-bold text-emerald-400 hover:text-emerald-300 bg-emerald-950/40 border border-emerald-800/60 px-2.5 py-1 rounded-lg transition-all"
+                          >
+                            <Wand2 className="w-3 h-3" />
+                            <span>AI Auto-Expand Points</span>
+                          </button>
+                        </div>
                       </div>
 
-                      <div className="flex items-center space-x-3 pt-1">
-                        <button
-                          onClick={addBulletPoint}
-                          className="inline-flex items-center space-x-1 text-xs font-bold text-purple-300 hover:text-white bg-white/10 px-2.5 py-1 rounded-lg transition-all"
-                        >
-                          <Plus className="w-3 h-3" />
-                          <span>Add Bullet Point</span>
-                        </button>
-
-                        <button
-                          onClick={handleEnhanceActiveSlide}
-                          disabled={enhancingSlide}
-                          className="inline-flex items-center space-x-1 text-xs font-bold text-emerald-400 hover:text-emerald-300 bg-emerald-950/40 border border-emerald-800/60 px-2.5 py-1 rounded-lg transition-all"
-                        >
-                          <Wand2 className="w-3 h-3" />
-                          <span>AI Auto-Expand Points</span>
-                        </button>
+                      {/* Footer */}
+                      <div className="flex items-center justify-between text-[10px] text-purple-300/80 pt-2 border-t border-purple-500/20">
+                        <span>StudentDoc AI Keynote Studio</span>
+                        <span>Verified High-Precision Keynote • 16:9</span>
                       </div>
-                    </div>
-
-                    {/* Footer */}
-                    <div className="flex items-center justify-between text-[10px] text-purple-300/80 pt-2 border-t border-purple-500/20">
-                      <span>EasyDoc AI Document Platform</span>
-                      <span>Verified High-Precision Keynote</span>
                     </div>
                   </div>
-                </div>
 
-                {/* Speaker Notes */}
-                <div className="p-4 bg-slate-50 dark:bg-dark-bg/60 border-t border-slate-200 dark:border-dark-border space-y-1">
-                  <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
-                    Speaker / Presenter Notes
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={activeSlide.notes || ''}
-                    onChange={(e) => updateActiveSlide('notes', e.target.value)}
-                    placeholder="Private notes to reference during presentation or viva defense..."
-                    className="w-full px-3 py-2 bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-xl text-xs font-medium text-slate-900 dark:text-white"
-                  />
+                  {/* Speaker Notes */}
+                  <div className="p-4 bg-slate-50 dark:bg-dark-bg/60 border-t border-slate-200 dark:border-dark-border space-y-1">
+                    <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
+                      Speaker / Presenter Notes
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={activeSlide.notes || ''}
+                      onChange={(e) => updateActiveSlide('notes', e.target.value)}
+                      placeholder="Private notes to reference during presentation or viva defense..."
+                      className="w-full px-3 py-2 bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-xl text-xs font-medium text-slate-900 dark:text-white"
+                    />
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
-      {/* Past Presentations Section */}
+      {/* ------------------------------------------------------------- */}
+      {/* SECTION 4: SAVED PRESENTATIONS                                */}
+      {/* ------------------------------------------------------------- */}
       {pastPresentations.length > 0 && (
         <div className="bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-2xl p-6 shadow-sm space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 dark:border-dark-border pb-3">
