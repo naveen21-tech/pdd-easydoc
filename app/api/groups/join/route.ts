@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/server';
-import { prisma } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -27,89 +26,71 @@ export async function POST(request: Request) {
 
     const cleanCode = parsed.data.code.trim().toUpperCase();
 
-    // 1. Find group by join code via Prisma
-    const targetGroup = await prisma.group.findUnique({
-      where: { joinCode: cleanCode },
-      include: {
-        creator: {
-          select: { id: true, name: true, email: true, avatarUrl: true },
-        },
-      },
-    });
+    // 1. Find group by join code via Supabase
+    const { data: targetGroup, error: findErr } = await supabase
+      .from('Group')
+      .select('*, creator:Profile!createdBy(id, name, email, avatarUrl)')
+      .eq('joinCode', cleanCode)
+      .maybeSingle();
 
-    if (!targetGroup) {
+    if (findErr || !targetGroup) {
       return NextResponse.json(
         { error: 'Group not found. Please check the join code and try again.' },
         { status: 404 }
       );
     }
 
-    // 2. Ensure Profile exists for joining user so their name & email are stored
-    const existingProfile = await prisma.profile.findUnique({ where: { id: user.id } });
+    // 2. Ensure Profile exists for joining student in Supabase
+    const { data: existingProfile } = await supabase
+      .from('Profile')
+      .select('id, name')
+      .eq('id', user.id)
+      .maybeSingle();
+
     if (!existingProfile) {
       const derivedName =
         user.user_metadata?.name ||
         user.user_metadata?.full_name ||
         (user.email ? user.email.split('@')[0] : 'Student');
 
-      await prisma.profile.create({
-        data: {
-          id: user.id,
-          email: user.email || '',
-          name: derivedName,
-        },
+      await supabase.from('Profile').upsert({
+        id: user.id,
+        email: user.email || '',
+        name: derivedName,
       });
     }
 
     // 3. Check if already joined
-    const existingMember = await prisma.groupMember.findUnique({
-      where: {
-        groupId_userId: {
-          groupId: targetGroup.id,
-          userId: user.id,
-        },
-      },
-    });
+    const { data: existingMember } = await supabase
+      .from('GroupMember')
+      .select('id, role')
+      .eq('groupId', targetGroup.id)
+      .eq('userId', user.id)
+      .maybeSingle();
 
     if (existingMember || targetGroup.createdBy === user.id) {
       return NextResponse.json({
         success: true,
         message: 'You are already a member of this classroom.',
-        group: {
-          id: targetGroup.id,
-          name: targetGroup.name,
-          description: targetGroup.description,
-          joinCode: targetGroup.joinCode,
-          createdBy: targetGroup.createdBy,
-          creator: targetGroup.creator,
-          createdAt: targetGroup.createdAt.toISOString(),
-          updatedAt: targetGroup.updatedAt.toISOString(),
-        },
+        group: targetGroup,
       });
     }
 
-    // 4. Add to GroupMember
-    await prisma.groupMember.create({
-      data: {
-        groupId: targetGroup.id,
-        userId: user.id,
-        role: 'MEMBER',
-      },
+    // 4. Add to GroupMember in Supabase
+    const { error: insertErr } = await supabase.from('GroupMember').insert({
+      groupId: targetGroup.id,
+      userId: user.id,
+      role: 'MEMBER',
     });
+
+    if (insertErr) {
+      throw new Error(insertErr.message || 'Failed to join classroom');
+    }
 
     return NextResponse.json({
       success: true,
       message: `Successfully joined ${targetGroup.name}!`,
-      group: {
-        id: targetGroup.id,
-        name: targetGroup.name,
-        description: targetGroup.description,
-        joinCode: targetGroup.joinCode,
-        createdBy: targetGroup.createdBy,
-        creator: targetGroup.creator,
-        createdAt: targetGroup.createdAt.toISOString(),
-        updatedAt: targetGroup.updatedAt.toISOString(),
-      },
+      group: targetGroup,
     });
   } catch (err: any) {
     console.error('Join group error:', err);

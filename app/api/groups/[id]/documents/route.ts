@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/server';
-import { prisma } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -18,63 +17,32 @@ export async function GET(
     }
 
     // Fetch Group & Membership to determine role
-    const group = await prisma.group.findUnique({
-      where: { id: groupId },
-      select: { id: true, createdBy: true },
-    });
+    const { data: group } = await supabase.from('Group').select('id, createdBy').eq('id', groupId).single();
     if (!group) return NextResponse.json({ error: 'Group not found' }, { status: 404 });
 
-    const member = await prisma.groupMember.findUnique({
-      where: {
-        groupId_userId: {
-          groupId,
-          userId: user.id,
-        },
-      },
-      select: { role: true },
-    });
+    const { data: member } = await supabase
+      .from('GroupMember')
+      .select('role')
+      .eq('groupId', groupId)
+      .eq('userId', user.id)
+      .maybeSingle();
 
     const isAdmin = group.createdBy === user.id || member?.role === 'ADMIN';
 
-    // Fetch documents via Prisma with uploader Profile details
-    const allDocs = await prisma.groupDocument.findMany({
-      where: { groupId },
-      include: {
-        uploader: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            avatarUrl: true,
-          },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+    // Fetch documents via Supabase with uploader Profile details
+    const { data: docs } = await supabase
+      .from('GroupDocument')
+      .select('*, uploader:Profile!uploadedBy(id, name, email, avatarUrl)')
+      .eq('groupId', groupId)
+      .order('createdAt', { ascending: false });
 
     // Privacy Filter: Teachers see everything; Students see teacher notes + only their own submissions
-    const filteredDocs = allDocs.filter((doc) => {
+    const filteredDocs = (docs || []).filter((doc: any) => {
       if (isAdmin) return true;
       return doc.uploadedBy === group.createdBy || doc.uploadedBy === user.id;
     });
 
-    return NextResponse.json({
-      documents: filteredDocs.map((d) => ({
-        id: d.id,
-        groupId: d.groupId,
-        uploadedBy: d.uploadedBy,
-        title: d.title,
-        fileName: d.fileName,
-        fileUrl: d.fileUrl,
-        content: d.content,
-        fileType: d.fileType,
-        fileSize: d.fileSize,
-        documentId: d.documentId,
-        createdAt: d.createdAt.toISOString(),
-        updatedAt: d.updatedAt.toISOString(),
-        uploader: d.uploader,
-      })),
-    });
+    return NextResponse.json({ documents: filteredDocs });
   } catch (err: any) {
     console.error('Fetch group documents error:', err);
     return NextResponse.json({ documents: [] });
@@ -95,31 +63,37 @@ export async function POST(
     }
 
     // Verify user is in group
-    const group = await prisma.group.findUnique({ where: { id: groupId } });
+    const { data: group } = await supabase.from('Group').select('*').eq('id', groupId).single();
     if (!group) return NextResponse.json({ error: 'Group not found' }, { status: 404 });
 
-    const member = await prisma.groupMember.findUnique({
-      where: {
-        groupId_userId: {
-          groupId,
-          userId: user.id,
-        },
-      },
-    });
+    const { data: member } = await supabase
+      .from('GroupMember')
+      .select('*')
+      .eq('groupId', groupId)
+      .eq('userId', user.id)
+      .maybeSingle();
 
     if (group.createdBy !== user.id && !member) {
       return NextResponse.json({ error: 'Access denied. You are not a member of this group.' }, { status: 403 });
     }
 
     // Ensure Profile exists for uploader
-    const userProfile = await prisma.profile.findUnique({ where: { id: user.id } });
+    const { data: userProfile } = await supabase
+      .from('Profile')
+      .select('id, name')
+      .eq('id', user.id)
+      .maybeSingle();
+
     if (!userProfile) {
-      await prisma.profile.create({
-        data: {
-          id: user.id,
-          email: user.email || '',
-          name: user.user_metadata?.name || user.user_metadata?.full_name || (user.email ? user.email.split('@')[0] : 'User'),
-        },
+      const derivedName =
+        user.user_metadata?.name ||
+        user.user_metadata?.full_name ||
+        (user.email ? user.email.split('@')[0] : 'User');
+
+      await supabase.from('Profile').upsert({
+        id: user.id,
+        email: user.email || '',
+        name: derivedName,
       });
     }
 
@@ -150,7 +124,6 @@ export async function POST(
         if (['txt', 'md', 'json', 'csv', 'html', 'rtf'].includes(ext) || file.type.startsWith('text/')) {
           content = await file.text();
         } else {
-          // For binary files like PDF, save data URL representation
           try {
             const buffer = Buffer.from(await file.arrayBuffer());
             fileUrl = `data:${file.type || 'application/octet-stream'};base64,${buffer.toString('base64')}`;
@@ -162,7 +135,7 @@ export async function POST(
 
       // If attaching from existing Document library
       if (documentId && !file) {
-        const sourceDoc = await prisma.document.findUnique({ where: { id: documentId } });
+        const { data: sourceDoc } = await supabase.from('Document').select('*').eq('id', documentId).single();
         if (sourceDoc) {
           fileName = `${sourceDoc.title}.md`;
           content = sourceDoc.content;
@@ -171,8 +144,9 @@ export async function POST(
         }
       }
 
-      const insertedDoc = await prisma.groupDocument.create({
-        data: {
+      const { data: insertedDoc, error: insertErr } = await supabase
+        .from('GroupDocument')
+        .insert({
           groupId,
           uploadedBy: user.id,
           title,
@@ -182,13 +156,11 @@ export async function POST(
           fileType,
           fileSize,
           documentId: documentId || null,
-        },
-        include: {
-          uploader: {
-            select: { id: true, name: true, email: true, avatarUrl: true },
-          },
-        },
-      });
+        })
+        .select('*, uploader:Profile!uploadedBy(id, name, email, avatarUrl)')
+        .single();
+
+      if (insertErr) throw insertErr;
 
       return NextResponse.json({ document: insertedDoc }, { status: 201 });
     }
@@ -201,8 +173,9 @@ export async function POST(
       return NextResponse.json({ error: 'Document title is required.' }, { status: 400 });
     }
 
-    const insertedDoc = await prisma.groupDocument.create({
-      data: {
+    const { data: insertedDoc, error: insertErr } = await supabase
+      .from('GroupDocument')
+      .insert({
         groupId,
         uploadedBy: user.id,
         title,
@@ -212,13 +185,11 @@ export async function POST(
         fileType: fileType || 'document',
         fileSize: fileSize || (content ? Buffer.byteLength(content, 'utf8') : 0),
         documentId: documentId || null,
-      },
-      include: {
-        uploader: {
-          select: { id: true, name: true, email: true, avatarUrl: true },
-        },
-      },
-    });
+      })
+      .select('*, uploader:Profile!uploadedBy(id, name, email, avatarUrl)')
+      .single();
+
+    if (insertErr) throw insertErr;
 
     return NextResponse.json({ document: insertedDoc }, { status: 201 });
   } catch (err: any) {

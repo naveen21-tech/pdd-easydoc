@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/server';
-import { prisma } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -50,9 +49,7 @@ export async function DELETE(
     }
 
     const { error: delErr } = await supabase.from('GroupMember').delete().eq('id', memberId);
-    if (delErr) {
-      await prisma.groupMember.delete({ where: { id: memberId } });
-    }
+    if (delErr) throw delErr;
 
     return NextResponse.json({ success: true, message: 'Member removed from group' });
   } catch (err: any) {

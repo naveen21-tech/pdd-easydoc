@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/server';
-import { prisma } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -40,70 +39,63 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Verify membership in group via Prisma
-    const group = await prisma.group.findUnique({
-      where: { id: groupId },
-      select: { id: true, createdBy: true },
-    });
+    // Verify membership in group
+    const { data: group } = await supabase.from('Group').select('id, createdBy').eq('id', groupId).single();
     if (!group) return NextResponse.json({ error: 'Group not found' }, { status: 404 });
 
-    const member = await prisma.groupMember.findUnique({
-      where: {
-        groupId_userId: {
-          groupId,
-          userId: user.id,
-        },
-      },
-    });
+    const { data: member } = await supabase
+      .from('GroupMember')
+      .select('role')
+      .eq('groupId', groupId)
+      .eq('userId', user.id)
+      .maybeSingle();
 
     if (group.createdBy !== user.id && !member) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
-    // Fetch tests via Prisma
-    const pTests = await prisma.groupMcqTest.findMany({
-      where: { groupId },
-      include: {
-        questions: true,
-        attempts: { where: { userId: user.id } },
-        _count: {
-          select: { attempts: true },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+    // 1. Fetch tests via Supabase
+    const { data: tests, error: testErr } = await supabase
+      .from('GroupMcqTest')
+      .select('*')
+      .eq('groupId', groupId)
+      .order('createdAt', { ascending: false });
 
-    const formatted = pTests.map((t) => {
-      const myAttempt = t.attempts[0] || null;
-      return {
-        id: t.id,
-        groupId: t.groupId,
-        createdBy: t.createdBy,
-        title: t.title,
-        description: t.description,
-        duration: t.duration,
-        totalMarks: t.totalMarks,
-        passingMarks: t.passingMarks,
-        startTime: t.startTime ? t.startTime.toISOString() : null,
-        endTime: t.endTime ? t.endTime.toISOString() : null,
-        isPublished: t.isPublished,
-        questionCount: t.questions.length,
-        attemptCount: t._count.attempts,
-        myAttempt: myAttempt
-          ? {
-              ...myAttempt,
-              startedAt: myAttempt.startedAt.toISOString(),
-              submittedAt: myAttempt.submittedAt.toISOString(),
-              createdAt: myAttempt.createdAt.toISOString(),
-              updatedAt: myAttempt.updatedAt.toISOString(),
-            }
-          : null,
-        createdAt: t.createdAt.toISOString(),
-        updatedAt: t.updatedAt.toISOString(),
-      };
-    });
+    if (testErr || !tests) {
+      return NextResponse.json({ tests: [] });
+    }
 
-    return NextResponse.json({ tests: formatted });
+    // 2. Enrich tests with question count & student's attempt
+    const enriched = await Promise.all(
+      tests.map(async (t: any) => {
+        const [{ count: qCount }, { data: myAttemptData }, { count: attemptCount }] = await Promise.all([
+          supabase.from('GroupMcqQuestion').select('*', { count: 'exact', head: true }).eq('testId', t.id),
+          supabase.from('GroupMcqAttempt').select('*').eq('testId', t.id).eq('userId', user.id).maybeSingle(),
+          supabase.from('GroupMcqAttempt').select('*', { count: 'exact', head: true }).eq('testId', t.id),
+        ]);
+
+        return {
+          id: t.id,
+          groupId: t.groupId,
+          createdBy: t.createdBy,
+          title: t.title,
+          description: t.description,
+          duration: t.duration,
+          totalMarks: t.totalMarks,
+          passingMarks: t.passingMarks,
+          startTime: t.startTime,
+          endTime: t.endTime,
+          isPublished: t.isPublished,
+          questionCount: qCount || 0,
+          attemptCount: attemptCount || 0,
+          myAttempt: myAttemptData || null,
+          createdAt: t.createdAt,
+          updatedAt: t.updatedAt,
+        };
+      })
+    );
+
+    return NextResponse.json({ tests: enriched });
   } catch (err: any) {
     console.error('Fetch tests error:', err);
     return NextResponse.json({ tests: [] });
@@ -123,17 +115,15 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const group = await prisma.group.findUnique({ where: { id: groupId } });
+    const { data: group } = await supabase.from('Group').select('*').eq('id', groupId).single();
     if (!group) return NextResponse.json({ error: 'Group not found' }, { status: 404 });
 
-    const member = await prisma.groupMember.findUnique({
-      where: {
-        groupId_userId: {
-          groupId,
-          userId: user.id,
-        },
-      },
-    });
+    const { data: member } = await supabase
+      .from('GroupMember')
+      .select('role')
+      .eq('groupId', groupId)
+      .eq('userId', user.id)
+      .maybeSingle();
 
     if (group.createdBy !== user.id && member?.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Only classroom faculty/administrators can create tests.' }, { status: 403 });
@@ -149,8 +139,10 @@ export async function POST(
     const { title, description, duration, passingMarks, startTime, endTime, isPublished, questions } = parsed.data;
     const calculatedTotalMarks = questions.reduce((sum, q) => sum + (q.marks || 1), 0);
 
-    const newTest = await prisma.groupMcqTest.create({
-      data: {
+    // 1. Create Test in Supabase
+    const { data: test, error: testErr } = await supabase
+      .from('GroupMcqTest')
+      .insert({
         groupId,
         createdBy: user.id,
         title,
@@ -158,26 +150,33 @@ export async function POST(
         duration: duration || 20,
         totalMarks: calculatedTotalMarks,
         passingMarks: passingMarks || Math.ceil(calculatedTotalMarks * 0.4),
-        startTime: startTime ? new Date(startTime) : null,
-        endTime: endTime ? new Date(endTime) : null,
+        startTime: startTime || null,
+        endTime: endTime || null,
         isPublished: isPublished ?? true,
-        questions: {
-          create: questions.map((q, idx) => ({
-            question: q.question,
-            optionA: q.optionA,
-            optionB: q.optionB,
-            optionC: q.optionC,
-            optionD: q.optionD,
-            correctOption: q.correctOption,
-            marks: q.marks || 1,
-            orderIndex: idx,
-          })),
-        },
-      },
-      include: { questions: true },
-    });
+      })
+      .select()
+      .single();
 
-    return NextResponse.json({ test: { ...newTest, questionCount: newTest.questions.length } }, { status: 201 });
+    if (testErr || !test) {
+      throw new Error(testErr?.message || 'Failed to create MCQ test');
+    }
+
+    // 2. Insert Questions in bulk
+    const questionsToInsert = questions.map((q, idx) => ({
+      testId: test.id,
+      question: q.question,
+      optionA: q.optionA,
+      optionB: q.optionB,
+      optionC: q.optionC,
+      optionD: q.optionD,
+      correctOption: q.correctOption,
+      marks: q.marks || 1,
+      orderIndex: idx,
+    }));
+
+    await supabase.from('GroupMcqQuestion').insert(questionsToInsert);
+
+    return NextResponse.json({ test: { ...test, questionCount: questions.length } }, { status: 201 });
   } catch (err: any) {
     console.error('Create test error:', err);
     return NextResponse.json({ error: err?.message || 'Failed to create test' }, { status: 500 });
