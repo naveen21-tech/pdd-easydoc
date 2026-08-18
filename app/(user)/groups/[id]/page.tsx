@@ -1200,6 +1200,16 @@ export default function GroupDetailsPage({ params }: { params: { id: string } })
 
               // Calculate student submissions count
               const studentSubmissionsCount = documents.filter((d) => d.uploadedBy === mem.userId).length;
+              const memberName =
+                mem.user?.name ||
+                (isGroupAdmin
+                  ? group.creator?.name || 'Instructor'
+                  : mem.user?.email
+                  ? mem.user.email.split('@')[0]
+                  : 'Enrolled Student');
+              const memberEmail =
+                mem.user?.email || (isGroupAdmin ? group.creator?.email || '' : '');
+              const memberInitial = memberName ? memberName[0].toUpperCase() : (isGroupAdmin ? 'T' : 'S');
 
               return (
                 <div
@@ -1214,12 +1224,12 @@ export default function GroupDetailsPage({ params }: { params: { id: string } })
                           : 'bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800'
                       }`}
                     >
-                      {mem.user?.name ? mem.user.name[0].toUpperCase() : 'S'}
+                      {memberInitial}
                     </div>
                     <div>
                       <div className="flex items-center space-x-2">
                         <span className="font-bold text-sm text-slate-900 dark:text-white">
-                          {mem.user?.name || 'Enrolled Student'}
+                          {memberName}
                         </span>
                         <span
                           className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full ${
@@ -1231,9 +1241,11 @@ export default function GroupDetailsPage({ params }: { params: { id: string } })
                           {isGroupAdmin ? 'Teacher / Admin' : '🟢 Enrolled Student'}
                         </span>
                       </div>
-                      <span className="text-xs text-slate-500 dark:text-slate-400 block mt-0.5 font-medium">
-                        {mem.user?.email || 'Student Email'}
-                      </span>
+                      {memberEmail && (
+                        <span className="text-xs text-slate-500 dark:text-slate-400 block mt-0.5 font-medium">
+                          {memberEmail}
+                        </span>
+                      )}
                     </div>
                   </div>
 

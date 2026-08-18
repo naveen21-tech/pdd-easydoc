@@ -337,6 +337,9 @@ function GroupsContent() {
                       <h3 className="font-display font-bold text-base text-slate-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-brand-lavender transition-colors line-clamp-1">
                         {group.name}
                       </h3>
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-medium">
+                        Instructor: {group.creator?.name || 'Faculty Guide'}
+                      </span>
                     </div>
 
                     {/* Join Code Copy Badge */}

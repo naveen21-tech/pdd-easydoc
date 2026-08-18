@@ -28,101 +28,42 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // 1. Fetch group memberships of user
-    const { data: memberships, error: memErr } = await supabase
-      .from('GroupMember')
-      .select('groupId, role, joinedAt')
-      .eq('userId', user.id);
-
-    const groupIds = (memberships || []).map((m: any) => m.groupId);
-
-    // Also include groups created by this user
-    const { data: createdGroups, error: createErr } = await supabase
-      .from('Group')
-      .select('id')
-      .eq('createdBy', user.id);
-
-    const createdIds = (createdGroups || []).map((g: any) => g.id);
-    const allGroupIds = Array.from(new Set([...groupIds, ...createdIds]));
-
-    if (allGroupIds.length === 0) {
-      return NextResponse.json({ groups: [] });
-    }
-
-    // 2. Fetch full group details
-    const { data: groupsData, error: groupErr } = await supabase
-      .from('Group')
-      .select('*, creator:Profile!createdBy(id, name, email, avatarUrl)')
-      .in('id', allGroupIds)
-      .order('createdAt', { ascending: false });
-
-    if (groupErr || !groupsData) {
-      // Fallback to Prisma
-      const prismaGroups = await prisma.group.findMany({
-        where: {
-          OR: [
-            { createdBy: user.id },
-            { members: { some: { userId: user.id } } },
-          ],
+    // Fetch groups where user is creator or member with full relations
+    const prismaGroups = await prisma.group.findMany({
+      where: {
+        OR: [
+          { createdBy: user.id },
+          { members: { some: { userId: user.id } } },
+        ],
+      },
+      include: {
+        creator: {
+          select: { id: true, name: true, email: true, avatarUrl: true },
         },
-        include: {
-          creator: {
-            select: { id: true, name: true, email: true, avatarUrl: true },
-          },
-          members: true,
-          documents: true,
-        },
-        orderBy: { createdAt: 'desc' },
-      });
+        members: true,
+        documents: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
 
-      const formatted = prismaGroups.map((g: any) => {
-        const myMem = g.members.find((m: any) => m.userId === user.id);
-        return {
-          id: g.id,
-          name: g.name,
-          description: g.description,
-          joinCode: g.joinCode,
-          createdBy: g.createdBy,
-          creator: g.creator,
-          memberCount: g.members.length,
-          documentCount: g.documents.length,
-          role: g.createdBy === user.id ? 'ADMIN' : (myMem?.role || 'MEMBER'),
-          createdAt: g.createdAt.toISOString(),
-          updatedAt: g.updatedAt.toISOString(),
-        };
-      });
+    const formatted = prismaGroups.map((g) => {
+      const myMem = g.members.find((m) => m.userId === user.id);
+      return {
+        id: g.id,
+        name: g.name,
+        description: g.description,
+        joinCode: g.joinCode,
+        createdBy: g.createdBy,
+        creator: g.creator,
+        memberCount: g.members.length,
+        documentCount: g.documents.length,
+        role: g.createdBy === user.id ? 'ADMIN' : (myMem?.role || 'MEMBER'),
+        createdAt: g.createdAt.toISOString(),
+        updatedAt: g.updatedAt.toISOString(),
+      };
+    });
 
-      return NextResponse.json({ groups: formatted });
-    }
-
-    // 3. For each group, get counts
-    const enriched = await Promise.all(
-      groupsData.map(async (grp: any) => {
-        const myMem = memberships?.find((m: any) => m.groupId === grp.id);
-        const role = grp.createdBy === user.id ? 'ADMIN' : (myMem?.role || 'MEMBER');
-
-        const [{ count: memberCount }, { count: docCount }] = await Promise.all([
-          supabase.from('GroupMember').select('*', { count: 'exact', head: true }).eq('groupId', grp.id),
-          supabase.from('GroupDocument').select('*', { count: 'exact', head: true }).eq('groupId', grp.id),
-        ]);
-
-        return {
-          id: grp.id,
-          name: grp.name,
-          description: grp.description,
-          joinCode: grp.joinCode,
-          createdBy: grp.createdBy,
-          creator: grp.creator,
-          memberCount: memberCount || 1,
-          documentCount: docCount || 0,
-          role,
-          createdAt: grp.createdAt,
-          updatedAt: grp.updatedAt,
-        };
-      })
-    );
-
-    return NextResponse.json({ groups: enriched });
+    return NextResponse.json({ groups: formatted });
   } catch (err: any) {
     console.error('Fetch groups error:', err);
     return NextResponse.json({ groups: [] });
@@ -147,6 +88,18 @@ export async function POST(request: Request) {
 
     const { name, description } = parsed.data;
 
+    // Ensure Profile exists for creator before group creation
+    const userProfile = await prisma.profile.findUnique({ where: { id: user.id } });
+    if (!userProfile) {
+      await prisma.profile.create({
+        data: {
+          id: user.id,
+          email: user.email || '',
+          name: user.user_metadata?.name || user.user_metadata?.full_name || (user.email ? user.email.split('@')[0] : 'User'),
+        },
+      });
+    }
+
     // Generate unique join code
     let joinCode = generateJoinCode();
     let isUnique = false;
@@ -154,11 +107,9 @@ export async function POST(request: Request) {
 
     while (!isUnique && attempts < 10) {
       attempts++;
-      const { data: existing } = await supabase
-        .from('Group')
-        .select('id')
-        .eq('joinCode', joinCode)
-        .maybeSingle();
+      const existing = await prisma.group.findUnique({
+        where: { joinCode },
+      });
 
       if (!existing) {
         isUnique = true;
@@ -167,46 +118,28 @@ export async function POST(request: Request) {
       }
     }
 
-    // 1. Insert Group into Supabase
-    const { data: insertedGroup, error: insertErr } = await supabase
-      .from('Group')
-      .insert({
+    // Create group and creator membership with Prisma
+    const newGroup = await prisma.group.create({
+      data: {
         name,
         description: description || null,
         joinCode,
         createdBy: user.id,
-      })
-      .select()
-      .single();
-
-    if (insertErr || !insertedGroup) {
-      // Fallback via Prisma
-      const newPrismaGroup = await prisma.group.create({
-        data: {
-          name,
-          description: description || null,
-          joinCode,
-          createdBy: user.id,
-          members: {
-            create: {
-              userId: user.id,
-              role: 'ADMIN',
-            },
+        members: {
+          create: {
+            userId: user.id,
+            role: 'ADMIN',
           },
         },
-      });
-
-      return NextResponse.json({ group: newPrismaGroup }, { status: 201 });
-    }
-
-    // 2. Add creator as ADMIN in GroupMember
-    await supabase.from('GroupMember').insert({
-      groupId: insertedGroup.id,
-      userId: user.id,
-      role: 'ADMIN',
+      },
+      include: {
+        creator: {
+          select: { id: true, name: true, email: true, avatarUrl: true },
+        },
+      },
     });
 
-    return NextResponse.json({ group: insertedGroup }, { status: 201 });
+    return NextResponse.json({ group: newGroup }, { status: 201 });
   } catch (err: any) {
     console.error('Create group error:', err);
     return NextResponse.json({ error: err?.message || 'Failed to create group' }, { status: 500 });
