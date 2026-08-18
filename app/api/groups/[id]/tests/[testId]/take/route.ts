@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/server';
-import { prisma } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -76,7 +75,7 @@ export async function GET(
     // 4. Fetch questions and STRIP correctOption to protect answers
     const { data: rawQuestions } = await supabase
       .from('GroupMcqQuestion')
-      .select('id, testId, question, optionA, optionB, optionC, optionD, marks, orderIndex')
+      .select('id, testId, question, optionA, optionB, optionC, optionD, marks, orderIndex, topic, difficulty')
       .eq('testId', testId)
       .order('orderIndex', { ascending: true });
 
@@ -89,6 +88,7 @@ export async function GET(
         duration: test.duration,
         totalMarks: test.totalMarks,
         passingMarks: test.passingMarks,
+        isAdaptive: test.isAdaptive ?? false,
         questionCount: rawQuestions?.length || 0,
       },
       questions: rawQuestions || [],

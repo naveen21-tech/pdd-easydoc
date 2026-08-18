@@ -38,6 +38,9 @@ model Profile {
   createdGroups  Group[]         @relation("GroupCreator")
   groupMemberships GroupMember[]
   groupDocuments GroupDocument[]
+  knowledgeMaterials GroupKnowledgeMaterial[]
+  createdAssignments GroupAssignment[]
+  assignmentSubmissions GroupAssignmentSubmission[]
   createdMcqTests GroupMcqTest[]
   mcqAttempts     GroupMcqAttempt[]
 }
@@ -183,18 +186,21 @@ enum GroupRole {
 }
 
 model Group {
-  id          String          @id @default(uuid())
-  name        String
-  description String?
-  joinCode    String          @unique
-  createdBy   String
-  creator     Profile         @relation("GroupCreator", fields: [createdBy], references: [id], onDelete: Cascade)
-  members     GroupMember[]
-  documents   GroupDocument[]
-  mcqTests    GroupMcqTest[]
-  mcqAttempts GroupMcqAttempt[]
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  id                 String                      @id @default(uuid())
+  name               String
+  description        String?
+  joinCode           String                      @unique
+  createdBy          String
+  creator            Profile                     @relation("GroupCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+  members            GroupMember[]
+  documents          GroupDocument[]
+  knowledgeMaterials GroupKnowledgeMaterial[]
+  assignments        GroupAssignment[]
+  submissions        GroupAssignmentSubmission[]
+  mcqTests           GroupMcqTest[]
+  mcqAttempts        GroupMcqAttempt[]
+  createdAt          DateTime                    @default(now())
+  updatedAt          DateTime                    @updatedAt
 }
 
 model GroupMember {
@@ -226,6 +232,70 @@ model GroupDocument {
   updatedAt   DateTime  @updatedAt
 }
 
+model GroupKnowledgeMaterial {
+  id          String    @id @default(uuid())
+  groupId     String
+  group       Group     @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  uploadedBy  String
+  uploader    Profile   @relation(fields: [uploadedBy], references: [id], onDelete: Cascade)
+  title       String
+  subject     String    @default("General")
+  unit        String    @default("Unit 1")
+  topic       String    @default("Overview")
+  chapter     String    @default("Chapter 1")
+  fileName    String
+  fileType    String    @default("pdf")
+  fileSize    Int?      @default(0)
+  fileUrl     String?
+  content     String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model GroupAssignment {
+  id                String                      @id @default(uuid())
+  groupId           String
+  group             Group                       @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  createdBy         String
+  creator           Profile                     @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  title             String
+  description       String?
+  dueDate           DateTime?
+  totalMarks        Int                         @default(100)
+  requiredSections  Json                        @default("[\"Title Page\", \"Introduction\", \"Problem Statement\", \"Objectives\", \"Methodology\", \"Results\", \"Conclusion\", \"References\"]")
+  minReferences     Int                         @default(3)
+  requiredKeywords  Json                        @default("[]")
+  minWordCount      Int                         @default(300)
+  autoReviewEnabled Boolean                     @default(true)
+  submissions       GroupAssignmentSubmission[]
+  createdAt         DateTime                    @default(now())
+  updatedAt         DateTime                    @updatedAt
+}
+
+model GroupAssignmentSubmission {
+  id            String          @id @default(uuid())
+  assignmentId  String
+  assignment    GroupAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  groupId       String
+  group         Group           @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  userId        String
+  user          Profile         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title         String
+  fileName      String
+  fileUrl       String?
+  content       String?
+  fileType      String          @default("docx")
+  fileSize      Int?            @default(0)
+  status        String          @default("SUBMITTED") // "SUBMITTED" | "LATE"
+  qualityScore  Int             @default(80)
+  reviewResult  Json?           // { sectionChecks, referencesFound, missingSections, summary, feedback }
+  submittedAt   DateTime        @default(now())
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@unique([assignmentId, userId])
+}
+
 model GroupMcqTest {
   id           String             @id @default(uuid())
   groupId      String
@@ -237,6 +307,7 @@ model GroupMcqTest {
   duration     Int                @default(20) // in minutes
   totalMarks   Int                @default(10)
   passingMarks Int                @default(4)
+  isAdaptive   Boolean            @default(false)
   startTime    DateTime?
   endTime      DateTime?
   isPublished  Boolean            @default(true)
@@ -258,6 +329,8 @@ model GroupMcqQuestion {
   correctOption String       // "A" | "B" | "C" | "D"
   marks         Int          @default(1)
   orderIndex    Int          @default(0)
+  topic         String       @default("General")
+  difficulty    String       @default("MEDIUM") // "EASY" | "MEDIUM" | "HARD"
   createdAt     DateTime     @default(now())
 }
 
@@ -277,6 +350,8 @@ model GroupMcqAttempt {
   correctCount    Int          @default(0)
   wrongCount      Int          @default(0)
   unansweredCount Int          @default(0)
+  topicScores     Json?        @default("{}")
+  adaptiveHistory Json?        @default("[]")
   startedAt       DateTime     @default(now())
   submittedAt     DateTime     @default(now())
   status          String       @default("SUBMITTED") // "SUBMITTED" | "AUTO_SUBMITTED"
@@ -286,6 +361,3 @@ model GroupMcqAttempt {
 
   @@unique([testId, userId])
 }
-
-
-

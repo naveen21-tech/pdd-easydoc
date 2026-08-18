@@ -38,6 +38,10 @@ import {
   XCircle,
   AlertTriangle,
   Sparkles,
+  Brain,
+  TrendingUp,
+  Layers,
+  ChevronRight,
 } from 'lucide-react';
 import {
   GroupItem,
@@ -49,6 +53,20 @@ import {
   McqAttemptItem,
   McqResultAnalytics,
 } from '@/lib/types';
+
+import KnowledgeHubTab from '@/components/classroom/KnowledgeHubTab';
+import AssignmentsTab from '@/components/classroom/AssignmentsTab';
+import FacultyIntelligenceTab from '@/components/classroom/FacultyIntelligenceTab';
+import MyPerformanceTab from '@/components/classroom/MyPerformanceTab';
+
+type ClassroomTab =
+  | 'overview'
+  | 'knowledge-hub'
+  | 'assignments'
+  | 'mcq-tests'
+  | 'my-performance'
+  | 'intelligence'
+  | 'members';
 
 export default function GroupDetailsPage({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -62,29 +80,13 @@ export default function GroupDetailsPage({ params }: { params: { id: string } })
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Active Tab: 'documents' | 'mcq-tests' | 'members'
-  const [activeTab, setActiveTab] = useState<'documents' | 'mcq-tests' | 'members'>('documents');
+  // Active Tab
+  const [activeTab, setActiveTab] = useState<ClassroomTab>('overview');
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 
-  // Document Upload / Share Modal
-  const [showUploadModal, setShowUploadModal] = useState(false);
-  const [uploadSource, setUploadSource] = useState<'file' | 'library'>('file');
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [docTitle, setDocTitle] = useState('');
-  const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
-
-  // Library Documents for Attach
-  const [myLibraryDocs, setMyLibraryDocs] = useState<DocumentItem[]>([]);
-  const [selectedLibraryDocId, setSelectedLibraryDocId] = useState<string>('');
-
   // Document Preview Modal
   const [previewDoc, setPreviewDoc] = useState<GroupDocumentItem | null>(null);
-
-  // Search & Filter
-  const [searchDocQuery, setSearchDocQuery] = useState('');
-  const [docFilter, setDocFilter] = useState<'all' | 'teacher' | 'student'>('all');
 
   // -------------------------------------------------------------
   // MCQ TEST STATE & MODALS
@@ -94,6 +96,7 @@ export default function GroupDetailsPage({ params }: { params: { id: string } })
   const [testDescription, setTestDescription] = useState('');
   const [testDuration, setTestDuration] = useState(20);
   const [testPassingMarks, setTestPassingMarks] = useState(4);
+  const [isAdaptiveTest, setIsAdaptiveTest] = useState(false);
   const [creatingTest, setCreatingTest] = useState(false);
   const [testError, setTestError] = useState<string | null>(null);
 
@@ -106,6 +109,8 @@ export default function GroupDetailsPage({ params }: { params: { id: string } })
       optionD: string;
       correctOption: 'A' | 'B' | 'C' | 'D';
       marks: number;
+      topic: string;
+      difficulty: 'EASY' | 'MEDIUM' | 'HARD';
     }>
   >([
     {
@@ -116,6 +121,8 @@ export default function GroupDetailsPage({ params }: { params: { id: string } })
       optionD: 'Physical datacenter isolation',
       correctOption: 'B',
       marks: 1,
+      topic: 'Cloud Computing',
+      difficulty: 'MEDIUM',
     },
     {
       question: 'Which HTTP method is idempotent and used for replacing resources?',
@@ -125,6 +132,8 @@ export default function GroupDetailsPage({ params }: { params: { id: string } })
       optionD: 'CONNECT',
       correctOption: 'B',
       marks: 1,
+      topic: 'Web Architecture',
+      difficulty: 'EASY',
     },
   ]);
 
@@ -179,18 +188,6 @@ export default function GroupDetailsPage({ params }: { params: { id: string } })
     }
   };
 
-  const fetchMyLibraryDocs = async () => {
-    try {
-      const res = await fetch('/api/documents');
-      if (res.ok) {
-        const data = await res.json();
-        setMyLibraryDocs(data.documents || []);
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
   const handleCopyCode = () => {
     if (!group) return;
     navigator.clipboard.writeText(group.joinCode);
@@ -198,104 +195,16 @@ export default function GroupDetailsPage({ params }: { params: { id: string } })
     setTimeout(() => setCopiedCode(false), 2500);
   };
 
-  const handleCopyShareLink = () => {
+  const handleCopyInviteLink = () => {
     if (!group) return;
-    const url = `${window.location.origin}/groups?join=${group.joinCode}`;
+    const url = `${window.location.origin}/groups/join?code=${group.joinCode}`;
     navigator.clipboard.writeText(url);
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2500);
   };
 
-  const handleUploadDocument = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!docTitle.trim()) {
-      setUploadError('Please enter a title for the document');
-      return;
-    }
-
-    try {
-      setUploading(true);
-      setUploadError(null);
-
-      if (uploadSource === 'file') {
-        if (!selectedFile) {
-          setUploadError('Please select a file to upload');
-          return;
-        }
-
-        const formData = new FormData();
-        formData.append('title', docTitle.trim());
-        formData.append('file', selectedFile);
-
-        const res = await fetch(`/api/groups/${groupId}/documents`, {
-          method: 'POST',
-          body: formData,
-        });
-
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Upload failed');
-      } else {
-        // From Library
-        if (!selectedLibraryDocId) {
-          setUploadError('Please select a document from your library');
-          return;
-        }
-
-        const libDoc = myLibraryDocs.find((d) => d.id === selectedLibraryDocId);
-        if (!libDoc) {
-          setUploadError('Selected document not found');
-          return;
-        }
-
-        const res = await fetch(`/api/groups/${groupId}/documents`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            title: docTitle.trim(),
-            fileName: `${libDoc.title}.md`,
-            content: libDoc.content,
-            fileType: 'document',
-            documentId: libDoc.id,
-            fileSize: new Blob([libDoc.content || '']).size,
-          }),
-        });
-
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Sharing failed');
-      }
-
-      setShowUploadModal(false);
-      setSelectedFile(null);
-      setDocTitle('');
-      setSelectedLibraryDocId('');
-      fetchGroupDetails();
-    } catch (e: any) {
-      setUploadError(e?.message || 'Failed to upload document');
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const handleDeleteDocument = async (docId: string, title: string) => {
-    if (!confirm(`Are you sure you want to delete "${title}"?`)) return;
-
-    try {
-      const res = await fetch(`/api/groups/${groupId}/documents/${docId}`, {
-        method: 'DELETE',
-      });
-      if (res.ok) {
-        setDocuments((prev) => prev.filter((d) => d.id !== docId));
-      } else {
-        const data = await res.json();
-        alert(data.error || 'Failed to delete document');
-      }
-    } catch (e) {
-      alert('Network error deleting document');
-    }
-  };
-
-  const handleRemoveMember = async (memberId: string, memberName: string) => {
-    if (!confirm(`Remove ${memberName} from this group?`)) return;
+  const handleRemoveMember = async (memberId: string) => {
+    if (!confirm('Are you sure you want to remove this student from the classroom?')) return;
 
     try {
       const res = await fetch(`/api/groups/${groupId}/members/${memberId}`, {
@@ -313,7 +222,7 @@ export default function GroupDetailsPage({ params }: { params: { id: string } })
   };
 
   const handleLeaveGroup = async () => {
-    if (!confirm('Are you sure you want to leave this group?')) return;
+    if (!confirm('Are you sure you want to leave this classroom?')) return;
 
     try {
       const res = await fetch(`/api/groups/${groupId}/leave`, {
@@ -331,7 +240,7 @@ export default function GroupDetailsPage({ params }: { params: { id: string } })
   };
 
   const handleDeleteGroup = async () => {
-    if (!confirm('Are you sure you want to permanently DELETE this group? This cannot be undone.')) return;
+    if (!confirm('Are you sure you want to permanently DELETE this classroom? This cannot be undone.')) return;
 
     try {
       const res = await fetch(`/api/groups/${groupId}`, {
@@ -362,6 +271,8 @@ export default function GroupDetailsPage({ params }: { params: { id: string } })
         optionD: '',
         correctOption: 'A',
         marks: 1,
+        topic: 'General',
+        difficulty: 'MEDIUM',
       },
     ]);
   };
@@ -412,7 +323,12 @@ export default function GroupDetailsPage({ params }: { params: { id: string } })
       }
 
       if (data.questions && data.questions.length > 0) {
-        setQuestionsList(data.questions);
+        const enriched = data.questions.map((q: any) => ({
+          ...q,
+          topic: testTitle.trim(),
+          difficulty: aiDifficulty === 'mixed' ? 'MEDIUM' : aiDifficulty === 'beginner' ? 'EASY' : aiDifficulty === 'advanced' ? 'HARD' : 'MEDIUM',
+        }));
+        setQuestionsList(enriched);
         const newDuration = Math.max(10, Math.ceil(data.questions.length * 1.5));
         setTestDuration(newDuration);
         setTestPassingMarks(Math.ceil(data.questions.length * 0.4));
@@ -433,7 +349,6 @@ export default function GroupDetailsPage({ params }: { params: { id: string } })
       return;
     }
 
-    // Validate questions
     for (let i = 0; i < questionsList.length; i++) {
       const q = questionsList[i];
       if (!q.question.trim() || !q.optionA.trim() || !q.optionB.trim() || !q.optionC.trim() || !q.optionD.trim()) {
@@ -454,6 +369,7 @@ export default function GroupDetailsPage({ params }: { params: { id: string } })
           description: testDescription.trim() || undefined,
           duration: Number(testDuration) || 20,
           passingMarks: Number(testPassingMarks) || 4,
+          isAdaptive: isAdaptiveTest,
           questions: questionsList,
         }),
       });
@@ -477,7 +393,7 @@ export default function GroupDetailsPage({ params }: { params: { id: string } })
   };
 
   const handleDeleteTest = async (testId: string, title: string) => {
-    if (!confirm(`Are you sure you want to delete the test "${title}"?`)) return;
+    if (!confirm(`Are you sure you want to delete the MCQ test "${title}"?`)) return;
 
     try {
       const res = await fetch(`/api/groups/${groupId}/tests/${testId}`, {
@@ -486,8 +402,7 @@ export default function GroupDetailsPage({ params }: { params: { id: string } })
       if (res.ok) {
         setMcqTests((prev) => prev.filter((t) => t.id !== testId));
       } else {
-        const data = await res.json();
-        alert(data.error || 'Failed to delete test');
+        alert('Failed to delete test');
       }
     } catch (e) {
       alert('Network error deleting test');
@@ -495,237 +410,164 @@ export default function GroupDetailsPage({ params }: { params: { id: string } })
   };
 
   const openTestAnalytics = async (testItem: McqTestItem) => {
+    setAnalyticsTest(testItem);
+    setLoadingAnalytics(true);
     try {
-      setAnalyticsTest(testItem);
-      setLoadingAnalytics(true);
-      setAnalyticsData(null);
-
       const res = await fetch(`/api/groups/${groupId}/tests/${testItem.id}/results`);
       if (res.ok) {
         const data = await res.json();
         setAnalyticsData(data);
-      } else {
-        const data = await res.json();
-        alert(data.error || 'Failed to load class analytics');
       }
     } catch (e) {
-      alert('Network error fetching analytics');
+      console.error(e);
     } finally {
       setLoadingAnalytics(false);
     }
   };
 
-  const downloadGroupDocument = (doc: GroupDocumentItem) => {
-    if (doc.fileUrl && doc.fileUrl.startsWith('data:')) {
-      const a = document.createElement('a');
-      a.href = doc.fileUrl;
-      a.download = doc.fileName || `${doc.title}.${doc.fileType === 'pdf' ? 'pdf' : 'txt'}`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      return;
-    }
-
-    if (doc.content) {
-      const blob = new Blob([doc.content], { type: 'text/markdown;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = doc.fileName.endsWith('.md') || doc.fileName.endsWith('.txt') ? doc.fileName : `${doc.fileName}.md`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      return;
-    }
-
-    alert('Document content is being processed.');
-  };
-
-  const formatFileSize = (bytes?: number | null) => {
-    if (!bytes || bytes === 0) return 'Document';
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  };
-
-  const getFileTypeIcon = (fileType: string) => {
-    switch (fileType.toLowerCase()) {
-      case 'pdf':
-        return <FileText className="w-5 h-5 text-rose-500" />;
-      case 'docx':
-      case 'doc':
-        return <FileCheck2 className="w-5 h-5 text-blue-500" />;
-      case 'xlsx':
-      case 'csv':
-        return <FileSpreadsheet className="w-5 h-5 text-emerald-500" />;
-      case 'code':
-      case 'json':
-        return <FileCode className="w-5 h-5 text-amber-500" />;
-      default:
-        return <FileText className="w-5 h-5 text-purple-500" />;
-    }
-  };
-
-  const filteredDocs = documents.filter((doc) => {
-    const matchesSearch =
-      doc.title.toLowerCase().includes(searchDocQuery.toLowerCase()) ||
-      doc.fileName.toLowerCase().includes(searchDocQuery.toLowerCase()) ||
-      (doc.uploader?.name && doc.uploader.name.toLowerCase().includes(searchDocQuery.toLowerCase()));
-
-    if (!matchesSearch) return false;
-
-    if (docFilter === 'teacher') return doc.uploadedBy === group?.createdBy;
-    if (docFilter === 'student') return doc.uploadedBy !== group?.createdBy;
-    return true;
-  });
-
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-24 space-y-3">
-        <Loader2 className="w-8 h-8 text-purple-600 dark:text-brand-lavender animate-spin" />
-        <p className="text-xs text-slate-500 font-medium">Opening classroom...</p>
+      <div className="min-h-screen py-16 flex items-center justify-center">
+        <div className="text-center space-y-3">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto text-purple-600 dark:text-brand-lavender" />
+          <p className="text-sm font-semibold text-slate-500">Loading classroom...</p>
+        </div>
       </div>
     );
   }
 
   if (error || !group) {
     return (
-      <div className="glass-card p-10 text-center rounded-3xl border border-slate-200 dark:border-dark-border max-w-md mx-auto my-12 space-y-4">
-        <div className="w-14 h-14 rounded-2xl bg-rose-100 dark:bg-rose-950 text-rose-600 flex items-center justify-center mx-auto">
+      <div className="max-w-xl mx-auto py-16 px-4 text-center space-y-4">
+        <div className="w-14 h-14 rounded-3xl bg-rose-100 dark:bg-rose-950/60 text-rose-600 flex items-center justify-center mx-auto">
           <AlertCircle className="w-7 h-7" />
         </div>
-        <h3 className="font-display font-bold text-lg text-slate-900 dark:text-white">
-          Classroom Access Error
-        </h3>
-        <p className="text-xs text-slate-500 dark:text-slate-400">
-          {error || 'Classroom not found or you do not have permission to view it.'}
+        <h2 className="font-display font-black text-2xl text-slate-900 dark:text-white">
+          Classroom Not Accessible
+        </h2>
+        <p className="text-sm text-slate-600 dark:text-slate-400">
+          {error || 'The requested classroom could not be found or you do not have permission.'}
         </p>
         <Link
           href="/groups"
-          className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-purple-700 dark:bg-brand-purple text-white font-bold text-xs"
+          className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-purple-700 text-white font-bold text-xs"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Back to Groups</span>
+          <span>Back to All Classrooms</span>
         </Link>
       </div>
     );
   }
 
-  const isAdmin = myRole === 'ADMIN';
+  const isAdmin = myRole === 'ADMIN' || group.createdBy === group.creator?.id;
 
   return (
-    <div className="space-y-8 animate-fade-in pb-20">
-      {/* 1. TOP NAV & BREADCRUMB */}
-      <div className="flex items-center justify-between">
-        <Link
-          href="/groups"
-          className="inline-flex items-center space-x-2 text-xs font-bold text-purple-700 dark:text-brand-lavender hover:underline"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>All Classrooms</span>
-        </Link>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-fade-in">
+      {/* 1. TOP BREADCRUMB & CLASSROOM BANNER */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-center space-x-3">
+          <Link
+            href="/groups"
+            className="p-2.5 rounded-2xl bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border text-slate-600 dark:text-slate-300 hover:text-purple-600 dark:hover:text-white hover:border-purple-300 transition-all shadow-xs"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </Link>
+          <div>
+            <div className="flex items-center space-x-2">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-brand-lavender border border-purple-200 dark:border-purple-800">
+                {isAdmin ? 'Teacher / Instructor View' : 'Student Classroom View'}
+              </span>
+              <span className="text-xs text-slate-400">•</span>
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                Instructor: {group.creator?.name || 'Classroom Faculty'}
+              </span>
+            </div>
+            <h1 className="font-display font-black text-2xl sm:text-3xl text-slate-900 dark:text-white mt-1">
+              {group.name}
+            </h1>
+          </div>
+        </div>
 
-        {/* Group Controls */}
-        <div className="flex items-center space-x-2">
+        {/* Join Code & Quick Actions */}
+        <div className="flex items-center space-x-2.5">
+          <div className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-950/60 border border-purple-200 dark:border-purple-800 text-xs font-mono font-bold text-purple-800 dark:text-brand-lavender">
+            <span>Code: {group.joinCode}</span>
+            <button onClick={handleCopyCode} title="Copy Join Code" className="hover:text-purple-600">
+              {copiedCode ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+            </button>
+          </div>
+
+          <button
+            onClick={handleCopyInviteLink}
+            className="p-2 rounded-xl bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border text-slate-600 dark:text-slate-300 hover:text-purple-600 hover:border-purple-300 transition-all text-xs font-bold flex items-center space-x-1 shadow-xs"
+            title="Copy Invite Link"
+          >
+            <Share2 className="w-4 h-4" />
+            <span className="hidden sm:inline">{copiedLink ? 'Copied Link!' : 'Invite'}</span>
+          </button>
+
           {isAdmin ? (
             <button
               onClick={handleDeleteGroup}
-              className="px-3 py-1.5 rounded-xl border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-bold transition-all"
+              className="p-2 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-transparent hover:border-rose-200 transition-all"
+              title="Delete Classroom"
             >
-              Delete Group
+              <Trash2 className="w-4 h-4" />
             </button>
           ) : (
             <button
               onClick={handleLeaveGroup}
-              className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-dark-border text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-dark-hover text-xs font-bold transition-all"
+              className="p-2 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-dark-hover transition-all text-xs font-bold flex items-center space-x-1"
+              title="Leave Classroom"
             >
-              Leave Classroom
+              <UserX className="w-4 h-4" />
+              <span className="hidden sm:inline">Leave</span>
             </button>
           )}
         </div>
       </div>
 
-      {/* 2. CLASSROOM HERO BANNER */}
-      <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-200 dark:border-dark-border relative overflow-hidden bg-gradient-to-tr from-purple-900/10 via-indigo-900/5 to-slate-900/10 dark:from-purple-950/40 dark:via-indigo-950/20 dark:to-dark-surface shadow-sm">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
-          <div className="space-y-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <span
-                className={`inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider ${
-                  isAdmin
-                    ? 'bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-brand-lavender border border-purple-200 dark:border-purple-800'
-                    : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
-                }`}
-              >
-                {isAdmin ? <Shield className="w-3.5 h-3.5" /> : <GraduationCap className="w-3.5 h-3.5" />}
-                <span>{isAdmin ? 'Teacher / Administrator' : 'Enrolled Student'}</span>
-              </span>
-
-              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                Created by {group.creator?.name || 'Instructor'}
-              </span>
-            </div>
-
-            <h1 className="font-display font-black text-2xl sm:text-3xl lg:text-4xl text-slate-900 dark:text-white tracking-tight">
-              {group.name}
-            </h1>
-
-            {group.description && (
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-2xl leading-relaxed">
-                {group.description}
-              </p>
-            )}
-          </div>
-
-          {/* Join Code Card & Share Button */}
-          <div className="p-4 sm:p-5 bg-white/80 dark:bg-dark-surface/90 border border-slate-200 dark:border-dark-border rounded-2xl flex flex-col space-y-3 shadow-md shrink-0 lg:w-72 backdrop-blur-md">
-            <div>
-              <span className="text-[10px] uppercase font-bold tracking-wider text-purple-700 dark:text-brand-lavender block">
-                Classroom Join Code
-              </span>
-              <div className="flex items-center justify-between mt-1">
-                <span className="font-mono text-xl font-black text-purple-900 dark:text-white tracking-widest">
-                  {group.joinCode}
-                </span>
-                <button
-                  onClick={handleCopyCode}
-                  title="Copy Join Code"
-                  className="p-1.5 rounded-lg bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 hover:bg-purple-200 transition-colors"
-                >
-                  {copiedCode ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-
-            <button
-              onClick={handleCopyShareLink}
-              className="w-full flex items-center justify-center space-x-2 py-2 px-3 rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-bg text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-100 dark:hover:bg-dark-hover transition-colors"
-            >
-              <Share2 className="w-3.5 h-3.5 text-purple-600 dark:text-brand-lavender" />
-              <span>{copiedLink ? 'Link Copied!' : 'Copy Shareable Link'}</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* 3. TABS NAVIGATION */}
-      <div className="flex items-center space-x-2 border-b border-slate-200 dark:border-dark-border">
+      {/* 2. TAB NAVIGATION BAR */}
+      <div className="flex items-center space-x-1 border-b border-slate-200 dark:border-dark-border overflow-x-auto no-scrollbar pt-2">
         <button
-          onClick={() => setActiveTab('documents')}
-          className={`flex items-center space-x-2 pb-3 px-4 text-xs font-bold border-b-2 transition-all ${
-            activeTab === 'documents'
+          onClick={() => setActiveTab('overview')}
+          className={`flex items-center space-x-2 pb-3 px-4 text-xs font-bold border-b-2 transition-all shrink-0 ${
+            activeTab === 'overview'
+              ? 'border-purple-600 dark:border-brand-lavender text-purple-700 dark:text-brand-lavender'
+              : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white'
+          }`}
+        >
+          <Layers className="w-4 h-4" />
+          <span>Overview</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('knowledge-hub')}
+          className={`flex items-center space-x-2 pb-3 px-4 text-xs font-bold border-b-2 transition-all shrink-0 ${
+            activeTab === 'knowledge-hub'
+              ? 'border-purple-600 dark:border-brand-lavender text-purple-700 dark:text-brand-lavender'
+              : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white'
+          }`}
+        >
+          <Brain className="w-4 h-4" />
+          <span>Knowledge Hub (RAG & Study Tools)</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('assignments')}
+          className={`flex items-center space-x-2 pb-3 px-4 text-xs font-bold border-b-2 transition-all shrink-0 ${
+            activeTab === 'assignments'
               ? 'border-purple-600 dark:border-brand-lavender text-purple-700 dark:text-brand-lavender'
               : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white'
           }`}
         >
           <FileText className="w-4 h-4" />
-          <span>Shared Documents & Assignments ({documents.length})</span>
+          <span>Assignments & Auto-Review</span>
         </button>
 
         <button
           onClick={() => setActiveTab('mcq-tests')}
-          className={`flex items-center space-x-2 pb-3 px-4 text-xs font-bold border-b-2 transition-all ${
+          className={`flex items-center space-x-2 pb-3 px-4 text-xs font-bold border-b-2 transition-all shrink-0 ${
             activeTab === 'mcq-tests'
               ? 'border-purple-600 dark:border-brand-lavender text-purple-700 dark:text-brand-lavender'
               : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white'
@@ -736,8 +578,34 @@ export default function GroupDetailsPage({ params }: { params: { id: string } })
         </button>
 
         <button
+          onClick={() => setActiveTab('my-performance')}
+          className={`flex items-center space-x-2 pb-3 px-4 text-xs font-bold border-b-2 transition-all shrink-0 ${
+            activeTab === 'my-performance'
+              ? 'border-purple-600 dark:border-brand-lavender text-purple-700 dark:text-brand-lavender'
+              : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white'
+          }`}
+        >
+          <TrendingUp className="w-4 h-4" />
+          <span>My Performance & Recommendations</span>
+        </button>
+
+        {isAdmin && (
+          <button
+            onClick={() => setActiveTab('intelligence')}
+            className={`flex items-center space-x-2 pb-3 px-4 text-xs font-bold border-b-2 transition-all shrink-0 ${
+              activeTab === 'intelligence'
+                ? 'border-purple-600 dark:border-brand-lavender text-purple-700 dark:text-brand-lavender'
+                : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <Sparkles className="w-4 h-4 text-purple-600 dark:text-brand-lavender" />
+            <span>Faculty Intelligence Dashboard</span>
+          </button>
+        )}
+
+        <button
           onClick={() => setActiveTab('members')}
-          className={`flex items-center space-x-2 pb-3 px-4 text-xs font-bold border-b-2 transition-all ${
+          className={`flex items-center space-x-2 pb-3 px-4 text-xs font-bold border-b-2 transition-all shrink-0 ${
             activeTab === 'members'
               ? 'border-purple-600 dark:border-brand-lavender text-purple-700 dark:text-brand-lavender'
               : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white'
@@ -748,253 +616,141 @@ export default function GroupDetailsPage({ params }: { params: { id: string } })
         </button>
       </div>
 
-      {/* 4. TAB 1: SHARED DOCUMENTS */}
-      {activeTab === 'documents' && (
-        <div className="space-y-6">
-          {/* Student Privacy Notice Banner */}
-          {!isAdmin && (
-            <div className="p-4 rounded-2xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/60 flex items-center space-x-3 text-xs text-purple-900 dark:text-purple-200">
-              <Shield className="w-5 h-5 text-purple-600 dark:text-brand-lavender shrink-0" />
-              <span>
-                <strong>Submission Privacy:</strong> Course materials from your teacher are visible to all students. Any documents you submit are <strong>private</strong> and only visible to your instructor.
-              </span>
-            </div>
-          )}
+      {/* 3. TAB CONTENT */}
 
-          {/* Controls bar */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            {/* Filter Buttons */}
-            <div className="flex items-center space-x-1.5 p-1 bg-slate-100 dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-xl w-full sm:w-auto">
-              <button
-                onClick={() => setDocFilter('all')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  docFilter === 'all'
-                    ? 'bg-white dark:bg-brand-purple text-purple-700 dark:text-white shadow-sm'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                }`}
-              >
-                All Files ({documents.length})
-              </button>
-              <button
-                onClick={() => setDocFilter('teacher')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  docFilter === 'teacher'
-                    ? 'bg-white dark:bg-brand-purple text-purple-700 dark:text-white shadow-sm'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                }`}
-              >
-                Teacher Notes ({documents.filter((d) => d.uploadedBy === group.createdBy).length})
-              </button>
-              <button
-                onClick={() => setDocFilter('student')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  docFilter === 'student'
-                    ? 'bg-white dark:bg-brand-purple text-purple-700 dark:text-white shadow-sm'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                }`}
-              >
-                {isAdmin
-                  ? `Student Submissions (${documents.filter((d) => d.uploadedBy !== group.createdBy).length})`
-                  : `My Submissions (${documents.filter((d) => d.uploadedBy !== group.createdBy).length})`}
-              </button>
-            </div>
-
-            {/* Right Action: Search & Upload Button */}
-            <div className="flex items-center space-x-3 w-full sm:w-auto">
-              <div className="relative flex-1 sm:w-60">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  value={searchDocQuery}
-                  onChange={(e) => setSearchDocQuery(e.target.value)}
-                  placeholder="Search files..."
-                  className="w-full pl-9 pr-4 py-2 bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:border-purple-500"
-                />
-              </div>
-
-              <button
-                onClick={() => {
-                  setDocTitle('');
-                  setSelectedFile(null);
-                  setSelectedLibraryDocId('');
-                  setUploadError(null);
-                  fetchMyLibraryDocs();
-                  setShowUploadModal(true);
-                }}
-                className="flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-purple-700 dark:bg-brand-purple text-white font-bold text-xs shadow-md hover:shadow-lg transition-all shrink-0"
-              >
-                <Upload className="w-4 h-4" />
-                <span>{isAdmin ? 'Upload Material' : 'Submit Document to Teacher'}</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Documents Grid / Table */}
-          {filteredDocs.length === 0 ? (
-            <div className="glass-card p-12 text-center rounded-3xl border border-slate-200 dark:border-dark-border space-y-4 max-w-md mx-auto">
-              <div className="w-14 h-14 rounded-2xl bg-purple-100 dark:bg-purple-950 text-purple-600 dark:text-brand-lavender flex items-center justify-center mx-auto border border-purple-200 dark:border-purple-800">
-                <FileText className="w-7 h-7" />
-              </div>
-              <div>
-                <h3 className="font-display font-bold text-base text-slate-900 dark:text-white">
-                  {searchDocQuery ? 'No documents matched your search' : 'No documents shared yet'}
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                  {isAdmin
-                    ? 'Upload study materials, lecture slides, or view student assignment submissions.'
-                    : 'Submit your homework, assignments, or view teacher lecture materials.'}
+      {/* TAB: OVERVIEW */}
+      {activeTab === 'overview' && (
+        <div className="space-y-8 animate-fade-in">
+          {/* Welcome Card */}
+          <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-200 dark:border-dark-border bg-gradient-to-r from-purple-900/10 via-indigo-900/5 to-slate-900/10 dark:from-purple-950/40 dark:via-indigo-950/20 dark:to-dark-surface shadow-sm space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <span className="text-xs font-black uppercase tracking-widest text-purple-700 dark:text-brand-lavender">
+                  Smart Classroom Overview
+                </span>
+                <h2 className="font-display font-black text-2xl text-slate-900 dark:text-white">
+                  Welcome to {group.name}
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-2xl leading-relaxed">
+                  {group.description || 'Welcome to your interactive Smart Classroom for curriculum materials, automated assignment reviews, and adaptive MCQ tests.'}
                 </p>
               </div>
-              <button
-                onClick={() => {
-                  setDocTitle('');
-                  setSelectedFile(null);
-                  setSelectedLibraryDocId('');
-                  setUploadError(null);
-                  fetchMyLibraryDocs();
-                  setShowUploadModal(true);
-                }}
-                className="px-4 py-2.5 rounded-xl bg-purple-700 dark:bg-brand-purple text-white font-bold text-xs inline-flex items-center space-x-2"
+
+              {/* Instructor Card */}
+              <div className="p-4 rounded-2xl bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border flex items-center space-x-3 shadow-xs shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-purple-700 text-white font-black text-sm flex items-center justify-center">
+                  {group.creator?.name ? group.creator.name[0].toUpperCase() : 'T'}
+                </div>
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block">Classroom Instructor</span>
+                  <p className="text-xs font-bold text-slate-900 dark:text-white">
+                    {group.creator?.name || 'Instructor'}
+                  </p>
+                  <p className="text-[11px] text-slate-500 font-medium">{group.creator?.email}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Modules Navigation Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4">
+              <div
+                onClick={() => setActiveTab('knowledge-hub')}
+                className="p-5 rounded-2xl bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border hover:border-purple-400 transition-all cursor-pointer space-y-2 shadow-xs group"
               >
-                <Upload className="w-4 h-4" />
-                <span>{isAdmin ? 'Upload Study Material' : 'Submit Assignment'}</span>
-              </button>
+                <div className="flex items-center justify-between">
+                  <span className="p-2.5 rounded-xl bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-brand-lavender">
+                    <Brain className="w-5 h-5" />
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-purple-600 transition-colors" />
+                </div>
+                <h4 className="font-display font-bold text-sm text-slate-900 dark:text-white">
+                  Knowledge Hub
+                </h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Subject & unit notes, RAG Q&A, and 8 instant study actions.
+                </p>
+              </div>
+
+              <div
+                onClick={() => setActiveTab('assignments')}
+                className="p-5 rounded-2xl bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border hover:border-indigo-400 transition-all cursor-pointer space-y-2 shadow-xs group"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="p-2.5 rounded-xl bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300">
+                    <FileText className="w-5 h-5" />
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-indigo-600 transition-colors" />
+                </div>
+                <h4 className="font-display font-bold text-sm text-slate-900 dark:text-white">
+                  Assignments
+                </h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Submit reports and get live automated structural checks.
+                </p>
+              </div>
+
+              <div
+                onClick={() => setActiveTab('mcq-tests')}
+                className="p-5 rounded-2xl bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border hover:border-purple-400 transition-all cursor-pointer space-y-2 shadow-xs group"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="p-2.5 rounded-xl bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-brand-lavender">
+                    <HelpCircle className="w-5 h-5" />
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-purple-600 transition-colors" />
+                </div>
+                <h4 className="font-display font-bold text-sm text-slate-900 dark:text-white">
+                  MCQ Tests
+                </h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Take normal and adaptive timed quizzes with instant grading.
+                </p>
+              </div>
+
+              <div
+                onClick={() => setActiveTab(isAdmin ? 'intelligence' : 'my-performance')}
+                className="p-5 rounded-2xl bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border hover:border-emerald-400 transition-all cursor-pointer space-y-2 shadow-xs group"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="p-2.5 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300">
+                    <TrendingUp className="w-5 h-5" />
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-emerald-600 transition-colors" />
+                </div>
+                <h4 className="font-display font-bold text-sm text-slate-900 dark:text-white">
+                  {isAdmin ? 'Faculty Intelligence' : 'My Performance'}
+                </h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {isAdmin
+                    ? 'Class performance metrics, topic trends, and insights.'
+                    : 'Personalized diagnostics and study recommendations.'}
+                </p>
+              </div>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {filteredDocs.map((doc) => {
-                const isTeacherUpload = doc.uploadedBy === group.createdBy;
-                const formattedDate = new Date(doc.createdAt).toLocaleDateString('en-US', {
-                  month: 'short',
-                  day: 'numeric',
-                  year: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                });
-
-                return (
-                  <div
-                    key={doc.id}
-                    className={`glass-card p-5 rounded-2xl border transition-all flex flex-col justify-between space-y-4 shadow-sm ${
-                      isTeacherUpload
-                        ? 'border-slate-200 dark:border-dark-border hover:border-purple-400'
-                        : 'border-indigo-200 dark:border-indigo-900/60 bg-indigo-50/20 dark:bg-indigo-950/10 hover:border-indigo-400'
-                    }`}
-                  >
-                    <div className="space-y-3">
-                      {/* Top Badges */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <div className="p-2 rounded-xl bg-slate-100 dark:bg-dark-surface border border-slate-200 dark:border-dark-border">
-                            {getFileTypeIcon(doc.fileType)}
-                          </div>
-                          <div>
-                            <span className="text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded bg-slate-100 dark:bg-dark-bg text-slate-600 dark:text-slate-400">
-                              {doc.fileType}
-                            </span>
-                            <span className="text-[10px] text-slate-400 ml-2">
-                              {formatFileSize(doc.fileSize)}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Role & Visibility Badge */}
-                        <span
-                          className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full ${
-                            isTeacherUpload
-                              ? 'bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-brand-lavender border border-purple-200 dark:border-purple-800'
-                              : 'bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800'
-                          }`}
-                        >
-                          {isTeacherUpload ? '📘 Course Material' : isAdmin ? '📥 Student Submission' : '🔒 My Private Submission'}
-                        </span>
-                      </div>
-
-                      {/* Title & File Name */}
-                      <div>
-                        <h4 className="font-display font-bold text-base text-slate-900 dark:text-white line-clamp-1">
-                          {doc.title}
-                        </h4>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 font-mono line-clamp-1 mt-0.5">
-                          {doc.fileName}
-                        </p>
-                      </div>
-
-                      {/* Submitter Info Card */}
-                      <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-dark-surface border border-slate-100 dark:border-dark-border flex items-center space-x-2.5">
-                        <div
-                          className={`w-7 h-7 rounded-xl text-white text-xs font-bold flex items-center justify-center shrink-0 ${
-                            isTeacherUpload
-                              ? 'bg-purple-700 dark:bg-brand-purple'
-                              : 'bg-indigo-600 dark:bg-indigo-700'
-                          }`}
-                        >
-                          {doc.uploader?.name ? doc.uploader.name[0].toUpperCase() : 'U'}
-                        </div>
-                        <div className="truncate text-xs">
-                          <span className="font-bold text-slate-900 dark:text-white block truncate">
-                            {doc.uploader?.name || 'Student Submitter'}
-                          </span>
-                          <span className="text-[10px] text-slate-400 block truncate">
-                            {doc.uploader?.email || 'email'} • {formattedDate}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-dark-border/60">
-                      <div className="flex items-center space-x-2">
-                        {doc.content && (
-                          <button
-                            onClick={() => setPreviewDoc(doc)}
-                            className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-dark-hover transition-colors text-xs font-bold flex items-center space-x-1"
-                            title="Preview Document Content"
-                          >
-                            <Eye className="w-4 h-4 text-purple-600 dark:text-brand-lavender" />
-                            <span>Preview</span>
-                          </button>
-                        )}
-
-                        <button
-                          onClick={() => downloadGroupDocument(doc)}
-                          className="p-2 rounded-xl text-purple-700 dark:text-brand-lavender hover:bg-purple-50 dark:hover:bg-dark-hover transition-colors text-xs font-bold flex items-center space-x-1"
-                          title="Download Document"
-                        >
-                          <Download className="w-4 h-4" />
-                          <span>Download</span>
-                        </button>
-                      </div>
-
-                      {/* Delete Option */}
-                      {(isAdmin || doc.uploadedBy === group.createdBy) && (
-                        <button
-                          onClick={() => handleDeleteDocument(doc.id, doc.title)}
-                          className="p-2 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl transition-colors"
-                          title="Delete Document"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          </div>
         </div>
       )}
 
-      {/* 5. TAB 2: MCQ TESTS MODULE */}
+      {/* TAB: KNOWLEDGE HUB */}
+      {activeTab === 'knowledge-hub' && (
+        <KnowledgeHubTab groupId={groupId} classroomName={group.name} isAdmin={isAdmin} />
+      )}
+
+      {/* TAB: ASSIGNMENTS */}
+      {activeTab === 'assignments' && (
+        <AssignmentsTab groupId={groupId} classroomName={group.name} isAdmin={isAdmin} />
+      )}
+
+      {/* TAB: MCQ TESTS */}
       {activeTab === 'mcq-tests' && (
-        <div className="space-y-6">
+        <div className="space-y-6 animate-fade-in">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div>
               <h3 className="font-display font-bold text-lg text-slate-900 dark:text-white">
                 Classroom MCQ Examination Tests
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Timed online quizzes, practice tests, and scored academic evaluations
+                Timed quizzes, normal tests, and adaptive assessments with automatic grading
               </p>
             </div>
 
@@ -1004,6 +760,7 @@ export default function GroupDetailsPage({ params }: { params: { id: string } })
                   setTestTitle('');
                   setTestDescription('');
                   setTestError(null);
+                  setIsAdaptiveTest(false);
                   setShowCreateTestModal(true);
                 }}
                 className="flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-purple-700 dark:bg-brand-purple text-white font-bold text-xs shadow-md hover:shadow-lg transition-all shrink-0"
@@ -1055,10 +812,17 @@ export default function GroupDetailsPage({ params }: { params: { id: string } })
                     <div className="space-y-3">
                       {/* Top Badges */}
                       <div className="flex items-center justify-between">
-                        <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-brand-lavender border border-purple-200 dark:border-purple-800">
-                          <Clock className="w-3 h-3" />
-                          <span>{t.duration} Minutes</span>
-                        </span>
+                        <div className="flex items-center space-x-1.5">
+                          <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-brand-lavender border border-purple-200 dark:border-purple-800">
+                            <Clock className="w-3 h-3" />
+                            <span>{t.duration} Mins</span>
+                          </span>
+                          {t.isAdaptive && (
+                            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
+                              Adaptive
+                            </span>
+                          )}
+                        </div>
 
                         {isCompleted ? (
                           <span
@@ -1089,7 +853,7 @@ export default function GroupDetailsPage({ params }: { params: { id: string } })
                         )}
                       </div>
 
-                      {/* Score or Specs Info */}
+                      {/* Score Info */}
                       {isCompleted ? (
                         <div className="p-3 rounded-xl bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border text-center space-y-1">
                           <span className="text-[10px] uppercase font-bold text-slate-400">Your Exam Score</span>
@@ -1161,9 +925,23 @@ export default function GroupDetailsPage({ params }: { params: { id: string } })
         </div>
       )}
 
-      {/* 6. TAB 3: MEMBERS LIST */}
+      {/* TAB: MY PERFORMANCE */}
+      {activeTab === 'my-performance' && (
+        <MyPerformanceTab
+          groupId={groupId}
+          classroomName={group.name}
+          onNavigateToKnowledgeHub={(action, query) => setActiveTab('knowledge-hub')}
+        />
+      )}
+
+      {/* TAB: FACULTY INTELLIGENCE (FACULTY ONLY) */}
+      {activeTab === 'intelligence' && isAdmin && (
+        <FacultyIntelligenceTab groupId={groupId} classroomName={group.name} />
+      )}
+
+      {/* TAB: MEMBERS */}
       {activeTab === 'members' && (
-        <div className="space-y-6">
+        <div className="space-y-6 animate-fade-in">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
               <h3 className="font-display font-bold text-lg text-slate-900 dark:text-white">
@@ -1184,7 +962,7 @@ export default function GroupDetailsPage({ params }: { params: { id: string } })
                 title="Click to copy join code"
               >
                 <span>{group.joinCode}</span>
-                {copiedCode ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3 text-purple-600" />}
+                {copiedCode ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-purple-600" />}
               </button>
             </div>
           </div>
@@ -1198,8 +976,6 @@ export default function GroupDetailsPage({ params }: { params: { id: string } })
                 year: 'numeric',
               });
 
-              // Calculate student submissions count
-              const studentSubmissionsCount = documents.filter((d) => d.uploadedBy === mem.userId).length;
               const memberName =
                 mem.user?.name ||
                 (isGroupAdmin
@@ -1249,21 +1025,15 @@ export default function GroupDetailsPage({ params }: { params: { id: string } })
                     </div>
                   </div>
 
-                  <div className="flex items-center space-x-4">
-                    {!isGroupAdmin && (
-                      <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-dark-bg border border-slate-200 dark:border-dark-border hidden sm:inline-block">
-                        📄 {studentSubmissionsCount} {studentSubmissionsCount === 1 ? 'Submission' : 'Submissions'}
-                      </span>
-                    )}
-
-                    <span className="text-xs text-slate-400 hidden md:inline-block font-medium">
-                      Enrolled {formattedDate}
+                  <div className="flex items-center space-x-3">
+                    <span className="text-[11px] text-slate-400 hidden sm:inline">
+                      Joined {formattedDate}
                     </span>
 
-                    {isAdmin && mem.userId !== group.createdBy && (
+                    {isAdmin && !isGroupAdmin && (
                       <button
-                        onClick={() => handleRemoveMember(mem.id, mem.user?.name || 'this student')}
-                        className="p-2 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                        onClick={() => handleRemoveMember(mem.id)}
+                        className="p-2 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl transition-colors"
                         title="Remove student from classroom"
                       >
                         <UserX className="w-4 h-4" />
@@ -1277,459 +1047,294 @@ export default function GroupDetailsPage({ params }: { params: { id: string } })
         </div>
       )}
 
-      {/* 7. UPLOAD DOCUMENT MODAL */}
-      {showUploadModal && (
+      {/* 4. CREATE MCQ TEST MODAL */}
+      {showCreateTestModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl relative">
+          <div className="bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-3xl p-6 sm:p-8 max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl relative space-y-6">
             <button
-              onClick={() => setShowUploadModal(false)}
-              className="absolute right-5 top-5 p-1.5 rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-dark-hover transition-colors"
+              onClick={() => setShowCreateTestModal(false)}
+              className="absolute right-5 top-5 p-1.5 rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-dark-hover"
             >
               <X className="w-5 h-5" />
             </button>
 
-            <form onSubmit={handleUploadDocument} className="space-y-5">
-              <div className="flex items-center space-x-3 mb-2">
-                <div className="w-10 h-10 rounded-2xl bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-brand-lavender flex items-center justify-center border border-purple-200 dark:border-purple-800">
-                  <Upload className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="font-display font-bold text-lg text-slate-900 dark:text-white">
-                    Share Document with Classroom
-                  </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Upload a file or share an existing document from your StudentDoc library.
-                  </p>
-                </div>
-              </div>
-
-              {uploadError && (
-                <div className="p-3 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 rounded-xl text-xs font-semibold">
-                  {uploadError}
-                </div>
-              )}
-
-              {/* Source Toggle */}
-              <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 dark:bg-dark-bg rounded-xl border border-slate-200 dark:border-dark-border">
-                <button
-                  type="button"
-                  onClick={() => setUploadSource('file')}
-                  className={`py-2 text-xs font-bold rounded-lg transition-all ${
-                    uploadSource === 'file'
-                      ? 'bg-white dark:bg-brand-purple text-purple-700 dark:text-white shadow-sm'
-                      : 'text-slate-600 dark:text-slate-400'
-                  }`}
-                >
-                  Upload File from Computer
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setUploadSource('library')}
-                  className={`py-2 text-xs font-bold rounded-lg transition-all ${
-                    uploadSource === 'library'
-                      ? 'bg-white dark:bg-brand-purple text-purple-700 dark:text-white shadow-sm'
-                      : 'text-slate-600 dark:text-slate-400'
-                  }`}
-                >
-                  Share from StudentDoc Library
-                </button>
-              </div>
-
-              {/* Document Title */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                  Document Title *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={docTitle}
-                  onChange={(e) => setDocTitle(e.target.value)}
-                  placeholder="e.g. Unit 3 Cloud Architecture Lecture Notes"
-                  className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:border-purple-500"
-                />
-              </div>
-
-              {uploadSource === 'file' ? (
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                    Select File (PDF, DOCX, TXT, MD, etc.) *
-                  </label>
-                  <div className="border-2 border-dashed border-slate-300 dark:border-dark-border hover:border-purple-500 rounded-2xl p-6 text-center cursor-pointer transition-colors relative bg-slate-50/50 dark:bg-dark-bg/50">
-                    <input
-                      type="file"
-                      onChange={(e) => {
-                        if (e.target.files && e.target.files[0]) {
-                          const f = e.target.files[0];
-                          setSelectedFile(f);
-                          if (!docTitle) setDocTitle(f.name.replace(/\.[^/.]+$/, ''));
-                        }
-                      }}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                    />
-                    <FileUp className="w-8 h-8 text-purple-600 dark:text-brand-lavender mx-auto mb-2" />
-                    {selectedFile ? (
-                      <p className="text-xs font-bold text-purple-700 dark:text-brand-lavender">
-                        Selected: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)
-                      </p>
-                    ) : (
-                      <div>
-                        <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                          Click to browse or drag & drop your document
-                        </p>
-                        <p className="text-[10px] text-slate-400 mt-0.5">
-                          Supports PDF, Word, Markdown, Text, and Code files
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                    Select from Your Created Documents *
-                  </label>
-                  {myLibraryDocs.length === 0 ? (
-                    <p className="text-xs text-slate-500 py-3">No saved documents found in your library.</p>
-                  ) : (
-                    <select
-                      value={selectedLibraryDocId}
-                      onChange={(e) => {
-                        setSelectedLibraryDocId(e.target.value);
-                        const sel = myLibraryDocs.find((d) => d.id === e.target.value);
-                        if (sel && !docTitle) setDocTitle(sel.title);
-                      }}
-                      className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:border-purple-500"
-                    >
-                      <option value="">-- Choose a document --</option>
-                      {myLibraryDocs.map((d) => (
-                        <option key={d.id} value={d.id}>
-                          {d.title} ({new Date(d.createdAt).toLocaleDateString()})
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </div>
-              )}
-
-              <div className="pt-2 flex items-center justify-end space-x-3">
-                <button
-                  type="button"
-                  onClick={() => setShowUploadModal(false)}
-                  className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-dark-border text-slate-600 dark:text-slate-400 font-bold text-xs"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={uploading}
-                  className="px-5 py-2.5 rounded-xl bg-purple-700 dark:bg-brand-purple text-white font-bold text-xs shadow-md hover:shadow-lg transition-all flex items-center space-x-2 disabled:opacity-50"
-                >
-                  {uploading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                  <span>{uploading ? 'Sharing Document...' : 'Share Document'}</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* 8. CREATE MCQ TEST MODAL (FACULTY) */}
-      {showCreateTestModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-fade-in overflow-y-auto">
-          <div className="bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-3xl p-6 sm:p-8 max-w-3xl w-full shadow-2xl relative my-8 max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between border-b border-slate-200 dark:border-dark-border pb-4 mb-4">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-2xl bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-brand-lavender flex items-center justify-center border border-purple-200 dark:border-purple-800">
-                  <HelpCircle className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="font-display font-bold text-lg text-slate-900 dark:text-white">
-                    Create MCQ Examination
-                  </h3>
-                  <p className="text-xs text-slate-500">
-                    Add unlimited questions with 4 choices, custom marks, and live countdown timer.
-                  </p>
-                </div>
-              </div>
-
-              <button
-                onClick={() => setShowCreateTestModal(false)}
-                className="p-1.5 rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-dark-hover transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
+            <div className="space-y-1">
+              <h3 className="font-display font-bold text-xl text-slate-900 dark:text-white">
+                Create Classroom MCQ Examination Test
+              </h3>
+              <p className="text-xs text-slate-500">
+                Configure quiz timing, adaptive mode, questions with topic tags, and scoring criteria.
+              </p>
             </div>
 
             {testError && (
-              <div className="p-3 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 rounded-xl text-xs font-semibold mb-4">
+              <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/50 text-rose-600 text-xs font-semibold">
                 {testError}
               </div>
             )}
 
-            <form onSubmit={handleCreateTest} className="space-y-6 flex-1 overflow-y-auto pr-1">
-              {/* Test Meta Info */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5 sm:col-span-2">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                    Test Title / Topic *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={testTitle}
-                    onChange={(e) => setTestTitle(e.target.value)}
-                    placeholder="e.g. Cloud Computing & Distributed Architecture"
-                    className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:border-purple-500 font-medium"
-                  />
-                </div>
-
-                {/* AI Question Generator Section */}
-                <div className="sm:col-span-2 p-4 rounded-2xl bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-brand-lavender/10 border border-purple-200 dark:border-purple-800/80 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <Sparkles className="w-4 h-4 text-purple-600 dark:text-brand-lavender" />
-                      <h4 className="font-display font-bold text-xs sm:text-sm text-purple-950 dark:text-purple-200">
-                        Auto-Generate Questions with AI (Up to 50 Questions)
-                      </h4>
-                    </div>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-200 dark:bg-purple-900 text-purple-800 dark:text-purple-200">
-                      AI Powered
-                    </span>
-                  </div>
-
-                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                    Type your subject or topic in the title field, choose your desired number of questions (up to 50), and click generate. AI will automatically construct every question, 4 choices, and mark the correct answers.
-                  </p>
-
-                  <div className="flex flex-wrap items-center gap-3 pt-1">
-                    {/* Number of Questions Selector */}
-                    <div className="flex items-center space-x-1.5">
-                      <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
-                        Questions:
-                      </label>
-                      <select
-                        value={aiQuestionCount}
-                        onChange={(e) => setAiQuestionCount(Number(e.target.value))}
-                        className="px-2.5 py-1.5 bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-xl text-xs font-bold text-purple-900 dark:text-brand-lavender focus:outline-none"
-                      >
-                        <option value={5}>5 Questions</option>
-                        <option value={10}>10 Questions</option>
-                        <option value={15}>15 Questions</option>
-                        <option value={20}>20 Questions</option>
-                        <option value={25}>25 Questions</option>
-                        <option value={30}>30 Questions</option>
-                        <option value={40}>40 Questions</option>
-                        <option value={50}>50 Questions (Max)</option>
-                      </select>
-                    </div>
-
-                    {/* Custom Number Input */}
-                    <div className="flex items-center space-x-1">
-                      <span className="text-[11px] text-slate-400">or custom:</span>
-                      <input
-                        type="number"
-                        min={1}
-                        max={50}
-                        value={aiQuestionCount}
-                        onChange={(e) => setAiQuestionCount(Math.min(50, Math.max(1, parseInt(e.target.value) || 1)))}
-                        className="w-14 px-2 py-1 bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-xl text-xs text-center font-bold text-slate-900 dark:text-white"
-                      />
-                    </div>
-
-                    {/* Difficulty Selector */}
-                    <div className="flex items-center space-x-1.5">
-                      <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
-                        Difficulty:
-                      </label>
-                      <select
-                        value={aiDifficulty}
-                        onChange={(e) => setAiDifficulty(e.target.value as any)}
-                        className="px-2.5 py-1.5 bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 focus:outline-none"
-                      >
-                        <option value="beginner">Beginner</option>
-                        <option value="intermediate">Intermediate</option>
-                        <option value="advanced">Advanced</option>
-                        <option value="mixed">Mixed</option>
-                      </select>
-                    </div>
-
-                    {/* Generate Button */}
-                    <button
-                      type="button"
-                      disabled={generatingAiQuestions || !testTitle.trim()}
-                      onClick={handleGenerateAiQuestions}
-                      className="ml-auto px-4 py-2 rounded-xl bg-gradient-to-r from-purple-700 to-indigo-800 dark:from-brand-purple dark:to-brand-amethyst text-white font-bold text-xs shadow-sm hover:shadow-md transition-all flex items-center space-x-1.5 disabled:opacity-50"
-                    >
-                      {generatingAiQuestions ? (
-                        <>
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          <span>Generating {aiQuestionCount} Questions...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="w-3.5 h-3.5" />
-                          <span>Auto-Generate {aiQuestionCount} Questions</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-
-                  {aiSuccessMessage && (
-                    <div className="p-2.5 bg-emerald-100 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 rounded-xl text-xs font-bold animate-fade-in flex items-center space-x-1.5">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                      <span>{aiSuccessMessage}</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-1.5 sm:col-span-2">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                    Description & Instructions (Optional)
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={testDescription}
-                    onChange={(e) => setTestDescription(e.target.value)}
-                    placeholder="e.g. Total questions. Each question carries 1 mark. No negative marking."
-                    className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:border-purple-500 resize-none"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                    Duration (Minutes) *
-                  </label>
-                  <input
-                    type="number"
-                    min={1}
-                    max={180}
-                    required
-                    value={testDuration}
-                    onChange={(e) => setTestDuration(parseInt(e.target.value) || 20)}
-                    className="w-full px-3.5 py-2 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl text-xs text-slate-900 dark:text-white"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                    Passing Marks Threshold *
-                  </label>
-                  <input
-                    type="number"
-                    min={1}
-                    required
-                    value={testPassingMarks}
-                    onChange={(e) => setTestPassingMarks(parseInt(e.target.value) || 4)}
-                    className="w-full px-3.5 py-2 bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl text-xs text-slate-900 dark:text-white"
-                  />
+            {/* AI Generation Box */}
+            <div className="p-4 rounded-2xl bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Sparkles className="w-4 h-4 text-purple-600 dark:text-brand-lavender animate-pulse" />
+                  <span className="text-xs font-bold text-purple-900 dark:text-purple-200">
+                    AI Question Generator
+                  </span>
                 </div>
               </div>
 
-              {/* Question Builder */}
-              <div className="space-y-4 border-t border-slate-200 dark:border-dark-border pt-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                <div>
+                  <label className="font-semibold text-slate-600 dark:text-slate-300 block mb-1">
+                    Question Count
+                  </label>
+                  <select
+                    value={aiQuestionCount}
+                    onChange={(e) => setAiQuestionCount(Number(e.target.value))}
+                    className="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-dark-border bg-white dark:bg-dark-surface font-semibold"
+                  >
+                    <option value={5}>5 Questions</option>
+                    <option value={10}>10 Questions</option>
+                    <option value={15}>15 Questions</option>
+                    <option value={20}>20 Questions</option>
+                    <option value={30}>30 Questions</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="font-semibold text-slate-600 dark:text-slate-300 block mb-1">
+                    Difficulty Level
+                  </label>
+                  <select
+                    value={aiDifficulty}
+                    onChange={(e) => setAiDifficulty(e.target.value as any)}
+                    className="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-dark-border bg-white dark:bg-dark-surface font-semibold"
+                  >
+                    <option value="beginner">Beginner / Easy</option>
+                    <option value="intermediate">Intermediate</option>
+                    <option value="advanced">Advanced / Hard</option>
+                    <option value="mixed">Mixed Difficulty</option>
+                  </select>
+                </div>
+                <div className="flex items-end">
+                  <button
+                    type="button"
+                    onClick={handleGenerateAiQuestions}
+                    disabled={generatingAiQuestions}
+                    className="w-full py-1.5 px-3 rounded-xl bg-purple-700 text-white font-bold text-xs hover:bg-purple-800 disabled:opacity-50 flex items-center justify-center space-x-1 shadow-sm"
+                  >
+                    {generatingAiQuestions ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Generating...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>Auto-Generate</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+              {aiSuccessMessage && (
+                <p className="text-xs text-emerald-600 font-bold">{aiSuccessMessage}</p>
+              )}
+            </div>
+
+            <form onSubmit={handleCreateTest} className="space-y-4">
+              <div>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  Test Title *
+                </label>
+                <input
+                  type="text"
+                  value={testTitle}
+                  onChange={(e) => setTestTitle(e.target.value)}
+                  placeholder="e.g. Operating Systems Unit 1 Quiz"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-dark-border bg-white dark:bg-dark-bg text-xs text-slate-900 dark:text-white focus:ring-1 focus:ring-purple-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  Description / Topic Notes
+                </label>
+                <textarea
+                  value={testDescription}
+                  onChange={(e) => setTestDescription(e.target.value)}
+                  rows={2}
+                  placeholder="Instructions for students..."
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-dark-border bg-white dark:bg-dark-bg text-xs text-slate-900 dark:text-white"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                    Duration (Minutes)
+                  </label>
+                  <input
+                    type="number"
+                    value={testDuration}
+                    onChange={(e) => setTestDuration(parseInt(e.target.value, 10) || 20)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-dark-border bg-white dark:bg-dark-bg text-xs text-slate-900 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                    Passing Marks
+                  </label>
+                  <input
+                    type="number"
+                    value={testPassingMarks}
+                    onChange={(e) => setTestPassingMarks(parseInt(e.target.value, 10) || 4)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-dark-border bg-white dark:bg-dark-bg text-xs text-slate-900 dark:text-white"
+                  />
+                </div>
+                <div className="flex items-center space-x-2 pt-6">
+                  <input
+                    type="checkbox"
+                    id="adaptiveCheck"
+                    checked={isAdaptiveTest}
+                    onChange={(e) => setIsAdaptiveTest(e.target.checked)}
+                    className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500"
+                  />
+                  <label htmlFor="adaptiveCheck" className="text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer">
+                    ⚡ Adaptive Test Mode
+                  </label>
+                </div>
+              </div>
+
+              {/* Questions List Editor */}
+              <div className="space-y-4 pt-2">
                 <div className="flex items-center justify-between">
-                  <h4 className="font-display font-bold text-sm text-slate-900 dark:text-white">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
                     Questions ({questionsList.length})
-                  </h4>
+                  </span>
                   <button
                     type="button"
                     onClick={handleAddQuestion}
-                    className="flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-brand-lavender text-xs font-bold hover:bg-purple-200 transition-colors"
+                    className="text-xs font-bold text-purple-700 dark:text-brand-lavender hover:underline flex items-center space-x-1"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>Add Question</span>
                   </button>
                 </div>
 
-                <div className="space-y-5">
+                <div className="space-y-3">
                   {questionsList.map((q, idx) => (
                     <div
                       key={idx}
-                      className="p-5 rounded-2xl border border-slate-200 dark:border-dark-border bg-slate-50/70 dark:bg-dark-bg/60 space-y-4 relative"
+                      className="p-4 rounded-2xl bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border space-y-3"
                     >
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-bold text-purple-700 dark:text-brand-lavender">
                           Question {idx + 1}
                         </span>
-
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveQuestion(idx)}
-                          className="p-1 rounded-lg text-rose-500 hover:bg-rose-100 dark:hover:bg-rose-950/50 transition-colors"
-                          title="Delete Question"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="text"
+                            value={q.topic}
+                            onChange={(e) => handleQuestionFieldChange(idx, 'topic', e.target.value)}
+                            placeholder="Topic"
+                            className="px-2 py-1 rounded-lg border border-slate-200 dark:border-dark-border text-[11px] font-semibold w-28 bg-white dark:bg-dark-surface"
+                          />
+                          <select
+                            value={q.difficulty}
+                            onChange={(e) => handleQuestionFieldChange(idx, 'difficulty', e.target.value)}
+                            className="px-2 py-1 rounded-lg border border-slate-200 dark:border-dark-border text-[11px] font-semibold bg-white dark:bg-dark-surface"
+                          >
+                            <option value="EASY">Easy</option>
+                            <option value="MEDIUM">Medium</option>
+                            <option value="HARD">Hard</option>
+                          </select>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveQuestion(idx)}
+                            className="text-rose-500 hover:text-rose-700"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
 
-                      {/* Question Text */}
                       <input
                         type="text"
-                        required
                         value={q.question}
                         onChange={(e) => handleQuestionFieldChange(idx, 'question', e.target.value)}
-                        placeholder={`e.g. Enter question text ${idx + 1}`}
-                        className="w-full px-3.5 py-2 bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-xl text-xs text-slate-900 dark:text-white"
+                        placeholder="Question prompt..."
+                        className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-dark-border bg-white dark:bg-dark-surface text-xs font-semibold"
                       />
 
-                      {/* 4 Choices Grid */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {(['A', 'B', 'C', 'D'] as const).map((optKey) => {
-                          const field = `option${optKey}` as 'optionA' | 'optionB' | 'optionC' | 'optionD';
-                          const isCorrect = q.correctOption === optKey;
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                        <input
+                          type="text"
+                          value={q.optionA}
+                          onChange={(e) => handleQuestionFieldChange(idx, 'optionA', e.target.value)}
+                          placeholder="Option A"
+                          className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-dark-border bg-white dark:bg-dark-surface text-xs"
+                        />
+                        <input
+                          type="text"
+                          value={q.optionB}
+                          onChange={(e) => handleQuestionFieldChange(idx, 'optionB', e.target.value)}
+                          placeholder="Option B"
+                          className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-dark-border bg-white dark:bg-dark-surface text-xs"
+                        />
+                        <input
+                          type="text"
+                          value={q.optionC}
+                          onChange={(e) => handleQuestionFieldChange(idx, 'optionC', e.target.value)}
+                          placeholder="Option C"
+                          className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-dark-border bg-white dark:bg-dark-surface text-xs"
+                        />
+                        <input
+                          type="text"
+                          value={q.optionD}
+                          onChange={(e) => handleQuestionFieldChange(idx, 'optionD', e.target.value)}
+                          placeholder="Option D"
+                          className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-dark-border bg-white dark:bg-dark-surface text-xs"
+                        />
+                      </div>
 
-                          return (
-                            <div key={optKey} className="flex items-center space-x-2">
-                              <button
-                                type="button"
-                                onClick={() => handleQuestionFieldChange(idx, 'correctOption', optKey)}
-                                className={`w-7 h-7 rounded-xl font-mono font-bold text-xs shrink-0 flex items-center justify-center border transition-all ${
-                                  isCorrect
-                                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
-                                    : 'bg-white dark:bg-dark-surface border-slate-300 text-slate-600 hover:border-emerald-500'
-                                }`}
-                                title="Click to set as correct answer"
-                              >
-                                {optKey}
-                              </button>
-                              <input
-                                type="text"
-                                required
-                                value={q[field]}
-                                onChange={(e) => handleQuestionFieldChange(idx, field, e.target.value)}
-                                placeholder={`Option ${optKey}`}
-                                className={`w-full px-3 py-1.5 bg-white dark:bg-dark-surface border rounded-xl text-xs ${
-                                  isCorrect
-                                    ? 'border-emerald-500 ring-1 ring-emerald-500/30'
-                                    : 'border-slate-200 dark:border-dark-border'
-                                }`}
-                              />
-                            </div>
-                          );
-                        })}
+                      <div className="flex items-center space-x-2 pt-1 text-xs">
+                        <span className="font-bold text-slate-500">Correct:</span>
+                        {(['A', 'B', 'C', 'D'] as const).map((opt) => (
+                          <button
+                            type="button"
+                            key={opt}
+                            onClick={() => handleQuestionFieldChange(idx, 'correctOption', opt)}
+                            className={`w-7 h-7 rounded-lg font-bold transition-all ${
+                              q.correctOption === opt
+                                ? 'bg-emerald-600 text-white'
+                                : 'bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border text-slate-600'
+                            }`}
+                          >
+                            {opt}
+                          </button>
+                        ))}
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Modal Footer */}
-              <div className="pt-4 flex items-center justify-end space-x-3 border-t border-slate-200 dark:border-dark-border">
+              <div className="flex items-center justify-end space-x-2 pt-4 border-t border-slate-200 dark:border-dark-border">
                 <button
                   type="button"
                   onClick={() => setShowCreateTestModal(false)}
-                  className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-dark-border text-slate-600 dark:text-slate-400 font-bold text-xs"
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={creatingTest}
-                  className="px-5 py-2.5 rounded-xl bg-purple-700 dark:bg-brand-purple text-white font-bold text-xs shadow-md hover:shadow-lg transition-all flex items-center space-x-2 disabled:opacity-50"
+                  className="px-5 py-2.5 rounded-xl bg-purple-700 text-white font-bold text-xs shadow-md hover:bg-purple-800 disabled:opacity-50 flex items-center space-x-2"
                 >
-                  {creatingTest && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                  <span>{creatingTest ? 'Publishing Test...' : 'Publish Test to Classroom'}</span>
+                  {creatingTest ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                  <span>Publish Examination Test</span>
                 </button>
               </div>
             </form>
@@ -1737,170 +1342,85 @@ export default function GroupDetailsPage({ params }: { params: { id: string } })
         </div>
       )}
 
-      {/* 9. FACULTY RESULTS & ANALYTICS MODAL */}
+      {/* 5. FACULTY RESULTS MODAL */}
       {analyticsTest && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-3xl p-6 sm:p-8 max-w-3xl w-full shadow-2xl relative max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between border-b border-slate-200 dark:border-dark-border pb-4 mb-4">
-              <div>
-                <h3 className="font-display font-bold text-lg text-slate-900 dark:text-white">
-                  {analyticsTest.title} — Examination Results
-                </h3>
-                <p className="text-xs text-slate-500 font-mono">
-                  Duration: {analyticsTest.duration}m • Total Marks: {analyticsTest.totalMarks} • Passing Threshold: {analyticsTest.passingMarks}
-                </p>
-              </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-3xl p-6 sm:p-8 max-w-2xl w-full shadow-2xl relative space-y-4 max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() => setAnalyticsTest(null)}
+              className="absolute right-5 top-5 p-1.5 rounded-xl text-slate-400 hover:bg-slate-100"
+            >
+              <X className="w-5 h-5" />
+            </button>
 
-              <button
-                onClick={() => setAnalyticsTest(null)}
-                className="p-1.5 rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-dark-hover transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
+            <div className="space-y-1">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-purple-700 dark:text-brand-lavender">
+                Exam Evaluation Analytics
+              </span>
+              <h3 className="font-display font-bold text-xl text-slate-900 dark:text-white">
+                {analyticsTest.title}
+              </h3>
             </div>
 
             {loadingAnalytics ? (
-              <div className="flex flex-col items-center justify-center py-20 space-y-3">
-                <Loader2 className="w-8 h-8 text-purple-600 dark:text-brand-lavender animate-spin" />
-                <p className="text-xs text-slate-500 font-medium">Computing student scores and analytics...</p>
+              <div className="p-8 text-center text-slate-400">
+                <Loader2 className="w-6 h-6 animate-spin mx-auto text-purple-600 mb-2" />
+                <p className="text-xs">Computing student scores and class averages...</p>
               </div>
             ) : analyticsData ? (
-              <div className="space-y-6 flex-1 overflow-y-auto pr-1">
-                {/* Analytics Metrics Cards */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <div className="p-3.5 rounded-2xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 text-center">
-                    <span className="text-[10px] font-bold uppercase text-purple-700 dark:text-brand-lavender">Attempted</span>
-                    <p className="text-xl font-black text-purple-900 dark:text-white">
-                      {analyticsData.analytics.attemptedCount} / {analyticsData.analytics.totalStudents}
-                    </p>
+              <div className="space-y-4">
+                <div className="grid grid-cols-3 gap-3 text-center text-xs">
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border">
+                    <span className="text-slate-400 block font-bold">Total Attempts</span>
+                    <span className="text-lg font-black text-slate-900 dark:text-white">
+                      {analyticsData.attempts?.length || 0}
+                    </span>
                   </div>
-
-                  <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-center">
-                    <span className="text-[10px] font-bold uppercase text-emerald-700 dark:text-emerald-400">Pass Rate</span>
-                    <p className="text-xl font-black text-emerald-600">
-                      {analyticsData.analytics.passPercentage}%
-                    </p>
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border">
+                    <span className="text-slate-400 block font-bold">Class Average</span>
+                    <span className="text-lg font-black text-purple-600">
+                      {analyticsData.classAverage || 0}%
+                    </span>
                   </div>
-
-                  <div className="p-3.5 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 text-center">
-                    <span className="text-[10px] font-bold uppercase text-indigo-700 dark:text-indigo-400">Class Average</span>
-                    <p className="text-xl font-black text-indigo-900 dark:text-white">
-                      {analyticsData.analytics.averageScore}%
-                    </p>
-                  </div>
-
-                  <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-center">
-                    <span className="text-[10px] font-bold uppercase text-amber-700 dark:text-amber-400">Highest Score</span>
-                    <p className="text-xl font-black text-amber-600">
-                      {analyticsData.analytics.highestScore}%
-                    </p>
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border">
+                    <span className="text-slate-400 block font-bold">Pass Rate</span>
+                    <span className="text-lg font-black text-emerald-600">
+                      {analyticsData.passRate || 0}%
+                    </span>
                   </div>
                 </div>
 
-                {/* Submissions Table */}
-                <div className="space-y-3">
-                  <h4 className="font-display font-bold text-sm text-slate-900 dark:text-white">
-                    Student Submissions ({analyticsData.submissions.length})
-                  </h4>
-
-                  {analyticsData.submissions.length === 0 ? (
-                    <p className="text-xs text-slate-500 py-4 text-center">
-                      No students have submitted this test yet.
-                    </p>
-                  ) : (
-                    <div className="rounded-2xl border border-slate-200 dark:border-dark-border divide-y divide-slate-100 dark:divide-dark-border overflow-hidden">
-                      {analyticsData.submissions.map((sub: any) => {
-                        const isPassed = sub.passed;
-                        const subTime = new Date(sub.submittedAt).toLocaleString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        });
-
-                        return (
-                          <div
-                            key={sub.id}
-                            className="p-3.5 flex items-center justify-between gap-4 hover:bg-slate-50 dark:hover:bg-dark-surface/50 transition-colors"
-                          >
-                            <div className="flex items-center space-x-3">
-                              <div className="w-8 h-8 rounded-xl bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-brand-lavender font-bold text-xs flex items-center justify-center">
-                                {sub.user?.name ? sub.user.name[0].toUpperCase() : 'S'}
-                              </div>
-                              <div>
-                                <span className="font-bold text-xs text-slate-900 dark:text-white block">
-                                  {sub.user?.name || 'Student'}
-                                </span>
-                                <span className="text-[10px] text-slate-400">
-                                  {sub.user?.email || 'email'} • {subTime}
-                                </span>
-                              </div>
-                            </div>
-
-                            <div className="flex items-center space-x-3">
-                              <span className="font-mono font-black text-xs text-purple-700 dark:text-brand-lavender">
-                                {sub.score} / {sub.totalMarks} ({sub.percentage}%)
-                              </span>
-
-                              <span
-                                className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                                  isPassed
-                                    ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400'
-                                    : 'bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-400'
-                                }`}
-                              >
-                                {isPassed ? 'PASS' : 'FAIL'}
-                              </span>
-                            </div>
+                <div className="space-y-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500 block">
+                    Student Submissions
+                  </span>
+                  <div className="divide-y divide-slate-100 dark:divide-dark-border/60 border border-slate-200 dark:border-dark-border rounded-2xl overflow-hidden text-xs">
+                    {analyticsData.attempts?.map((att: any) => (
+                      <div key={att.id} className="p-3 flex items-center justify-between">
+                        <div>
+                          <div className="font-bold text-slate-900 dark:text-white">
+                            {att.user?.name || (att.user?.email ? att.user.email.split('@')[0] : 'Student')}
                           </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                          <div className="text-[11px] text-slate-400">{att.user?.email}</div>
+                        </div>
+                        <div className="text-right">
+                          <span className="font-black text-sm text-purple-700 dark:text-brand-lavender">
+                            {att.score} / {att.totalMarks} ({att.percentage}%)
+                          </span>
+                          <span
+                            className={`block text-[10px] font-extrabold uppercase ${
+                              att.passed ? 'text-emerald-600' : 'text-rose-600'
+                            }`}
+                          >
+                            {att.passed ? 'Passed' : 'Failed'}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             ) : null}
-          </div>
-        </div>
-      )}
-
-      {/* 10. DOCUMENT PREVIEW MODAL */}
-      {previewDoc && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-3xl p-6 sm:p-8 max-w-2xl w-full shadow-2xl relative max-h-[85vh] flex flex-col">
-            <div className="flex items-center justify-between border-b border-slate-200 dark:border-dark-border pb-4 mb-4">
-              <div>
-                <h3 className="font-display font-bold text-lg text-slate-900 dark:text-white">
-                  {previewDoc.title}
-                </h3>
-                <p className="text-xs text-slate-500 font-mono">{previewDoc.fileName}</p>
-              </div>
-
-              <button
-                onClick={() => setPreviewDoc(null)}
-                className="p-1.5 rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-dark-hover transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-4 bg-slate-50 dark:bg-dark-bg rounded-2xl border border-slate-200 dark:border-dark-border text-xs text-slate-800 dark:text-slate-200 leading-relaxed font-sans whitespace-pre-wrap">
-              {previewDoc.content || 'Document preview is not directly available as plain text.'}
-            </div>
-
-            <div className="pt-4 flex items-center justify-between border-t border-slate-200 dark:border-dark-border mt-4">
-              <span className="text-xs text-slate-500">
-                Uploaded by {previewDoc.uploader?.name || 'Member'}
-              </span>
-
-              <button
-                onClick={() => downloadGroupDocument(previewDoc)}
-                className="px-4 py-2 rounded-xl bg-purple-700 dark:bg-brand-purple text-white font-bold text-xs flex items-center space-x-2"
-              >
-                <Download className="w-4 h-4" />
-                <span>Download File</span>
-              </button>
-            </div>
           </div>
         </div>
       )}

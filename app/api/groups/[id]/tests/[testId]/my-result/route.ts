@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/server';
-import { prisma } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -52,6 +51,8 @@ export async function GET(
       return {
         id: q.id,
         question: q.question,
+        topic: q.topic || 'General',
+        difficulty: q.difficulty || 'MEDIUM',
         optionA: q.optionA,
         optionB: q.optionB,
         optionC: q.optionC,
@@ -68,6 +69,7 @@ export async function GET(
       test,
       attempt,
       questionBreakdown,
+      topicScores: attempt.topicScores || {},
     });
   } catch (err: any) {
     console.error('Fetch student result error:', err);

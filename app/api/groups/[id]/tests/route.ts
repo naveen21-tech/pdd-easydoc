@@ -12,6 +12,8 @@ const questionSchema = z.object({
   optionD: z.string().min(1, 'Option D is required'),
   correctOption: z.enum(['A', 'B', 'C', 'D']),
   marks: z.number().min(1).default(1),
+  topic: z.string().default('General'),
+  difficulty: z.enum(['EASY', 'MEDIUM', 'HARD']).default('MEDIUM'),
 });
 
 const createTestSchema = z.object({
@@ -20,6 +22,7 @@ const createTestSchema = z.object({
   duration: z.number().min(1, 'Duration must be at least 1 minute').default(20),
   totalMarks: z.number().min(1).optional(),
   passingMarks: z.number().min(1).default(4),
+  isAdaptive: z.boolean().default(false),
   startTime: z.string().optional().nullable(),
   endTime: z.string().optional().nullable(),
   isPublished: z.boolean().default(true),
@@ -83,6 +86,7 @@ export async function GET(
           duration: t.duration,
           totalMarks: t.totalMarks,
           passingMarks: t.passingMarks,
+          isAdaptive: t.isAdaptive ?? false,
           startTime: t.startTime,
           endTime: t.endTime,
           isPublished: t.isPublished,
@@ -136,7 +140,18 @@ export async function POST(
       return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
     }
 
-    const { title, description, duration, passingMarks, startTime, endTime, isPublished, questions } = parsed.data;
+    const {
+      title,
+      description,
+      duration,
+      passingMarks,
+      isAdaptive,
+      startTime,
+      endTime,
+      isPublished,
+      questions,
+    } = parsed.data;
+
     const calculatedTotalMarks = questions.reduce((sum, q) => sum + (q.marks || 1), 0);
 
     // 1. Create Test in Supabase
@@ -150,6 +165,7 @@ export async function POST(
         duration: duration || 20,
         totalMarks: calculatedTotalMarks,
         passingMarks: passingMarks || Math.ceil(calculatedTotalMarks * 0.4),
+        isAdaptive: isAdaptive ?? false,
         startTime: startTime || null,
         endTime: endTime || null,
         isPublished: isPublished ?? true,
@@ -161,7 +177,7 @@ export async function POST(
       throw new Error(testErr?.message || 'Failed to create MCQ test');
     }
 
-    // 2. Insert Questions in bulk
+    // 2. Insert Questions in bulk with topic and difficulty
     const questionsToInsert = questions.map((q, idx) => ({
       testId: test.id,
       question: q.question,
@@ -172,6 +188,8 @@ export async function POST(
       correctOption: q.correctOption,
       marks: q.marks || 1,
       orderIndex: idx,
+      topic: q.topic || 'General',
+      difficulty: q.difficulty || 'MEDIUM',
     }));
 
     await supabase.from('GroupMcqQuestion').insert(questionsToInsert);

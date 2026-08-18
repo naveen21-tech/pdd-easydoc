@@ -441,6 +441,8 @@ export interface McqQuestionItem {
   correctOption?: string; // 'A' | 'B' | 'C' | 'D' (Hidden from students during exam)
   marks: number;
   orderIndex: number;
+  topic?: string;
+  difficulty?: 'EASY' | 'MEDIUM' | 'HARD' | string;
 }
 
 export interface McqTestItem {
@@ -452,6 +454,7 @@ export interface McqTestItem {
   duration: number; // in minutes
   totalMarks: number;
   passingMarks: number;
+  isAdaptive?: boolean;
   startTime?: string | null;
   endTime?: string | null;
   isPublished: boolean;
@@ -476,6 +479,8 @@ export interface McqAttemptItem {
   correctCount: number;
   wrongCount: number;
   unansweredCount: number;
+  topicScores?: Record<string, { total: number; correct: number; percentage: number }>;
+  adaptiveHistory?: any[];
   startedAt: string;
   submittedAt?: string;
   status: 'SUBMITTED' | 'AUTO_SUBMITTED';
