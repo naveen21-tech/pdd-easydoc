@@ -368,12 +368,25 @@ export default function AssignmentsTab({ groupId, classroomName, isAdmin }: Assi
                               <CheckCircle2 className="w-4 h-4" />
                               <span>Submitted • Quality: {asgn.mySubmission.qualityScore}/100</span>
                             </div>
-                            <button
-                              onClick={() => setViewReviewModal(asgn.mySubmission)}
-                              className="px-4 py-2 rounded-xl bg-purple-700 text-white text-xs font-bold hover:bg-purple-800 shadow-sm transition-all"
-                            >
-                              View My Auto-Review
-                            </button>
+                            <div className="flex items-center space-x-2 justify-end">
+                              <button
+                                onClick={() => setViewReviewModal(asgn.mySubmission)}
+                                className="px-3.5 py-2 rounded-xl bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-brand-lavender text-xs font-bold hover:bg-purple-200 shadow-xs transition-all"
+                              >
+                                View Review
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setSubmitModalAssignment(asgn);
+                                  setSubmitFile(null);
+                                  setSubmitError(null);
+                                }}
+                                className="px-3.5 py-2 rounded-xl bg-purple-700 text-white text-xs font-bold hover:bg-purple-800 shadow-xs transition-all flex items-center space-x-1"
+                              >
+                                <Upload className="w-3.5 h-3.5" />
+                                <span>Resubmit</span>
+                              </button>
+                            </div>
                           </div>
                         ) : (
                           <button

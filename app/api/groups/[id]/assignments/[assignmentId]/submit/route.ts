@@ -302,6 +302,23 @@ export async function POST(
       documentId: documentId || null,
     });
 
+    // Also catalog in GroupKnowledgeMaterial so it is immediately searchable in Knowledge Hub and Generative AI
+    await supabase.from('GroupKnowledgeMaterial').insert({
+      id: `mat-sub-${submissionId}`,
+      groupId,
+      uploadedBy: user.id,
+      title: `[Submission] ${title} (${assignment.title})`,
+      subject: 'Assignments & Coursework',
+      unit: assignment.title,
+      topic: `Submission: ${title}`,
+      chapter: `Submitted by ${userProfile?.name || user.email}`,
+      fileName,
+      fileType,
+      fileSize,
+      fileUrl,
+      content,
+    });
+
     return NextResponse.json({
       success: true,
       message: 'Assignment submitted successfully with automated quality review!',

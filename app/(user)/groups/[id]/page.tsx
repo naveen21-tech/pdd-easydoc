@@ -459,7 +459,7 @@ export default function GroupDetailsPage({ params }: { params: { id: string } })
     );
   }
 
-  const isAdmin = myRole === 'ADMIN' || group.createdBy === group.creator?.id;
+  const isAdmin = myRole === 'ADMIN';
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-fade-in">

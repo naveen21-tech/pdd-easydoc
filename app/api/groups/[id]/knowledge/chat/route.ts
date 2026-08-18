@@ -47,7 +47,9 @@ export async function POST(
       .eq('userId', user.id)
       .maybeSingle();
 
-    if (group.createdBy !== user.id && !member) {
+    const isAdmin = group.createdBy === user.id || member?.role === 'ADMIN';
+
+    if (!isAdmin && !member) {
       return NextResponse.json({ error: 'Access denied. You are not a member of this classroom.' }, { status: 403 });
     }
 
@@ -60,13 +62,13 @@ export async function POST(
 
     const { action, query, materialId, unit, subject } = parsed.data;
 
-    // 1. Retrieve ONLY materials belonging to this specific classroom
+    // 1. Retrieve materials from GroupKnowledgeMaterial
     let materialQuery = supabase
       .from('GroupKnowledgeMaterial')
       .select('id, title, subject, unit, topic, chapter, fileName, content')
       .eq('groupId', groupId);
 
-    if (materialId) {
+    if (materialId && !materialId.startsWith('doc-') && !materialId.startsWith('asgn-')) {
       materialQuery = materialQuery.eq('id', materialId);
     }
     if (unit) {
@@ -76,9 +78,56 @@ export async function POST(
       materialQuery = materialQuery.eq('subject', subject);
     }
 
-    const { data: materials, error: matErr } = await materialQuery;
+    const [{ data: rawMaterials }, { data: rawDocs }, { data: rawAssignments }] = await Promise.all([
+      materialQuery,
+      supabase.from('GroupDocument').select('id, title, fileName, content, uploadedBy').eq('groupId', groupId),
+      supabase.from('GroupAssignment').select('id, title, description, requiredSections, minReferences, minWordCount, totalMarks').eq('groupId', groupId),
+    ]);
 
-    if (matErr || !materials || materials.length === 0) {
+    const allMaterials: any[] = [...(rawMaterials || [])];
+    const existingFileNames = new Set(allMaterials.map((m) => `${m.fileName}-${m.title}`));
+
+    // Include GroupDocument (including assignment uploads and submissions)
+    (rawDocs || []).forEach((doc: any) => {
+      if (!isAdmin && doc.uploadedBy !== group.createdBy && doc.uploadedBy !== user.id) {
+        return;
+      }
+      const key = `${doc.fileName}-${doc.title}`;
+      if (!existingFileNames.has(key)) {
+        existingFileNames.add(key);
+        const isAssignmentFile = doc.title.toLowerCase().includes('assignment') || doc.title.toLowerCase().includes('submission');
+        allMaterials.push({
+          id: `doc-${doc.id}`,
+          title: doc.title,
+          subject: isAssignmentFile ? 'Assignments & Coursework' : 'Classroom Documents',
+          unit: isAssignmentFile ? 'Assignments' : 'General Materials',
+          topic: doc.title,
+          chapter: isAssignmentFile ? 'Course Submissions' : 'Shared Files',
+          fileName: doc.fileName,
+          content: doc.content || `Document: ${doc.title} (${doc.fileName})`,
+        });
+      }
+    });
+
+    // Include Assignments
+    (rawAssignments || []).forEach((asgn: any) => {
+      const key = `asgn-${asgn.id}`;
+      if (!existingFileNames.has(key)) {
+        existingFileNames.add(key);
+        allMaterials.push({
+          id: `asgn-mat-${asgn.id}`,
+          title: `Assignment: ${asgn.title}`,
+          subject: 'Assignments & Coursework',
+          unit: asgn.title,
+          topic: `${asgn.title} Rubric & Requirements`,
+          chapter: 'Assignment Details',
+          fileName: `${asgn.title}-assignment.docx`,
+          content: `Assignment: ${asgn.title}\nDescription: ${asgn.description || 'None'}\nRequired Sections: ${Array.isArray(asgn.requiredSections) ? asgn.requiredSections.join(', ') : ''}\nMin References: ${asgn.minReferences}\nMin Word Count: ${asgn.minWordCount}\nTotal Marks: ${asgn.totalMarks}`,
+        });
+      }
+    });
+
+    if (allMaterials.length === 0) {
       return NextResponse.json({
         answer: 'No classroom materials found in this classroom matching your selection. Please ask your instructor to upload notes to the Knowledge Hub.',
         sourceDocuments: [],
@@ -93,7 +142,7 @@ export async function POST(
       .split(/\s+/)
       .filter((w) => w.length > 2 && !['what', 'explain', 'tell', 'show', 'from', 'with', 'about', 'this', 'that'].includes(w));
 
-    const scoredMaterials = materials.map((m: any) => {
+    const scoredMaterials = allMaterials.map((m: any) => {
       const combinedText = `${m.title} ${m.subject} ${m.unit} ${m.topic} ${m.chapter} ${m.content || ''}`.toLowerCase();
       let matchCount = 0;
       queryTerms.forEach((term) => {
@@ -108,10 +157,10 @@ export async function POST(
     // Sort by relevance score
     scoredMaterials.sort((a, b) => b.relevanceScore - a.relevanceScore);
 
-    const relevantDocs = scoredMaterials.filter((m) => m.relevanceScore > 0 || materials.length === 1);
+    const relevantDocs = scoredMaterials.filter((m) => m.relevanceScore > 0 || allMaterials.length === 1);
 
     // If no relevant documents found at all (and more than 1 material exists), check if query is completely off-topic
-    if (relevantDocs.length === 0 && materials.length > 1 && action === 'find-topic') {
+    if (relevantDocs.length === 0 && allMaterials.length > 1 && action === 'find-topic') {
       return NextResponse.json({
         answer: `The topic "${query}" was not found in the available classroom resources for "${group.name}".`,
         sourceDocuments: [],
@@ -120,7 +169,7 @@ export async function POST(
       });
     }
 
-    const topDoc = relevantDocs[0] || materials[0];
+    const topDoc = relevantDocs[0] || allMaterials[0];
     const sourceDocuments = (relevantDocs.length > 0 ? relevantDocs : [topDoc]).slice(0, 3).map((d) => ({
       id: d.id,
       title: d.title,
@@ -133,7 +182,7 @@ export async function POST(
 
     // Build context snippet strictly from classroom docs
     const contextSnippet = sourceDocuments
-      .map((d) => `[Source: ${d.title} | ${d.subject} - ${d.unit} (${d.chapter}): Topic "${d.topic}"]\n${(materials.find((m: any) => m.id === d.id)?.content || '').slice(0, 1500)}`)
+      .map((d) => `[Source: ${d.title} | ${d.subject} - ${d.unit} (${d.chapter}): Topic "${d.topic}"]\n${(allMaterials.find((m: any) => m.id === d.id)?.content || '').slice(0, 1500)}`)
       .join('\n\n');
 
     // 3. Handle Special Actions

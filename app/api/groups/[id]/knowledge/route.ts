@@ -28,12 +28,14 @@ export async function GET(
       .eq('userId', user.id)
       .maybeSingle();
 
-    if (group.createdBy !== user.id && !member) {
+    const isAdmin = group.createdBy === user.id || member?.role === 'ADMIN';
+
+    if (!isAdmin && !member) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
-    // Fetch Knowledge Materials for this classroom
-    const { data: materials, error: matErr } = await supabase
+    // 1. Fetch Knowledge Materials for this classroom
+    const { data: rawMaterials } = await supabase
       .from('GroupKnowledgeMaterial')
       .select('*, uploader:Profile!uploadedBy(id, name, email, avatarUrl)')
       .eq('groupId', groupId)
@@ -41,11 +43,81 @@ export async function GET(
       .order('unit', { ascending: true })
       .order('createdAt', { ascending: false });
 
-    if (matErr) throw matErr;
+    // 2. Fetch Group Documents (shared documents and assignment submissions)
+    const { data: rawDocs } = await supabase
+      .from('GroupDocument')
+      .select('*, uploader:Profile!uploadedBy(id, name, email, avatarUrl)')
+      .eq('groupId', groupId)
+      .order('createdAt', { ascending: false });
 
-    // Group materials by Subject and Unit for structured display
+    // 3. Fetch Assignments
+    const { data: rawAssignments } = await supabase
+      .from('GroupAssignment')
+      .select('*, creator:Profile!createdBy(id, name, email, avatarUrl)')
+      .eq('groupId', groupId);
+
+    const materialsList: any[] = [...(rawMaterials || [])];
+    const existingFileNames = new Set(materialsList.map((m) => `${m.fileName}-${m.title}`));
+
+    // Map GroupDocument items to Knowledge Hub format if not already in materials
+    (rawDocs || []).forEach((doc: any) => {
+      // Privacy check: student sees only instructor docs + their own submissions
+      if (!isAdmin && doc.uploadedBy !== group.createdBy && doc.uploadedBy !== user.id) {
+        return;
+      }
+
+      const key = `${doc.fileName}-${doc.title}`;
+      if (!existingFileNames.has(key)) {
+        existingFileNames.add(key);
+        const isAssignmentFile = doc.title.toLowerCase().includes('assignment') || doc.title.toLowerCase().includes('submission');
+        materialsList.push({
+          id: `doc-${doc.id}`,
+          groupId: doc.groupId,
+          uploadedBy: doc.uploadedBy,
+          title: doc.title,
+          subject: isAssignmentFile ? 'Assignments & Coursework' : 'Classroom Documents',
+          unit: isAssignmentFile ? 'Assignments' : 'General Materials',
+          topic: doc.title,
+          chapter: isAssignmentFile ? 'Course Submissions' : 'Shared Files',
+          fileName: doc.fileName,
+          fileType: doc.fileType || 'pdf',
+          fileSize: doc.fileSize || 0,
+          fileUrl: doc.fileUrl || null,
+          content: doc.content || null,
+          createdAt: doc.createdAt,
+          uploader: doc.uploader || null,
+        });
+      }
+    });
+
+    // Map Assignments to Knowledge Hub format so their rubrics and prompts are indexed
+    (rawAssignments || []).forEach((asgn: any) => {
+      const key = `asgn-${asgn.id}`;
+      if (!existingFileNames.has(key)) {
+        existingFileNames.add(key);
+        materialsList.push({
+          id: `asgn-mat-${asgn.id}`,
+          groupId: asgn.groupId,
+          uploadedBy: asgn.createdBy,
+          title: `Assignment: ${asgn.title}`,
+          subject: 'Assignments & Coursework',
+          unit: asgn.title,
+          topic: `${asgn.title} Rubric & Requirements`,
+          chapter: 'Assignment Details',
+          fileName: `${asgn.title}-assignment.docx`,
+          fileType: 'docx',
+          fileSize: 1024,
+          fileUrl: null,
+          content: `Assignment: ${asgn.title}\nDescription: ${asgn.description || 'None'}\nRequired Sections: ${Array.isArray(asgn.requiredSections) ? asgn.requiredSections.join(', ') : ''}\nMin References: ${asgn.minReferences}\nMin Word Count: ${asgn.minWordCount}\nTotal Marks: ${asgn.totalMarks}`,
+          createdAt: asgn.createdAt,
+          uploader: asgn.creator || null,
+        });
+      }
+    });
+
+    // Group all materials by Subject and Unit for structured display
     const tree: Record<string, Record<string, any[]>> = {};
-    (materials || []).forEach((m: any) => {
+    materialsList.forEach((m: any) => {
       const subj = m.subject || 'General Subject';
       const un = m.unit || 'General Unit';
       if (!tree[subj]) tree[subj] = {};
@@ -54,9 +126,9 @@ export async function GET(
     });
 
     return NextResponse.json({
-      materials: materials || [],
+      materials: materialsList,
       tree,
-      totalCount: materials?.length || 0,
+      totalCount: materialsList.length,
     });
   } catch (err: any) {
     console.error('Fetch knowledge materials error:', err);
@@ -130,7 +202,6 @@ export async function POST(
         try {
           const buffer = Buffer.from(await file.arrayBuffer());
           fileUrl = `data:${file.type || 'application/octet-stream'};base64,${buffer.toString('base64')}`;
-          // For search indexing, extract basic text or header summary
           content = `Material: ${title} | Subject: ${subject} | Unit: ${unit} | Chapter: ${chapter} | Topic: ${topic}`;
         } catch (e) {
           console.warn('Binary read warning:', e);
@@ -178,6 +249,18 @@ export async function POST(
 
     if (insertErr) throw insertErr;
 
+    // Also catalog in GroupDocument for shared classroom documents tab
+    await supabase.from('GroupDocument').insert({
+      groupId,
+      uploadedBy: user.id,
+      title,
+      fileName,
+      fileUrl,
+      content,
+      fileType,
+      fileSize,
+    });
+
     return NextResponse.json({ material: inserted }, { status: 201 });
   } catch (err: any) {
     console.error('Upload knowledge material error:', err);
@@ -219,13 +302,12 @@ export async function DELETE(
       return NextResponse.json({ error: 'Only faculty can delete materials' }, { status: 403 });
     }
 
-    const { error: delErr } = await supabase
-      .from('GroupKnowledgeMaterial')
-      .delete()
-      .eq('id', materialId)
-      .eq('groupId', groupId);
+    const cleanId = materialId.startsWith('doc-') ? materialId.replace('doc-', '') : materialId;
 
-    if (delErr) throw delErr;
+    await Promise.all([
+      supabase.from('GroupKnowledgeMaterial').delete().eq('id', cleanId).eq('groupId', groupId),
+      supabase.from('GroupDocument').delete().eq('id', cleanId).eq('groupId', groupId),
+    ]);
 
     return NextResponse.json({ success: true, message: 'Material deleted successfully' });
   } catch (err: any) {
