@@ -26,6 +26,8 @@ import {
   Mic,
   Eye,
   X,
+  Award,
+  AlertTriangle,
 } from 'lucide-react';
 
 interface KnowledgeMaterial {
@@ -44,6 +46,11 @@ interface KnowledgeMaterial {
   content?: string | null;
   createdAt: string;
   uploader?: { id: string; name: string; email: string };
+  qualityScore?: number | null;
+  reviewResult?: any | null;
+  isAssignmentSubmission?: boolean;
+  isAssignmentBrief?: boolean;
+  status?: string;
 }
 
 interface KnowledgeHubTabProps {
@@ -58,6 +65,7 @@ export default function KnowledgeHubTab({ groupId, classroomName, isAdmin }: Kno
   const [loading, setLoading] = useState(true);
   const [selectedSubject, setSelectedSubject] = useState<string>('all');
   const [selectedUnit, setSelectedUnit] = useState<string>('all');
+  const [fileFilter, setFileFilter] = useState<'all' | 'notes' | 'assignments'>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
   // Upload Modal
@@ -84,8 +92,9 @@ export default function KnowledgeHubTab({ groupId, classroomName, isAdmin }: Kno
   } | null>(null);
   const [selectedMaterialForChat, setSelectedMaterialForChat] = useState<string>('');
 
-  // Preview Modal
+  // Preview & Auto-Review Modals
   const [previewMaterial, setPreviewMaterial] = useState<KnowledgeMaterial | null>(null);
+  const [viewReviewModal, setViewReviewModal] = useState<any | null>(null);
 
   useEffect(() => {
     fetchMaterials();
@@ -153,7 +162,7 @@ export default function KnowledgeHubTab({ groupId, classroomName, isAdmin }: Kno
   };
 
   const handleDelete = async (materialId: string) => {
-    if (!confirm('Are you sure you want to delete this study material?')) return;
+    if (!confirm('Are you sure you want to delete this file from classroom knowledge?')) return;
     try {
       const res = await fetch(`/api/groups/${groupId}/knowledge?materialId=${materialId}`, {
         method: 'DELETE',
@@ -166,7 +175,7 @@ export default function KnowledgeHubTab({ groupId, classroomName, isAdmin }: Kno
     }
   };
 
-  const executeAiAction = async (actionType: string, customQuery?: string) => {
+  const executeAiAction = async (actionType: string, customQuery?: string, targetMaterialId?: string) => {
     const q = customQuery || aiQuery;
     if (!q.trim()) {
       alert('Please enter a question or topic to analyze');
@@ -182,7 +191,7 @@ export default function KnowledgeHubTab({ groupId, classroomName, isAdmin }: Kno
         body: JSON.stringify({
           action: actionType,
           query: q.trim(),
-          materialId: selectedMaterialForChat || undefined,
+          materialId: targetMaterialId || selectedMaterialForChat || undefined,
         }),
       });
 
@@ -201,6 +210,8 @@ export default function KnowledgeHubTab({ groupId, classroomName, isAdmin }: Kno
 
   // Filtered materials
   const filteredMaterials = materials.filter((m) => {
+    if (fileFilter === 'notes' && m.subject.toLowerCase().includes('assignment')) return false;
+    if (fileFilter === 'assignments' && !m.subject.toLowerCase().includes('assignment')) return false;
     if (selectedSubject !== 'all' && m.subject !== selectedSubject) return false;
     if (selectedUnit !== 'all' && m.unit !== selectedUnit) return false;
     if (searchQuery.trim()) {
@@ -210,7 +221,8 @@ export default function KnowledgeHubTab({ groupId, classroomName, isAdmin }: Kno
         m.subject.toLowerCase().includes(q) ||
         m.unit.toLowerCase().includes(q) ||
         m.topic.toLowerCase().includes(q) ||
-        m.chapter.toLowerCase().includes(q)
+        m.chapter.toLowerCase().includes(q) ||
+        m.fileName.toLowerCase().includes(q)
       );
     }
     return true;
@@ -225,7 +237,7 @@ export default function KnowledgeHubTab({ groupId, classroomName, isAdmin }: Kno
     { id: 'generate-mcq', label: 'Generate MCQs', icon: FileQuestion, desc: 'Practice test' },
     { id: 'generate-short-q', label: 'Short Questions', icon: ListOrdered, desc: 'Concept checks' },
     { id: 'generate-important-q', label: 'Important Questions', icon: Zap, desc: 'High weightage' },
-    { id: 'explain-simply', label: 'Explain Simply', icon: Sparkles, desc: 'Intuitive analogies' },
+    { id: 'explain-simple', label: 'Explain Simply', icon: Sparkles, desc: 'Intuitive analogies' },
     { id: 'find-topic', label: 'Find Topic', icon: Search, desc: 'Locate unit/page' },
     { id: 'generate-viva', label: 'Viva Questions', icon: Mic, desc: 'Oral exam prep' },
   ];
@@ -241,11 +253,11 @@ export default function KnowledgeHubTab({ groupId, classroomName, isAdmin }: Kno
                 <Brain className="w-5 h-5" />
               </span>
               <h2 className="font-display font-black text-xl sm:text-2xl text-slate-900 dark:text-white">
-                Classroom Knowledge Hub
+                Classroom Knowledge Hub & Generative AI
               </h2>
             </div>
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300">
-              Classroom-scoped notes, lecture presentations, and curriculum materials organized by Subject, Unit & Topic.
+              All classroom study notes, assignment uploads, and auto-review reports indexed with classroom-scoped AI retrieval.
             </p>
           </div>
 
@@ -269,11 +281,11 @@ export default function KnowledgeHubTab({ groupId, classroomName, isAdmin }: Kno
           <div className="flex items-center space-x-2">
             <Sparkles className="w-5 h-5 text-purple-600 dark:text-brand-lavender animate-pulse" />
             <h3 className="font-display font-bold text-sm sm:text-base text-slate-900 dark:text-white">
-              Smart Study Assistant (Classroom Scoped)
+              Generative AI Assistant (Notes, Assignments & Auto-Reviews)
             </h3>
           </div>
           <span className="text-[11px] font-semibold text-purple-700 dark:text-brand-lavender bg-purple-100 dark:bg-purple-900/50 px-2.5 py-0.5 rounded-full">
-            {materials.length} Materials Indexed
+            {materials.length} Files Indexed
           </span>
         </div>
 
@@ -285,7 +297,7 @@ export default function KnowledgeHubTab({ groupId, classroomName, isAdmin }: Kno
               value={aiQuery}
               onChange={(e) => setAiQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && executeAiAction(selectedAction)}
-              placeholder="e.g. Explain deadlock prevention from Unit 3, or type any topic..."
+              placeholder="e.g. Summarize my assignment submission, or explain deadlock from Unit 3..."
               className="w-full px-4 py-3 rounded-2xl border border-slate-200 dark:border-dark-border bg-white dark:bg-dark-surface text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-sm"
             />
             <button
@@ -357,7 +369,7 @@ export default function KnowledgeHubTab({ groupId, classroomName, isAdmin }: Kno
               <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-300 flex items-start space-x-2.5">
                 <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                 <span>
-                  <strong>Strict Classroom Scope:</strong> This topic is not covered in the current uploaded classroom resources. The AI will not fabricate unverified content.
+                  <strong>Strict Classroom Scope:</strong> This topic is not covered in the current uploaded classroom resources or assignment files.
                 </span>
               </div>
             )}
@@ -371,7 +383,7 @@ export default function KnowledgeHubTab({ groupId, classroomName, isAdmin }: Kno
             {aiResult.sourceDocuments && aiResult.sourceDocuments.length > 0 && (
               <div className="pt-3 border-t border-slate-100 dark:border-dark-border space-y-2">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
-                  Cited Classroom Sources:
+                  Cited Classroom Files:
                 </span>
                 <div className="flex flex-wrap gap-2">
                   {aiResult.sourceDocuments.map((doc: any, i: number) => (
@@ -381,7 +393,7 @@ export default function KnowledgeHubTab({ groupId, classroomName, isAdmin }: Kno
                     >
                       <BookOpen className="w-3.5 h-3.5 text-purple-600" />
                       <span>
-                        {doc.title} ({doc.unit}, {doc.chapter})
+                        {doc.title} ({doc.unit})
                       </span>
                     </span>
                   ))}
@@ -394,34 +406,39 @@ export default function KnowledgeHubTab({ groupId, classroomName, isAdmin }: Kno
 
       {/* 3. MATERIALS BROWSER & HIERARCHICAL VIEW */}
       <div className="space-y-4">
-        {/* Search & Subject Filters */}
+        {/* Category Filters & Search */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex items-center space-x-2 w-full sm:w-auto">
-            <select
-              value={selectedSubject}
-              onChange={(e) => setSelectedSubject(e.target.value)}
-              className="px-3 py-2 rounded-xl border border-slate-200 dark:border-dark-border bg-white dark:bg-dark-surface text-xs font-bold text-slate-800 dark:text-white"
+          <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100 dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border">
+            <button
+              onClick={() => setFileFilter('all')}
+              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                fileFilter === 'all'
+                  ? 'bg-white dark:bg-brand-purple text-purple-700 dark:text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+              }`}
             >
-              <option value="all">All Subjects</option>
-              {uniqueSubjects.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={selectedUnit}
-              onChange={(e) => setSelectedUnit(e.target.value)}
-              className="px-3 py-2 rounded-xl border border-slate-200 dark:border-dark-border bg-white dark:bg-dark-surface text-xs font-bold text-slate-800 dark:text-white"
+              All Files ({materials.length})
+            </button>
+            <button
+              onClick={() => setFileFilter('notes')}
+              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                fileFilter === 'notes'
+                  ? 'bg-white dark:bg-brand-purple text-purple-700 dark:text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+              }`}
             >
-              <option value="all">All Units</option>
-              {uniqueUnits.map((u) => (
-                <option key={u} value={u}>
-                  {u}
-                </option>
-              ))}
-            </select>
+              Course Notes
+            </button>
+            <button
+              onClick={() => setFileFilter('assignments')}
+              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                fileFilter === 'assignments'
+                  ? 'bg-white dark:bg-brand-purple text-purple-700 dark:text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+              }`}
+            >
+              Assignments & Auto-Reviews
+            </button>
           </div>
 
           <div className="relative w-full sm:w-64">
@@ -430,7 +447,7 @@ export default function KnowledgeHubTab({ groupId, classroomName, isAdmin }: Kno
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search materials..."
+              placeholder="Search all files & assignments..."
               className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 dark:border-dark-border bg-white dark:bg-dark-surface text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-purple-500"
             />
           </div>
@@ -440,85 +457,192 @@ export default function KnowledgeHubTab({ groupId, classroomName, isAdmin }: Kno
         {loading ? (
           <div className="p-12 text-center text-slate-400">
             <Loader2 className="w-8 h-8 animate-spin mx-auto text-purple-600 mb-2" />
-            <p className="text-xs">Loading classroom knowledge materials...</p>
+            <p className="text-xs">Loading classroom knowledge materials & assignment files...</p>
           </div>
         ) : filteredMaterials.length === 0 ? (
           <div className="p-12 text-center rounded-3xl border border-dashed border-slate-300 dark:border-dark-border bg-slate-50/50 dark:bg-dark-surface/40 space-y-3">
             <BookOpen className="w-10 h-10 text-slate-400 mx-auto" />
-            <h4 className="font-bold text-sm text-slate-900 dark:text-white">No Materials Found</h4>
+            <h4 className="font-bold text-sm text-slate-900 dark:text-white">No Files Found</h4>
             <p className="text-xs text-slate-500 max-w-sm mx-auto">
-              {isAdmin
-                ? 'Upload subject lecture notes, unit documents, or presentations to populate the classroom Knowledge Hub.'
-                : 'No course materials have been published yet in this classroom.'}
+              Upload study notes or submit assignments to view and analyze files with Generative AI.
             </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredMaterials.map((mat) => (
-              <div
-                key={mat.id}
-                className="glass-card rounded-2xl border border-slate-200 dark:border-dark-border p-5 hover:border-purple-400 dark:hover:border-purple-600 transition-all flex flex-col justify-between space-y-4 shadow-sm"
-              >
-                <div className="space-y-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-brand-lavender border border-purple-200 dark:border-purple-800 uppercase tracking-wider">
-                      {mat.subject} • {mat.unit}
-                    </span>
-                    <span className="text-[10px] font-mono text-slate-400">
-                      {mat.fileType.toUpperCase()}
-                    </span>
+            {filteredMaterials.map((mat) => {
+              const isSub = mat.isAssignmentSubmission;
+              const hasScore = mat.qualityScore !== null && mat.qualityScore !== undefined;
+
+              return (
+                <div
+                  key={mat.id}
+                  className="glass-card rounded-2xl border border-slate-200 dark:border-dark-border p-5 hover:border-purple-400 dark:hover:border-purple-600 transition-all flex flex-col justify-between space-y-4 shadow-sm"
+                >
+                  <div className="space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-brand-lavender border border-purple-200 dark:border-purple-800 uppercase tracking-wider">
+                        {mat.subject} • {mat.unit}
+                      </span>
+                      {hasScore ? (
+                        <span
+                          className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                            mat.qualityScore! >= 80
+                              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
+                              : mat.qualityScore! >= 60
+                              ? 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-brand-lavender'
+                              : 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300'
+                          }`}
+                        >
+                          ⚡ Auto-Review: {mat.qualityScore}/100
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-mono text-slate-400">
+                          {mat.fileType.toUpperCase()}
+                        </span>
+                      )}
+                    </div>
+
+                    <h4 className="font-display font-bold text-sm text-slate-900 dark:text-white line-clamp-1">
+                      {mat.title}
+                    </h4>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1">
+                      {mat.topic} ({mat.chapter})
+                    </p>
                   </div>
 
-                  <h4 className="font-display font-bold text-sm text-slate-900 dark:text-white line-clamp-1">
-                    {mat.title}
-                  </h4>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1">
-                    Topic: {mat.topic} ({mat.chapter})
-                  </p>
-                </div>
-
-                <div className="pt-3 border-t border-slate-100 dark:border-dark-border/60 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                  <span>{mat.fileName}</span>
-                  <div className="flex items-center space-x-1.5">
-                    <button
-                      onClick={() => {
-                        setAiQuery(`Explain ${mat.topic} from ${mat.unit}`);
-                        setSelectedMaterialForChat(mat.id);
-                        executeAiAction('ask', `Explain ${mat.topic} from ${mat.unit}`);
-                      }}
-                      title="Ask AI about this document"
-                      className="p-1.5 rounded-lg text-purple-600 dark:text-brand-lavender hover:bg-purple-50 dark:hover:bg-purple-950/60"
-                    >
-                      <Sparkles className="w-4 h-4" />
-                    </button>
-                    {mat.fileUrl && (
-                      <a
-                        href={mat.fileUrl}
-                        download={mat.fileName}
-                        className="p-1.5 rounded-lg text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/60"
-                        title="Download Material"
-                      >
-                        <Download className="w-4 h-4" />
-                      </a>
-                    )}
-                    {isAdmin && (
+                  <div className="pt-3 border-t border-slate-100 dark:border-dark-border/60 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                    <span className="truncate max-w-[140px]">{mat.fileName}</span>
+                    <div className="flex items-center space-x-1.5">
+                      {mat.reviewResult && (
+                        <button
+                          onClick={() => setViewReviewModal(mat)}
+                          className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/60"
+                          title="View Auto-Review Details"
+                        >
+                          <Award className="w-4 h-4" />
+                        </button>
+                      )}
                       <button
-                        onClick={() => handleDelete(mat.id)}
-                        className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/60"
-                        title="Delete Material"
+                        onClick={() => {
+                          setAiQuery(`Summarize ${mat.title} from ${mat.unit}`);
+                          setSelectedMaterialForChat(mat.id);
+                          executeAiAction('summarize', `Summarize ${mat.title} from ${mat.unit}`, mat.id);
+                        }}
+                        title="Analyze with Generative AI"
+                        className="p-1.5 rounded-lg text-purple-600 dark:text-brand-lavender hover:bg-purple-50 dark:hover:bg-purple-950/60"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Sparkles className="w-4 h-4" />
                       </button>
-                    )}
+                      {mat.fileUrl && (
+                        <a
+                          href={mat.fileUrl}
+                          download={mat.fileName}
+                          className="p-1.5 rounded-lg text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/60"
+                          title="Download File"
+                        >
+                          <Download className="w-4 h-4" />
+                        </a>
+                      )}
+                      {isAdmin && !isSub && (
+                        <button
+                          onClick={() => handleDelete(mat.id)}
+                          className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/60"
+                          title="Delete File"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
 
-      {/* 4. UPLOAD MATERIAL MODAL (FACULTY) */}
+      {/* 4. AUTO-REVIEW DETAILS MODAL */}
+      {viewReviewModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl relative space-y-4 max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() => setViewReviewModal(null)}
+              className="absolute right-5 top-5 p-1.5 rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-dark-hover"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="space-y-1">
+              <span className="text-[10px] uppercase font-bold text-purple-700 dark:text-brand-lavender">
+                Automated Submission Review
+              </span>
+              <h3 className="font-display font-bold text-lg text-slate-900 dark:text-white">
+                {viewReviewModal.title}
+              </h3>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/60 flex items-center justify-between">
+              <div>
+                <span className="text-xs text-slate-500 font-semibold block">Quality Score</span>
+                <span className="text-2xl font-black text-purple-700 dark:text-brand-lavender">
+                  {viewReviewModal.qualityScore}/100
+                </span>
+              </div>
+              <span className="px-3 py-1 rounded-full text-xs font-bold uppercase bg-emerald-100 text-emerald-700">
+                {viewReviewModal.status || 'SUBMITTED'}
+              </span>
+            </div>
+
+            {/* Section Breakdown */}
+            {viewReviewModal.reviewResult?.sectionChecks && (
+              <div className="space-y-2 text-xs">
+                <span className="font-bold text-slate-700 dark:text-slate-300 block">
+                  Required Section Verification:
+                </span>
+                <div className="grid grid-cols-2 gap-2">
+                  {viewReviewModal.reviewResult.sectionChecks.map((chk: any, i: number) => (
+                    <div
+                      key={i}
+                      className={`p-2 rounded-xl border text-[11px] font-semibold flex items-center space-x-1.5 ${
+                        chk.present
+                          ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800'
+                          : 'bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-800'
+                      }`}
+                    >
+                      {chk.present ? <CheckCircle2 className="w-3.5 h-3.5" /> : <AlertTriangle className="w-3.5 h-3.5" />}
+                      <span>{chk.name}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {viewReviewModal.reviewResult?.missingRequirements?.length > 0 && (
+              <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-300 space-y-1">
+                <span className="font-bold block">Improvement Notes:</span>
+                <ul className="list-disc pl-4 space-y-0.5">
+                  {viewReviewModal.reviewResult.missingRequirements.map((req: string, i: number) => (
+                    <li key={i}>{req}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {viewReviewModal.fileUrl && (
+              <a
+                href={viewReviewModal.fileUrl}
+                download={viewReviewModal.fileName || 'submission.docx'}
+                className="w-full py-2.5 rounded-xl bg-indigo-600 text-white text-xs font-bold flex items-center justify-center space-x-2 shadow-sm hover:bg-indigo-700 transition-colors"
+              >
+                <Download className="w-4 h-4" />
+                <span>Download Original Submission</span>
+              </a>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 5. UPLOAD MATERIAL MODAL (FACULTY) */}
       {showUploadModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl relative space-y-4">

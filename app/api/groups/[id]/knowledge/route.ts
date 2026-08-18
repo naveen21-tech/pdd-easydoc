@@ -43,7 +43,7 @@ export async function GET(
       .order('unit', { ascending: true })
       .order('createdAt', { ascending: false });
 
-    // 2. Fetch Group Documents (shared documents and assignment submissions)
+    // 2. Fetch Group Documents (shared documents and course files)
     const { data: rawDocs } = await supabase
       .from('GroupDocument')
       .select('*, uploader:Profile!uploadedBy(id, name, email, avatarUrl)')
@@ -54,38 +54,52 @@ export async function GET(
     const { data: rawAssignments } = await supabase
       .from('GroupAssignment')
       .select('*, creator:Profile!createdBy(id, name, email, avatarUrl)')
-      .eq('groupId', groupId);
+      .eq('groupId', groupId)
+      .order('createdAt', { ascending: false });
+
+    // 4. Fetch Assignment Submissions with Auto-Reviews
+    let submissionQuery = supabase
+      .from('GroupAssignmentSubmission')
+      .select('*, user:Profile!userId(id, name, email, avatarUrl), assignment:GroupAssignment!assignmentId(id, title, requiredSections, minReferences, minWordCount)')
+      .eq('groupId', groupId)
+      .order('submittedAt', { ascending: false });
+
+    if (!isAdmin) {
+      // Student sees only their own submissions
+      submissionQuery = submissionQuery.eq('userId', user.id);
+    }
+
+    const { data: rawSubmissions } = await submissionQuery;
 
     const materialsList: any[] = [...(rawMaterials || [])];
-    const existingFileNames = new Set(materialsList.map((m) => `${m.fileName}-${m.title}`));
+    const existingFileKeys = new Set(materialsList.map((m) => `${m.fileName}-${m.title}`));
 
-    // Map GroupDocument items to Knowledge Hub format if not already in materials
-    (rawDocs || []).forEach((doc: any) => {
-      // Privacy check: student sees only instructor docs + their own submissions
-      if (!isAdmin && doc.uploadedBy !== group.createdBy && doc.uploadedBy !== user.id) {
-        return;
-      }
-
-      const key = `${doc.fileName}-${doc.title}`;
-      if (!existingFileNames.has(key)) {
-        existingFileNames.add(key);
-        const isAssignmentFile = doc.title.toLowerCase().includes('assignment') || doc.title.toLowerCase().includes('submission');
-        materialsList.push({
-          id: `doc-${doc.id}`,
-          groupId: doc.groupId,
-          uploadedBy: doc.uploadedBy,
-          title: doc.title,
-          subject: isAssignmentFile ? 'Assignments & Coursework' : 'Classroom Documents',
-          unit: isAssignmentFile ? 'Assignments' : 'General Materials',
-          topic: doc.title,
-          chapter: isAssignmentFile ? 'Course Submissions' : 'Shared Files',
-          fileName: doc.fileName,
-          fileType: doc.fileType || 'pdf',
-          fileSize: doc.fileSize || 0,
-          fileUrl: doc.fileUrl || null,
-          content: doc.content || null,
-          createdAt: doc.createdAt,
-          uploader: doc.uploader || null,
+    // Map Assignment Submissions with Auto-Reviews into Classroom Files
+    (rawSubmissions || []).forEach((sub: any) => {
+      const assignmentTitle = sub.assignment?.title || 'Assignment';
+      const key = `sub-${sub.id}`;
+      if (!existingFileKeys.has(key)) {
+        existingFileKeys.add(key);
+        materialsList.unshift({
+          id: `sub-${sub.id}`,
+          groupId: sub.groupId,
+          uploadedBy: sub.userId,
+          title: `[Submission] ${sub.title}`,
+          subject: 'Assignments & Auto-Review',
+          unit: assignmentTitle,
+          topic: `Submission: ${sub.title}`,
+          chapter: `Score: ${sub.qualityScore}/100 (${sub.status})`,
+          fileName: sub.fileName || `${sub.title}.docx`,
+          fileType: sub.fileType || 'docx',
+          fileSize: sub.fileSize || 0,
+          fileUrl: sub.fileUrl || null,
+          content: sub.content || `Assignment: ${assignmentTitle}\nSubmission Title: ${sub.title}\nQuality Score: ${sub.qualityScore}/100\nStatus: ${sub.status}\nAuto-Review: ${sub.reviewResult?.summary || 'Completed'}\nMissing Items: ${Array.isArray(sub.reviewResult?.missingRequirements) ? sub.reviewResult.missingRequirements.join(', ') : 'None'}`,
+          createdAt: sub.submittedAt || sub.createdAt,
+          uploader: sub.user || null,
+          qualityScore: sub.qualityScore,
+          reviewResult: sub.reviewResult,
+          isAssignmentSubmission: true,
+          status: sub.status,
         });
       }
     });
@@ -93,17 +107,17 @@ export async function GET(
     // Map Assignments to Knowledge Hub format so their rubrics and prompts are indexed
     (rawAssignments || []).forEach((asgn: any) => {
       const key = `asgn-${asgn.id}`;
-      if (!existingFileNames.has(key)) {
-        existingFileNames.add(key);
+      if (!existingFileKeys.has(key)) {
+        existingFileKeys.add(key);
         materialsList.push({
           id: `asgn-mat-${asgn.id}`,
           groupId: asgn.groupId,
           uploadedBy: asgn.createdBy,
           title: `Assignment: ${asgn.title}`,
-          subject: 'Assignments & Coursework',
+          subject: 'Assignments & Auto-Review',
           unit: asgn.title,
           topic: `${asgn.title} Rubric & Requirements`,
-          chapter: 'Assignment Details',
+          chapter: 'Coursework Guidelines',
           fileName: `${asgn.title}-assignment.docx`,
           fileType: 'docx',
           fileSize: 1024,
@@ -111,6 +125,37 @@ export async function GET(
           content: `Assignment: ${asgn.title}\nDescription: ${asgn.description || 'None'}\nRequired Sections: ${Array.isArray(asgn.requiredSections) ? asgn.requiredSections.join(', ') : ''}\nMin References: ${asgn.minReferences}\nMin Word Count: ${asgn.minWordCount}\nTotal Marks: ${asgn.totalMarks}`,
           createdAt: asgn.createdAt,
           uploader: asgn.creator || null,
+          isAssignmentBrief: true,
+        });
+      }
+    });
+
+    // Map GroupDocument items to Knowledge Hub format if not already in materials
+    (rawDocs || []).forEach((doc: any) => {
+      if (!isAdmin && doc.uploadedBy !== group.createdBy && doc.uploadedBy !== user.id) {
+        return;
+      }
+
+      const key = `${doc.fileName}-${doc.title}`;
+      if (!existingFileKeys.has(key)) {
+        existingFileKeys.add(key);
+        const isAssignmentFile = doc.title.toLowerCase().includes('assignment') || doc.title.toLowerCase().includes('submission');
+        materialsList.push({
+          id: `doc-${doc.id}`,
+          groupId: doc.groupId,
+          uploadedBy: doc.uploadedBy,
+          title: doc.title,
+          subject: isAssignmentFile ? 'Assignments & Auto-Review' : 'Classroom Documents',
+          unit: isAssignmentFile ? 'Coursework Uploads' : 'General Materials',
+          topic: doc.title,
+          chapter: isAssignmentFile ? 'Uploaded Submissions' : 'Shared Files',
+          fileName: doc.fileName,
+          fileType: doc.fileType || 'pdf',
+          fileSize: doc.fileSize || 0,
+          fileUrl: doc.fileUrl || null,
+          content: doc.content || null,
+          createdAt: doc.createdAt,
+          uploader: doc.uploader || null,
         });
       }
     });
@@ -302,7 +347,13 @@ export async function DELETE(
       return NextResponse.json({ error: 'Only faculty can delete materials' }, { status: 403 });
     }
 
-    const cleanId = materialId.startsWith('doc-') ? materialId.replace('doc-', '') : materialId;
+    const cleanId = materialId.startsWith('doc-')
+      ? materialId.replace('doc-', '')
+      : materialId.startsWith('sub-')
+      ? materialId.replace('sub-', '')
+      : materialId.startsWith('asgn-mat-')
+      ? materialId.replace('asgn-mat-', '')
+      : materialId;
 
     await Promise.all([
       supabase.from('GroupKnowledgeMaterial').delete().eq('id', cleanId).eq('groupId', groupId),

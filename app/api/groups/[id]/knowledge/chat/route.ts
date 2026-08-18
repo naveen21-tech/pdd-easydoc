@@ -68,7 +68,7 @@ export async function POST(
       .select('id, title, subject, unit, topic, chapter, fileName, content')
       .eq('groupId', groupId);
 
-    if (materialId && !materialId.startsWith('doc-') && !materialId.startsWith('asgn-')) {
+    if (materialId && !materialId.startsWith('doc-') && !materialId.startsWith('asgn-') && !materialId.startsWith('sub-')) {
       materialQuery = materialQuery.eq('id', materialId);
     }
     if (unit) {
@@ -78,16 +78,45 @@ export async function POST(
       materialQuery = materialQuery.eq('subject', subject);
     }
 
-    const [{ data: rawMaterials }, { data: rawDocs }, { data: rawAssignments }] = await Promise.all([
+    let submissionQuery = supabase
+      .from('GroupAssignmentSubmission')
+      .select('id, title, fileName, content, qualityScore, reviewResult, status, userId, assignment:GroupAssignment!assignmentId(id, title)')
+      .eq('groupId', groupId);
+
+    if (!isAdmin) {
+      submissionQuery = submissionQuery.eq('userId', user.id);
+    }
+
+    const [{ data: rawMaterials }, { data: rawDocs }, { data: rawAssignments }, { data: rawSubmissions }] = await Promise.all([
       materialQuery,
       supabase.from('GroupDocument').select('id, title, fileName, content, uploadedBy').eq('groupId', groupId),
       supabase.from('GroupAssignment').select('id, title, description, requiredSections, minReferences, minWordCount, totalMarks').eq('groupId', groupId),
+      submissionQuery,
     ]);
 
     const allMaterials: any[] = [...(rawMaterials || [])];
     const existingFileNames = new Set(allMaterials.map((m) => `${m.fileName}-${m.title}`));
 
-    // Include GroupDocument (including assignment uploads and submissions)
+    // Include Assignment Submissions with Auto-Reviews into Generative AI Context
+    (rawSubmissions || []).forEach((sub: any) => {
+      const assignmentTitle = sub.assignment?.title || 'Assignment';
+      const key = `sub-${sub.id}`;
+      if (!existingFileNames.has(key)) {
+        existingFileNames.add(key);
+        allMaterials.push({
+          id: `sub-${sub.id}`,
+          title: `[Assignment Submission] ${sub.title} (${assignmentTitle})`,
+          subject: 'Assignments & Auto-Review',
+          unit: assignmentTitle,
+          topic: `Submission: ${sub.title}`,
+          chapter: `Auto-Review Score: ${sub.qualityScore}/100`,
+          fileName: sub.fileName || `${sub.title}.docx`,
+          content: sub.content || `Assignment: ${assignmentTitle}\nSubmission Title: ${sub.title}\nQuality Score: ${sub.qualityScore}/100\nStatus: ${sub.status}\nAuto-Review Evaluation Summary: ${sub.reviewResult?.summary || 'Completed'}\nMissing Items: ${Array.isArray(sub.reviewResult?.missingRequirements) ? sub.reviewResult.missingRequirements.join(', ') : 'None'}\nSections: ${Array.isArray(sub.reviewResult?.sectionChecks) ? sub.reviewResult.sectionChecks.map((c: any) => `${c.name}: ${c.present ? 'Present' : 'Missing'}`).join(', ') : ''}`,
+        });
+      }
+    });
+
+    // Include GroupDocument (including assignment uploads and shared notes)
     (rawDocs || []).forEach((doc: any) => {
       if (!isAdmin && doc.uploadedBy !== group.createdBy && doc.uploadedBy !== user.id) {
         return;
@@ -99,7 +128,7 @@ export async function POST(
         allMaterials.push({
           id: `doc-${doc.id}`,
           title: doc.title,
-          subject: isAssignmentFile ? 'Assignments & Coursework' : 'Classroom Documents',
+          subject: isAssignmentFile ? 'Assignments & Auto-Review' : 'Classroom Documents',
           unit: isAssignmentFile ? 'Assignments' : 'General Materials',
           topic: doc.title,
           chapter: isAssignmentFile ? 'Course Submissions' : 'Shared Files',
@@ -109,7 +138,7 @@ export async function POST(
       }
     });
 
-    // Include Assignments
+    // Include Assignments and Rubrics
     (rawAssignments || []).forEach((asgn: any) => {
       const key = `asgn-${asgn.id}`;
       if (!existingFileNames.has(key)) {
@@ -117,7 +146,7 @@ export async function POST(
         allMaterials.push({
           id: `asgn-mat-${asgn.id}`,
           title: `Assignment: ${asgn.title}`,
-          subject: 'Assignments & Coursework',
+          subject: 'Assignments & Auto-Review',
           unit: asgn.title,
           topic: `${asgn.title} Rubric & Requirements`,
           chapter: 'Assignment Details',
@@ -212,7 +241,7 @@ export async function POST(
     }
 
     // 4. Construct Strict Prompt based on Action
-    let systemPrompt = `You are the StudentDoc Classroom Knowledge Assistant. You answer student questions STRICTLY using the provided classroom study materials.
+    let systemPrompt = `You are the StudentDoc Classroom Knowledge Assistant. You answer student questions STRICTLY using the provided classroom study materials, assignment files, and auto-review reports.
 If the requested information is not present in the provided materials, clearly state: "The requested topic was not found in the available classroom resources." Do not make up facts.`;
 
     let userPrompt = '';
