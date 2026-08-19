@@ -1,4 +1,4 @@
-import { generateWithGroq, getGroqConfig } from '@/lib/ai/groq';
+import { generateWithOpenAI, getOpenAIConfig, cleanAIOutput } from '@/lib/ai/openai';
 import { HealthReportItem, HealthIssueItem, AIProvider } from '@/lib/types';
 
 export interface AnalyzeHealthOptions {
@@ -50,9 +50,9 @@ Return ONLY raw JSON.`;
 Document Content:
 ${content.slice(0, 7000)}`;
 
-  // Call Centralized Groq Cloud Service
-  const config = getGroqConfig();
-  const groqRes = await generateWithGroq({
+  // Call Centralized OpenAI Service
+  const config = getOpenAIConfig();
+  const openAIRes = await generateWithOpenAI({
     task: 'health',
     model: config.model,
     system: systemPrompt,
@@ -62,8 +62,8 @@ ${content.slice(0, 7000)}`;
     jsonFormat: true,
   });
 
-  if (groqRes.success && groqRes.text) {
-    const raw = groqRes.text.replace(/```json|```/g, '').trim();
+  if (openAIRes.success && openAIRes.text) {
+    const raw = cleanAIOutput(openAIRes.text).replace(/```json|```/g, '').trim();
     const match = raw.match(/\{[\s\S]*\}/);
     if (match) {
       try {
@@ -75,7 +75,7 @@ ${content.slice(0, 7000)}`;
           };
         }
       } catch (e) {
-        console.warn('Groq health report parse error:', e);
+        console.warn('OpenAI health report parse error:', e);
       }
     }
   }

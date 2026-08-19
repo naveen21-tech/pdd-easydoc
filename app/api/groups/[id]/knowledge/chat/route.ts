@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
-import { generateWithGroq, generateFallbackMcqs } from '@/lib/ai/groq';
+import { generateWithOpenAI, generateFallbackMcqs } from '@/lib/ai/openai';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -312,11 +312,11 @@ Generate 5 rigorous Viva Voce / Oral Examination questions on "${query}" with id
         break;
     }
 
-    // 5. Call Central Groq LLM Service with automatic fallback
+    // 5. Call Central OpenAI Service with automatic fallback
     let aiResponseText = '';
     try {
       const isMcqTask = action === 'generate-mcq';
-      const aiResult = await generateWithGroq({
+      const aiResult = await generateWithOpenAI({
         prompt: userPrompt,
         system: systemPrompt,
         task: isMcqTask ? 'mcq' : 'document',
@@ -330,7 +330,7 @@ Generate 5 rigorous Viva Voce / Oral Examination questions on "${query}" with id
         throw new Error(aiResult.error || 'LLM generation failed');
       }
     } catch (e: any) {
-      console.warn('Groq knowledge chat fallback note:', e);
+      console.warn('OpenAI knowledge chat fallback note:', e);
 
       // Deterministic High-Quality Fallback based on Action
       if (action === 'ask') {

@@ -8,7 +8,7 @@ describe('AI Provider Service (lib/ai/provider.ts)', () => {
 
   it('should generate fallback content when API keys are not present or invalid', async () => {
     const options: GenerateDocOptions = {
-      provider: 'groq',
+      provider: 'openai',
       title: 'Cloud Distributed System Architecture',
       tone: 'Formal & Technical',
       instructions: 'Explain microservices and consensus protocols',
@@ -21,7 +21,7 @@ describe('AI Provider Service (lib/ai/provider.ts)', () => {
     expect(typeof result.content).toBe('string');
     expect(result.content).toContain('[TEMPLATE_BADGE] Software Architecture Document');
     expect(result.content).toContain('# **Cloud Distributed System Architecture**');
-    expect(result.content).toContain('## 1. Executive Summary');
+    expect(result.content).toContain('## 1. Introduction');
   });
 
   it('should correctly format template badges and custom templates', async () => {
@@ -41,7 +41,7 @@ describe('AI Provider Service (lib/ai/provider.ts)', () => {
 
   it('should handle edge cases with empty title or instructions gracefully', async () => {
     const options: GenerateDocOptions = {
-      provider: 'groq',
+      provider: 'openai',
       title: '',
       tone: 'Professional',
       instructions: '',

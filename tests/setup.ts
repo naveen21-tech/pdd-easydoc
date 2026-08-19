@@ -4,8 +4,8 @@ import { vi } from 'vitest';
 // Set mock environment variables for unit tests
 process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://mock-supabase.supabase.co';
 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'mock-anon-key';
-process.env.GROQ_API_KEY = 'mock-groq-key';
-process.env.GROQ_MODEL = 'llama-3.3-70b-versatile';
+process.env.OPENAI_API_KEY = 'mock-openai-key';
+process.env.OPENAI_MODEL = 'gpt-4o-mini';
 process.env.NEXT_PUBLIC_SITE_URL = 'http://localhost:3000';
 
 // Global fetch mock to prevent real external network calls
@@ -13,9 +13,8 @@ const originalFetch = global.fetch;
 global.fetch = vi.fn(async (url: any, options: any) => {
   const urlStr = typeof url === 'string' ? url : url?.toString() || '';
   if (
-    urlStr.includes('api.groq.com') ||
-    urlStr.includes('googleapis.com') ||
     urlStr.includes('api.openai.com') ||
+    urlStr.includes('googleapis.com') ||
     urlStr.includes('api.anthropic.com')
   ) {
     return {

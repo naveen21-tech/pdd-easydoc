@@ -46,7 +46,7 @@ describe('Document Parsing, Text Chunking & Context Retrieval (Area 6)', () => {
 The platform is built using a modern microservices architecture with Next.js App Router on the frontend and PostgreSQL as the primary database.
 Data persistence is handled through Prisma ORM with connection pooling.
 Authentication is managed by Supabase Auth with JSON Web Tokens (JWT) and Row Level Security (RLS) policies.
-The AI document generation pipeline uses Groq Cloud Llama-3.3 70B and Google Gemini 1.5 Flash.
+The AI document generation pipeline uses OpenAI GPT-4o-mini and Google Gemini 1.5 Flash.
 Document export supports PDF, DOCX, Markdown, and TXT with multi-page A4 formatting.
 `;
 
@@ -88,7 +88,7 @@ Document export supports PDF, DOCX, Markdown, and TXT with multi-page A4 formatt
     const chunks = [
       'Document export formats include PDF, DOCX, and TXT.',
       'Authentication is managed by Supabase Auth with JWT and RLS.',
-      'AI pipeline uses Groq Llama 3.3 and Google Gemini.',
+      'AI pipeline uses OpenAI GPT-4o-mini and Google Gemini.',
     ];
 
     const relevant = retrieveRelevantContext(chunks, 'Supabase Authentication');
@@ -100,7 +100,7 @@ Document export supports PDF, DOCX, Markdown, and TXT with multi-page A4 formatt
     const chunks = [
       'Document export formats include PDF, DOCX, and TXT.',
       'Authentication is managed by Supabase Auth with JWT and RLS.',
-      'AI pipeline uses Groq Llama 3.3 and Google Gemini.',
+      'AI pipeline uses OpenAI GPT-4o-mini and Google Gemini.',
     ];
 
     const relevant = retrieveRelevantContext(chunks, 'Export PDF');

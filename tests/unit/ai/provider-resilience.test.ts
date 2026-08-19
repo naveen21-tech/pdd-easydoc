@@ -6,9 +6,9 @@ describe('AI Engine: Multi-Model Resilience & Fallbacks (Area 7)', () => {
     vi.restoreAllMocks();
   });
 
-  it('1. should generate document using Groq Llama-3.3 70B synthesis fallback', async () => {
+  it('1. should generate document using OpenAI synthesis fallback', async () => {
     const options: GenerateDocOptions = {
-      provider: 'groq',
+      provider: 'openai',
       title: 'Cloud Native Microservices Architecture',
       tone: 'Formal & Technical',
       instructions: 'Explain service mesh and distributed tracing',
@@ -63,7 +63,7 @@ describe('AI Engine: Multi-Model Resilience & Fallbacks (Area 7)', () => {
 
   it('5. should handle empty title with safe default title', async () => {
     const options: GenerateDocOptions = {
-      provider: 'groq',
+      provider: 'openai',
       title: '',
       tone: 'Professional',
       instructions: 'General notes',
@@ -76,7 +76,7 @@ describe('AI Engine: Multi-Model Resilience & Fallbacks (Area 7)', () => {
 
   it('6. should handle empty instructions with default outline synthesis', async () => {
     const options: GenerateDocOptions = {
-      provider: 'groq',
+      provider: 'openai',
       title: 'Autonomous Drone Systems',
       tone: 'Formal & Technical',
       instructions: '',
@@ -84,12 +84,12 @@ describe('AI Engine: Multi-Model Resilience & Fallbacks (Area 7)', () => {
 
     const res = await generateDocument(options);
     expect(res.content).toContain('Autonomous Drone Systems');
-    expect(res.content).toContain('1. Executive Summary');
+    expect(res.content).toContain('1. Introduction');
   });
 
   it('7. should include document template badge in generated markdown', async () => {
     const options: GenerateDocOptions = {
-      provider: 'groq',
+      provider: 'openai',
       title: 'Operating Systems Lab',
       tone: 'Academic',
       instructions: 'Lab experiment',
@@ -102,7 +102,7 @@ describe('AI Engine: Multi-Model Resilience & Fallbacks (Area 7)', () => {
 
   it('8. should calculate and return execution response time in milliseconds', async () => {
     const options: GenerateDocOptions = {
-      provider: 'groq',
+      provider: 'openai',
       title: 'Performance Benchmark',
       tone: 'Formal',
       instructions: 'Benchmark metrics',
@@ -127,21 +127,21 @@ describe('AI Engine: Multi-Model Resilience & Fallbacks (Area 7)', () => {
 
   it('10. should construct 5+ structured sections in generated document', async () => {
     const options: GenerateDocOptions = {
-      provider: 'groq',
+      provider: 'openai',
       title: 'Full Specification Document',
       tone: 'Formal & Technical',
       instructions: 'Comprehensive architecture',
     };
 
     const res = await generateDocument(options);
-    expect(res.content).toContain('1. Executive Summary');
-    expect(res.content).toContain('2. Strategic Objectives & Scope');
-    expect(res.content).toContain('5. Conclusion & Next Steps');
+    expect(res.content).toContain('1. Introduction & Overview');
+    expect(res.content).toContain('2. Core Concepts & Theoretical Framework');
+    expect(res.content).toContain('5. Conclusion & Recommendations');
   });
 
   it('11. should format document with table of metrics or specifications', async () => {
     const options: GenerateDocOptions = {
-      provider: 'groq',
+      provider: 'openai',
       title: 'System Benchmarking Spec',
       tone: 'Formal & Technical',
       instructions: 'Benchmarking metrics table',
@@ -154,7 +154,7 @@ describe('AI Engine: Multi-Model Resilience & Fallbacks (Area 7)', () => {
   it('12. should handle very long instructions exceeding 2,000 characters', async () => {
     const longInstructions = 'Detail '.repeat(400);
     const options: GenerateDocOptions = {
-      provider: 'groq',
+      provider: 'openai',
       title: 'Detailed Instructions Test',
       tone: 'Formal',
       instructions: longInstructions,
@@ -167,7 +167,7 @@ describe('AI Engine: Multi-Model Resilience & Fallbacks (Area 7)', () => {
 
   it('13. should handle special symbols in document title gracefully', async () => {
     const options: GenerateDocOptions = {
-      provider: 'groq',
+      provider: 'openai',
       title: 'C++ & Rust: Memory Safety vs Performance (2026)',
       tone: 'Technical',
       instructions: 'Compare borrow checker and manual allocation',
@@ -179,7 +179,7 @@ describe('AI Engine: Multi-Model Resilience & Fallbacks (Area 7)', () => {
 
   it('14. should format metadata date footer in generated document', async () => {
     const options: GenerateDocOptions = {
-      provider: 'groq',
+      provider: 'openai',
       title: 'Annual Review',
       tone: 'Formal',
       instructions: 'Review 2026',
@@ -192,7 +192,7 @@ describe('AI Engine: Multi-Model Resilience & Fallbacks (Area 7)', () => {
 
   it('15. should sanitize output content to remove markdown code-fence wrapper artifacts', async () => {
     const options: GenerateDocOptions = {
-      provider: 'groq',
+      provider: 'openai',
       title: 'Code Fence Sanitization Test',
       tone: 'Technical',
       instructions: 'Testing sanitization',

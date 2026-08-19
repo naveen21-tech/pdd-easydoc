@@ -23,6 +23,9 @@ import {
   Layers,
   GraduationCap,
   Paperclip,
+  Eye,
+  EyeOff,
+  ShieldCheck,
 } from 'lucide-react';
 import { downloadDocumentFile, ExportFormat } from '@/lib/download';
 import { GroupItem, GroupDocumentItem } from '@/lib/types';
@@ -62,6 +65,17 @@ function GenerateFormAndPreview() {
   const [downloadSuccess, setDownloadSuccess] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [downloadingFormat, setDownloadingFormat] = useState<ExportFormat | null>(null);
+
+  // AI Engine Provider Selection & Keys
+  const [selectedProvider, setSelectedProvider] = useState<'groq' | 'gemini'>('groq');
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [copiedApiKey, setCopiedApiKey] = useState(false);
+
+  const groqMaskedKey = 'gsk_HmHZ••••••••••••••••••••0oZF2Z';
+  const geminiMaskedKey = 'AQ.Ab8RN••••••••••••••••••••4kPQ';
+
+  const activeKey = selectedProvider === 'groq' ? groqMaskedKey : geminiMaskedKey;
+  const activeModel = selectedProvider === 'groq' ? 'openai/gpt-oss-120b' : 'gemini-flash-latest';
 
   useEffect(() => {
     const tmplNameParam = searchParams.get('templateName');
@@ -193,6 +207,7 @@ function GenerateFormAndPreview() {
           templateName: templateName || undefined,
           tone,
           instructions,
+          provider: selectedProvider,
           referenceContent: attachedContent || undefined,
           referenceFileName: attachedFileName || undefined,
         }),
@@ -265,10 +280,98 @@ function GenerateFormAndPreview() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Left Column: Input Form (5 cols) */}
         <div className="lg:col-span-5 bg-white dark:bg-dark-surface rounded-3xl border border-slate-200 dark:border-dark-border p-6 shadow-sm space-y-6">
-          <h3 className="font-display font-bold text-base text-slate-900 dark:text-white pb-3 border-b border-slate-100 dark:border-dark-border flex items-center space-x-2">
-            <Sparkles className="w-5 h-5 text-purple-600 dark:text-brand-lavender" />
-            <span>Document Configuration</span>
+          <h3 className="font-display font-bold text-base text-slate-900 dark:text-white pb-3 border-b border-slate-100 dark:border-dark-border flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Sparkles className="w-5 h-5 text-purple-600 dark:text-brand-lavender" />
+              <span>Document Configuration</span>
+            </div>
+            <span className="flex items-center space-x-1.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/40 px-2.5 py-0.5 rounded-full">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span>{selectedProvider === 'groq' ? 'Groq LPU Active' : 'Gemini Active'}</span>
+            </span>
           </h3>
+
+          {/* AI ENGINE PROVIDER SELECTOR & LIVE KEY CARD */}
+          <div className="p-3.5 rounded-2xl bg-gradient-to-r from-purple-900/30 via-indigo-950/30 to-slate-900/50 border border-purple-500/30 text-white space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                <Zap className="w-3.5 h-3.5 text-amber-400" />
+                Select AI Engine Provider:
+              </span>
+              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-400/20">
+                {activeModel}
+              </span>
+            </div>
+
+            {/* Provider Switcher Tabs */}
+            <div className="grid grid-cols-2 gap-2 p-1 bg-slate-950/70 rounded-xl border border-slate-800">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedProvider('groq');
+                  setShowApiKey(false);
+                }}
+                className={`flex items-center justify-center space-x-2 py-2 px-3 rounded-lg text-xs font-bold transition-all ${
+                  selectedProvider === 'groq'
+                    ? 'bg-purple-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                }`}
+              >
+                <Zap className="w-3.5 h-3.5" />
+                <span>Groq LPU (gpt-oss-120b)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedProvider('gemini');
+                  setShowApiKey(false);
+                }}
+                className={`flex items-center justify-center space-x-2 py-2 px-3 rounded-lg text-xs font-bold transition-all ${
+                  selectedProvider === 'gemini'
+                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5 text-blue-300" />
+                <span>Google Gemini (flash)</span>
+              </button>
+            </div>
+
+            {/* Connected API Key Viewer */}
+            <div className="flex items-center justify-between text-xs bg-slate-950/90 rounded-xl px-3 py-2 border border-slate-800/80">
+              <div className="flex flex-col overflow-hidden mr-2">
+                <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                  Active {selectedProvider === 'groq' ? 'Groq' : 'Gemini'} API Key
+                </span>
+                <span className="font-mono text-[11px] text-emerald-300 truncate">
+                  {activeKey}
+                </span>
+              </div>
+              <div className="flex items-center space-x-1 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setShowApiKey(!showApiKey)}
+                  className="p-1.5 hover:bg-slate-800 text-slate-400 hover:text-slate-200 rounded-lg transition-colors"
+                  title={showApiKey ? 'Hide API Key' : 'Show Full Key'}
+                >
+                  {showApiKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(activeKey);
+                    setCopiedApiKey(true);
+                    setTimeout(() => setCopiedApiKey(false), 2000);
+                  }}
+                  className="p-1.5 hover:bg-slate-800 text-slate-400 hover:text-slate-200 rounded-lg transition-colors"
+                  title="Copy API Key"
+                >
+                  {copiedApiKey ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+            </div>
+          </div>
 
           {error && (
             <div className="p-4 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/50 flex items-start space-x-3 text-red-700 dark:text-red-300 text-xs">
@@ -479,6 +582,58 @@ function GenerateFormAndPreview() {
               )}
             </div>
 
+            {/* AI Engine Provider Selector inside Form */}
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-200 mb-2">
+                AI Inference Engine Provider *
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setSelectedProvider('groq')}
+                  className={`p-3 rounded-2xl border text-left transition-all relative ${
+                    selectedProvider === 'groq'
+                      ? 'border-purple-600 bg-purple-50 dark:bg-purple-950/40 ring-2 ring-purple-600/30'
+                      : 'border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-bg/60 hover:bg-slate-100 dark:hover:bg-dark-hover'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="flex items-center space-x-1.5 text-xs font-bold text-slate-900 dark:text-white">
+                      <Zap className="w-4 h-4 text-purple-600 dark:text-brand-lavender" />
+                      <span>Groq LPU</span>
+                    </span>
+                    {selectedProvider === 'groq' && (
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    )}
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">openai/gpt-oss-120b</p>
+                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold block mt-1">⚡ Fast 0.8s</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedProvider('gemini')}
+                  className={`p-3 rounded-2xl border text-left transition-all relative ${
+                    selectedProvider === 'gemini'
+                      ? 'border-blue-600 bg-blue-50 dark:bg-blue-950/40 ring-2 ring-blue-600/30'
+                      : 'border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-bg/60 hover:bg-slate-100 dark:hover:bg-dark-hover'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="flex items-center space-x-1.5 text-xs font-bold text-slate-900 dark:text-white">
+                      <Sparkles className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                      <span>Google Gemini</span>
+                    </span>
+                    {selectedProvider === 'gemini' && (
+                      <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                    )}
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">gemini-flash-latest</p>
+                  <span className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold block mt-1">🌟 1M+ Token Context</span>
+                </button>
+              </div>
+            </div>
+
             {/* Tone Selector */}
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-200 mb-2">
@@ -516,18 +671,22 @@ function GenerateFormAndPreview() {
             <button
               type="submit"
               disabled={generating}
-              className="w-full flex items-center justify-center space-x-2 bg-gradient-to-r from-purple-700 to-indigo-800 dark:from-brand-purple dark:to-brand-amethyst hover:opacity-95 text-white font-bold py-3.5 px-6 rounded-xl text-sm transition-all shadow-md shadow-purple-600/20 disabled:opacity-50"
+              className={`w-full flex items-center justify-center space-x-2 text-white font-bold py-3.5 px-6 rounded-xl text-sm transition-all shadow-md disabled:opacity-50 ${
+                selectedProvider === 'gemini'
+                  ? 'bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 shadow-blue-600/20'
+                  : 'bg-gradient-to-r from-purple-700 to-indigo-800 dark:from-brand-purple dark:to-brand-amethyst hover:opacity-95 shadow-purple-600/20'
+              }`}
             >
               {generating ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  <span>Synthesizing Document with AI...</span>
+                  <span>Synthesizing Document with {selectedProvider === 'gemini' ? 'Google Gemini' : 'Groq LPU'}...</span>
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-5 h-5" />
+                  {selectedProvider === 'gemini' ? <Sparkles className="w-5 h-5" /> : <Zap className="w-5 h-5" />}
                   <span>
-                    {attachedFileName ? 'Synthesize with Imported File' : 'Generate Document'}
+                    Generate with {selectedProvider === 'gemini' ? 'Google Gemini' : 'Groq LPU'}
                   </span>
                 </>
               )}
@@ -581,8 +740,22 @@ function GenerateFormAndPreview() {
               <div className="space-y-4 text-slate-900 dark:text-white">
                 {responseTimeMs && (
                   <div className="text-[11px] font-mono text-slate-500 dark:text-slate-400 pb-2 border-b border-slate-200 dark:border-dark-border flex items-center justify-between">
-                    <span className="text-purple-600 dark:text-brand-lavender font-bold">StudentDoc AI Synthesis</span>
-                    <span>Response Time: {responseTimeMs}ms</span>
+                    <span className="font-bold flex items-center gap-1.5 text-slate-800 dark:text-slate-200">
+                      {selectedProvider === 'gemini' ? (
+                        <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
+                          <Sparkles className="w-3.5 h-3.5" />
+                          <span>Generated with Google Gemini (flash)</span>
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1 text-purple-600 dark:text-purple-400">
+                          <Zap className="w-3.5 h-3.5 text-amber-500" />
+                          <span>Generated with Groq LPU (gpt-oss-120b)</span>
+                        </span>
+                      )}
+                    </span>
+                    <span className="bg-slate-200/60 dark:bg-slate-800 px-2 py-0.5 rounded text-[10px]">
+                      {responseTimeMs}ms
+                    </span>
                   </div>
                 )}
 

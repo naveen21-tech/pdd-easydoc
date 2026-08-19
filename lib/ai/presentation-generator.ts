@@ -1,4 +1,4 @@
-import { generateWithGroq, getGroqConfig } from '@/lib/ai/groq';
+import { generateWithOpenAI, getOpenAIConfig, cleanAIOutput } from '@/lib/ai/openai';
 import { SlideItem, PresentationStyle, AIProvider } from '@/lib/types';
 
 export interface GeneratePresentationOptions {
@@ -67,9 +67,9 @@ Target Slide Count: ${count}
 Source Document / Context:
 ${content.slice(0, 8000)}`;
 
-  // Call Centralized Groq Cloud Service
-  const config = getGroqConfig();
-  const groqRes = await generateWithGroq({
+  // Call Centralized OpenAI Service
+  const config = getOpenAIConfig();
+  const openAIRes = await generateWithOpenAI({
     task: 'document',
     model: config.model,
     system: systemPrompt,
@@ -79,8 +79,8 @@ ${content.slice(0, 8000)}`;
     jsonFormat: true,
   });
 
-  if (groqRes.success && groqRes.text) {
-    const parsed = extractSlidesJson(groqRes.text);
+  if (openAIRes.success && openAIRes.text) {
+    const parsed = extractSlidesJson(openAIRes.text);
     if (parsed && parsed.length > 0) {
       return sanitizeSlides(parsed, title, style, count);
     }
@@ -108,9 +108,9 @@ Output ONLY valid JSON:
   "notes": "Speaker notes for the presenter"
 }`;
 
-  // Call Centralized Groq Cloud Service
-  const config = getGroqConfig();
-  const groqRes = await generateWithGroq({
+  // Call Centralized OpenAI Service
+  const config = getOpenAIConfig();
+  const openAIRes = await generateWithOpenAI({
     task: 'document',
     model: config.model,
     system: systemPrompt,
@@ -120,8 +120,9 @@ Output ONLY valid JSON:
     jsonFormat: true,
   });
 
-  if (groqRes.success && groqRes.text) {
-    const match = groqRes.text.match(/\{[\s\S]*\}/);
+  if (openAIRes.success && openAIRes.text) {
+    const raw = cleanAIOutput(openAIRes.text);
+    const match = raw.match(/\{[\s\S]*\}/);
     if (match) {
       try {
         const parsed = JSON.parse(match[0]);
@@ -134,7 +135,7 @@ Output ONLY valid JSON:
           };
         }
       } catch (e) {
-        console.warn('Groq enhance slide parse error:', e);
+        console.warn('OpenAI enhance slide parse error:', e);
       }
     }
   }
@@ -310,7 +311,7 @@ function generateDomainBullets(slideTitle: string, domain: DomainType, deckTitle
       return [
         'Core ML Engines: PyTorch, Hugging Face Transformers, ONNX Runtime, and TensorRT',
         'Orchestration & Data: LangChain, LlamaIndex, Pinecone / pgvector, and FastAPI backends',
-        'Inference Infrastructure: Groq LPU acceleration, Google Vertex AI, and Docker containerization',
+        'Inference Infrastructure: OpenAI Cloud API, Google Vertex AI, and Docker containerization',
       ];
     } else if (domain === 'cloud' || domain === 'web') {
       return [

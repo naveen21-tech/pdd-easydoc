@@ -164,7 +164,7 @@ model AIRequest {
   userId         String
   user           Profile  @relation(fields: [userId], references: [id], onDelete: Cascade)
   prompt         String
-  provider       String   // "openai" | "anthropic" | "gemini" | "groq"
+  provider       String   // "openai" | "anthropic" | "gemini"
   responseTimeMs Int
   success        Boolean  @default(true)
   createdAt      DateTime @default(now())

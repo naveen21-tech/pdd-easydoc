@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import { generateMcqsWithGroq } from '@/lib/ai/groq';
+import { generateMcqsWithOpenAI } from '@/lib/ai/openai';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,13 +39,20 @@ export async function POST(
     const instructions = body.instructions || '';
     const difficulty = body.difficulty || 'intermediate';
 
-    // Generate MCQs using Centralized Groq Cloud LLM Service (llama-3.3-70b-versatile)
-    const result = await generateMcqsWithGroq({
-      topic,
-      count: requestedCount,
-      difficulty,
-      instructions,
-    });
+    // Generate MCQs using High-Speed Groq Engine (with OpenAI fallback)
+    const result = process.env.GROQ_API_KEY
+      ? await generateMcqsWithGroq({
+          topic,
+          count: requestedCount,
+          difficulty,
+          instructions,
+        })
+      : await generateMcqsWithOpenAI({
+          topic,
+          count: requestedCount,
+          difficulty,
+          instructions,
+        });
 
     return NextResponse.json({
       success: true,

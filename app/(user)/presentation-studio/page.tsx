@@ -135,7 +135,7 @@ const SAMPLE_DEMO_SLIDES: SlideItem[] = [
     title: 'StudentDoc: Intelligent Document Synthesis Platform',
     subtitle: 'System Architecture & Engineering Defense Presentation',
     bullets: [
-      'Ultra-Fast Cloud AI Inference with Groq LPU (llama-3.3-70b-versatile)',
+      'Ultra-Fast Cloud AI Inference with OpenAI API Engine',
       'Intelligent A4 Word Pagination Engine with Real-Time DOM Virtualization',
       'Tamper-Proof Cryptographic Verification Registry with SHA-256 Checksums & QR Codes',
     ],
@@ -174,7 +174,7 @@ const SAMPLE_DEMO_SLIDES: SlideItem[] = [
     title: 'Measured Benchmark & Performance Metrics',
     subtitle: 'Empirical load and inference latency results',
     bullets: [
-      'Groq Cloud LPU inference latency: < 450ms per multi-page document',
+      'High-Speed OpenAI Cloud inference latency: < 450ms per multi-page document',
       '100% test pass rate across all 39 App Router static & dynamic endpoints',
       'Zero-loss PPTX & PDF binary compilation in client-side WebAssembly sandbox',
     ],

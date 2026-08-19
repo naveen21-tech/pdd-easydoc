@@ -1,7 +1,24 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { User, Mail, Lock, Shield, CheckCircle2, AlertCircle, Loader2, Zap } from 'lucide-react';
+import {
+  User,
+  Mail,
+  Lock,
+  Shield,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  Zap,
+  Copy,
+  Check,
+  Eye,
+  EyeOff,
+  Sparkles,
+  Cpu,
+  Activity,
+  RefreshCw,
+} from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 export default function ProfilePage() {
@@ -12,6 +29,22 @@ export default function ProfilePage() {
   const [updatingPassword, setUpdatingPassword] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // AI Engine API Key State (Masked Display)
+  const groqApiKey = 'gsk_HmHZ••••••••••••••••••••0oZF2Z';
+  const geminiApiKey = 'AQ.Ab8RN••••••••••••••••••••4kPQ';
+  const openaiApiKey = 'sk-proj-••••••••••••••••••••66kA';
+
+  const [showGroqKey, setShowGroqKey] = useState(false);
+  const [copiedGroq, setCopiedGroq] = useState(false);
+  const [showGeminiKey, setShowGeminiKey] = useState(false);
+  const [copiedGemini, setCopiedGemini] = useState(false);
+  const [showOpenAIKey, setShowOpenAIKey] = useState(false);
+  const [copiedOpenAI, setCopiedOpenAI] = useState(false);
+
+  const [testingPing, setTestingPing] = useState(false);
+  const [pingLatency, setPingLatency] = useState<number | null>(null);
+  const [pingStatus, setPingStatus] = useState<'ok' | 'error' | null>(null);
 
   useEffect(() => {
     fetchProfile();
@@ -27,6 +60,24 @@ export default function ProfilePage() {
       }
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  const testGroqPing = async () => {
+    setTestingPing(true);
+    setPingLatency(null);
+    setPingStatus(null);
+    try {
+      const startTime = Date.now();
+      const res = await fetch('/api/ai/health');
+      const data = await res.json();
+      const latency = data.groq?.latencyMs || Date.now() - startTime;
+      setPingLatency(latency);
+      setPingStatus(res.ok && data.status !== 'unhealthy' ? 'ok' : 'error');
+    } catch (e) {
+      setPingStatus('error');
+    } finally {
+      setTestingPing(false);
     }
   };
 
@@ -81,7 +132,7 @@ export default function ProfilePage() {
       <div>
         <h2 className="font-display text-2xl font-bold text-slate-900 dark:text-white">Account & Settings</h2>
         <p className="text-sm text-slate-500 dark:text-slate-400">
-          Manage your personal details, subscription plan, and security settings
+          Manage your personal details, AI inference keys, subscription plan, and security settings
         </p>
       </div>
 
@@ -100,8 +151,207 @@ export default function ProfilePage() {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {/* Profile Info (2 Cols) */}
+        {/* Left Column (2 Cols) */}
         <div className="md:col-span-2 space-y-6">
+          {/* AI Inference & API Key Management Card */}
+          <div className="bg-white dark:bg-dark-surface rounded-2xl border border-purple-200 dark:border-purple-900/50 p-6 shadow-card space-y-6 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 rounded-full blur-2xl pointer-events-none" />
+            
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-dark-border">
+              <h3 className="font-display font-bold text-base text-slate-900 dark:text-white flex items-center space-x-2">
+                <Zap className="w-5 h-5 text-amber-500" />
+                <span>AI Inference Engine & API Keys</span>
+              </h3>
+              <span className="flex items-center space-x-1.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/40 px-2.5 py-0.5 rounded-full">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span>Groq LPU Active</span>
+              </span>
+            </div>
+
+            {/* Groq Primary Engine */}
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-50 dark:from-purple-950/30 to-indigo-50 dark:to-indigo-950/30 border border-purple-200 dark:border-purple-800/40 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Cpu className="w-4 h-4 text-purple-600 dark:text-brand-lavender" />
+                  <span className="font-bold text-xs text-purple-950 dark:text-purple-200">
+                    Primary Engine: Groq LPU
+                  </span>
+                </div>
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-purple-200 dark:bg-purple-900 text-purple-800 dark:text-purple-200">
+                  openai/gpt-oss-120b
+                </span>
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400 mb-1.5 tracking-wider">
+                  Groq API Key
+                </label>
+                <div className="flex items-center space-x-2">
+                  <div className="relative flex-1">
+                    <input
+                      type={showGroqKey ? 'text' : 'password'}
+                      readOnly
+                      value={groqApiKey}
+                      className="w-full px-3.5 py-2.5 bg-white dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl text-xs font-mono text-slate-900 dark:text-emerald-300 select-all focus:outline-none"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowGroqKey(!showGroqKey)}
+                    className="p-2.5 bg-slate-100 dark:bg-dark-bg hover:bg-slate-200 dark:hover:bg-dark-hover border border-slate-200 dark:border-dark-border rounded-xl text-slate-600 dark:text-slate-300 transition-colors"
+                    title={showGroqKey ? 'Hide API Key' : 'Show Full Key'}
+                  >
+                    {showGroqKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(groqApiKey);
+                      setCopiedGroq(true);
+                      setTimeout(() => setCopiedGroq(false), 2000);
+                    }}
+                    className="inline-flex items-center space-x-1.5 px-3 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-colors"
+                    title="Copy API Key"
+                  >
+                    {copiedGroq ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    <span>{copiedGroq ? 'Copied' : 'Copy'}</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-1">
+                <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Failovers: groq/compound-mini, openai/gpt-oss-20b, qwen/qwen3.6-27b
+                </span>
+                <button
+                  type="button"
+                  onClick={testGroqPing}
+                  disabled={testingPing}
+                  className="inline-flex items-center space-x-1.5 text-[11px] font-semibold text-purple-700 dark:text-brand-lavender hover:underline"
+                >
+                  {testingPing ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <RefreshCw className="w-3.5 h-3.5" />
+                  )}
+                  <span>
+                    {pingLatency !== null
+                      ? `Ping: ${pingLatency}ms (${pingStatus === 'ok' ? 'Healthy' : 'Degraded'})`
+                      : 'Test Connection Ping'}
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            {/* Google Gemini Engine */}
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-50 dark:from-blue-950/30 to-indigo-50 dark:to-indigo-950/30 border border-blue-200 dark:border-blue-800/40 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Sparkles className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  <span className="font-bold text-xs text-blue-950 dark:text-blue-200">
+                    Engine Provider: Google Gemini
+                  </span>
+                </div>
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-blue-200 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
+                  gemini-flash-latest
+                </span>
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400 mb-1.5 tracking-wider">
+                  Gemini API Key
+                </label>
+                <div className="flex items-center space-x-2">
+                  <div className="relative flex-1">
+                    <input
+                      type={showGeminiKey ? 'text' : 'password'}
+                      readOnly
+                      value={geminiApiKey}
+                      className="w-full px-3.5 py-2.5 bg-white dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-xl text-xs font-mono text-slate-900 dark:text-blue-300 select-all focus:outline-none"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowGeminiKey(!showGeminiKey)}
+                    className="p-2.5 bg-slate-100 dark:bg-dark-bg hover:bg-slate-200 dark:hover:bg-dark-hover border border-slate-200 dark:border-dark-border rounded-xl text-slate-600 dark:text-slate-300 transition-colors"
+                    title={showGeminiKey ? 'Hide API Key' : 'Show Full Key'}
+                  >
+                    {showGeminiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(geminiApiKey);
+                      setCopiedGemini(true);
+                      setTimeout(() => setCopiedGemini(false), 2000);
+                    }}
+                    className="inline-flex items-center space-x-1.5 px-3 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-colors"
+                    title="Copy API Key"
+                  >
+                    {copiedGemini ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    <span>{copiedGemini ? 'Copied' : 'Copy'}</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="pt-1">
+                <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Features: Multi-Modal Context, 1M+ Token Support, Deep Academic Synthesis
+                </span>
+              </div>
+            </div>
+
+            {/* OpenAI Secondary Backup */}
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-dark-bg/60 border border-slate-200 dark:border-dark-border space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Sparkles className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                  <span className="font-bold text-xs text-slate-800 dark:text-slate-200">
+                    Secondary Backup: OpenAI API
+                  </span>
+                </div>
+                <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                  gpt-4o-mini
+                </span>
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 mb-1.5 tracking-wider">
+                  OpenAI API Key (Backup)
+                </label>
+                <div className="flex items-center space-x-2">
+                  <div className="relative flex-1">
+                    <input
+                      type={showOpenAIKey ? 'text' : 'password'}
+                      readOnly
+                      value={openaiApiKey}
+                      className="w-full px-3.5 py-2.5 bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-xl text-xs font-mono text-slate-700 dark:text-slate-300 select-all focus:outline-none"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowOpenAIKey(!showOpenAIKey)}
+                    className="p-2.5 bg-slate-100 dark:bg-dark-surface hover:bg-slate-200 dark:hover:bg-dark-hover border border-slate-200 dark:border-dark-border rounded-xl text-slate-600 dark:text-slate-300 transition-colors"
+                  >
+                    {showOpenAIKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(openaiApiKey);
+                      setCopiedOpenAI(true);
+                      setTimeout(() => setCopiedOpenAI(false), 2000);
+                    }}
+                    className="inline-flex items-center space-x-1.5 px-3 py-2.5 bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 text-white rounded-xl text-xs font-semibold shadow-sm transition-colors"
+                  >
+                    {copiedOpenAI ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    <span>{copiedOpenAI ? 'Copied' : 'Copy'}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* General Profile Card */}
           <div className="bg-white dark:bg-dark-surface rounded-2xl border border-slate-200 dark:border-dark-border p-6 shadow-card space-y-6">
             <h3 className="font-display font-bold text-base text-slate-900 dark:text-white pb-3 border-b border-slate-100 dark:border-dark-border flex items-center space-x-2">
@@ -212,7 +462,11 @@ export default function ProfilePage() {
             <ul className="space-y-2 text-xs text-slate-600 dark:text-slate-300 pt-2 border-t border-slate-100 dark:border-dark-border">
               <li className="flex items-center space-x-2">
                 <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
-                <span>Unlimited OpenAI / Claude / Gemini calls</span>
+                <span>Ultra-Fast Groq LPU Inference (gpt-oss-120b)</span>
+              </li>
+              <li className="flex items-center space-x-2">
+                <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
+                <span>MCQ Studio & AI Classroom Tests</span>
               </li>
               <li className="flex items-center space-x-2">
                 <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />

@@ -1,4 +1,4 @@
-import { generateWithGroq, getGroqConfig } from '@/lib/ai/groq';
+import { generateWithOpenAI, getOpenAIConfig, cleanAIOutput } from '@/lib/ai/openai';
 import { ResumeData, ATSAnalysisResult, AIProvider } from '@/lib/types';
 
 export interface AnalyzeJDOptions {
@@ -65,9 +65,9 @@ ${jobDescription.slice(0, 5000)}
 CANDIDATE RESUME:
 ${resumeText.slice(0, 5000)}`;
 
-  // Call Centralized Groq Cloud Service
-  const config = getGroqConfig();
-  const groqRes = await generateWithGroq({
+  // Call Centralized OpenAI Service
+  const config = getOpenAIConfig();
+  const openAIRes = await generateWithOpenAI({
     task: 'career',
     model: config.model,
     system: systemPrompt,
@@ -77,15 +77,15 @@ ${resumeText.slice(0, 5000)}`;
     jsonFormat: true,
   });
 
-  if (groqRes.success && groqRes.text) {
-    const raw = groqRes.text.replace(/```json|```/g, '').trim();
+  if (openAIRes.success && openAIRes.text) {
+    const raw = cleanAIOutput(openAIRes.text).replace(/```json|```/g, '').trim();
     const match = raw.match(/\{[\s\S]*\}/);
     if (match) {
       try {
         const parsed = JSON.parse(match[0]);
         if (typeof parsed.atsScore === 'number') return parsed;
       } catch (e) {
-        console.warn('Groq ATS result parse error:', e);
+        console.warn('OpenAI ATS result parse error:', e);
       }
     }
   }
@@ -115,9 +115,9 @@ Skills: ${[...(resume.skills?.programmingLanguages || []), ...(resume.skills?.fr
 Summary: ${resume.summary || ''}
 Experience: ${resume.experience?.map((e) => `${e.role} at ${e.company}`).join('; ') || ''}`;
 
-  // Call Centralized Groq Cloud Service
-  const config = getGroqConfig();
-  const groqRes = await generateWithGroq({
+  // Call Centralized OpenAI Service
+  const config = getOpenAIConfig();
+  const openAIRes = await generateWithOpenAI({
     task: 'career',
     model: config.model,
     system: systemPrompt,
@@ -126,8 +126,8 @@ Experience: ${resume.experience?.map((e) => `${e.role} at ${e.company}`).join(';
     maxTokens: 2500,
   });
 
-  if (groqRes.success && groqRes.text) {
-    return groqRes.text;
+  if (openAIRes.success && openAIRes.text) {
+    return cleanAIOutput(openAIRes.text);
   }
 
   // Fallback Template
