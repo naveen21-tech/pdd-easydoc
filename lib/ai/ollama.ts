@@ -57,14 +57,54 @@ export interface OllamaGenerateResult {
 }
 
 /**
- * Fast Cloud LLM Fallback (Gemini Flash / OpenAI)
+ * Fast Cloud LLM Fallback (Groq Llama-3.3 70B / Gemini Flash / OpenAI)
  */
 async function tryCloudFastGenerate(options: OllamaGenerateOptions): Promise<OllamaGenerateResult | null> {
   const startTime = Date.now();
   const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
   const openaiKey = process.env.OPENAI_API_KEY;
 
-  // 1. Try Google Gemini Flash (< 800ms response time)
+  // 1. Try Groq Cloud Llama-3.3 70B (< 500ms ultra-fast inference)
+  const groqKey = process.env.GROQ_API_KEY;
+  if (groqKey && !groqKey.toLowerCase().includes('mock')) {
+    try {
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${groqKey.trim()}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          messages: [
+            ...(options.system ? [{ role: 'system', content: options.system }] : []),
+            { role: 'user', content: options.prompt },
+          ],
+          temperature: options.temperature ?? 0.5,
+          max_tokens: options.maxTokens ?? 3500,
+          response_format: options.jsonFormat ? { type: 'json_object' } : undefined,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const text = data.choices?.[0]?.message?.content || '';
+        if (text && text.trim()) {
+          return {
+            text: text.trim(),
+            model: 'llama-3.3-70b-versatile',
+            provider: 'groq',
+            responseTimeMs: Date.now() - startTime,
+            success: true,
+          };
+        }
+      }
+    } catch (e) {
+      console.warn('Groq cloud generation note:', e);
+    }
+  }
+
+  // 2. Try Google Gemini Flash (< 800ms response time)
   if (geminiKey) {
     try {
       const genAI = new GoogleGenerativeAI(geminiKey);
