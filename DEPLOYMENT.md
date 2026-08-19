@@ -38,9 +38,11 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzd
 SUPABASE_SERVICE_ROLE_KEY=<your-service-role-key>
 DATABASE_URL=postgresql://postgres:<your-db-password>@db.vupbdftdcpwvzxnfigdt.supabase.co:6543/postgres?pgboiler=true
 DIRECT_URL=postgresql://postgres:<your-db-password>@db.vupbdftdcpwvzxnfigdt.supabase.co:5432/postgres
-OPENAI_API_KEY=<your-openai-key>
-ANTHROPIC_API_KEY=<your-anthropic-key>
-GEMINI_API_KEY=<your-gemini-key>
+GROQ_API_KEY=<your-groq-api-key>
+GROQ_MODEL=openai/gpt-oss-120b
+GEMINI_API_KEY=<your-gemini-api-key>
+GEMINI_MODEL=gemini-flash-latest
+OPENAI_API_KEY=<optional-openai-key>
 NEXT_PUBLIC_SITE_URL=https://<your-vercel-project-name>.vercel.app
 ```
 
