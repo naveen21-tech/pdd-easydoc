@@ -433,19 +433,44 @@ export interface GenerateMcqResult {
   error?: string;
 }
 
+export interface GenerateMcqsOptions {
+  topic: string;
+  count?: number;
+  difficulty?: string;
+  instructions?: string;
+  provider?: string;
+}
+
 export async function generateMcqsWithOllama(
-  topic: string,
-  count: number = 5,
-  difficulty?: string
+  optionsOrTopic: GenerateMcqsOptions | string,
+  countParam: number = 5,
+  difficultyParam?: string
 ): Promise<GenerateMcqResult> {
   const startTime = Date.now();
   const config = getOllamaConfig();
+
+  let topic = 'General Knowledge';
+  let count = 5;
+  let difficulty: string | undefined = undefined;
+  let instructions: string | undefined = undefined;
+
+  if (typeof optionsOrTopic === 'object' && optionsOrTopic !== null) {
+    topic = optionsOrTopic.topic || 'General Knowledge';
+    count = optionsOrTopic.count || 5;
+    difficulty = optionsOrTopic.difficulty;
+    instructions = optionsOrTopic.instructions;
+  } else {
+    topic = optionsOrTopic || 'General Knowledge';
+    count = countParam || 5;
+    difficulty = difficultyParam;
+  }
 
   const systemPrompt = `You are an expert exam question creator. Generate high-quality multiple choice questions in strict JSON format.
 Output a JSON array of objects with keys: "question", "optionA", "optionB", "optionC", "optionD", "correctOption" (A, B, C, or D), "explanation", "marks" (1), "topic", "difficulty" (EASY, MEDIUM, or HARD).`;
 
   const userPrompt = `Create exactly ${count} multiple choice questions about "${topic}".
 ${difficulty ? `Difficulty Level: ${difficulty}` : 'Include a balanced mix of EASY, MEDIUM, and HARD questions.'}
+${instructions ? `Specific Instructions: ${instructions}` : ''}
 Return ONLY a valid JSON array.`;
 
   const ollamaResult = await generateWithOllama({
@@ -482,6 +507,18 @@ Return ONLY a valid JSON array.`;
     responseTimeMs,
     success: true,
   };
+}
+
+export function extractAndSanitizeMcqs(
+  rawJson: string,
+  count: number = 5,
+  fallbackTopic: string = 'General'
+): GeneratedMcqQuestion[] {
+  const parsed = parseMcqJson(rawJson);
+  if (parsed.length > 0) {
+    return parsed.slice(0, count);
+  }
+  return generateFallbackMcqs(fallbackTopic, count);
 }
 
 export function parseMcqJson(rawJson: string): GeneratedMcqQuestion[] {
