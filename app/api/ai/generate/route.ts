@@ -13,7 +13,7 @@ const generateSchema = z.object({
   templateName: z.string().optional(),
   tone: z.string().default('Professional'),
   instructions: z.string().min(5, 'Instructions are required'),
-  provider: z.enum(['ollama', 'openai', 'anthropic', 'gemini', 'groq']).default('ollama'),
+  provider: z.enum(['groq', 'openai', 'anthropic', 'gemini']).default('groq'),
   referenceContent: z.string().optional(),
   referenceFileName: z.string().optional(),
 });

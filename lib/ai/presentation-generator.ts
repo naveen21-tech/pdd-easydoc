@@ -1,4 +1,4 @@
-import { generateWithOllama, getOllamaConfig } from '@/lib/ai/ollama';
+import { generateWithGroq, getGroqConfig } from '@/lib/ai/groq';
 import { SlideItem, PresentationStyle, AIProvider } from '@/lib/types';
 
 export interface GeneratePresentationOptions {
@@ -67,11 +67,11 @@ Target Slide Count: ${count}
 Source Document / Context:
 ${content.slice(0, 8000)}`;
 
-  // Call Centralized Ollama Service with llama3.2
-  const config = getOllamaConfig();
-  const ollamaRes = await generateWithOllama({
+  // Call Centralized Groq Cloud Service
+  const config = getGroqConfig();
+  const groqRes = await generateWithGroq({
     task: 'document',
-    model: config.documentModel,
+    model: config.model,
     system: systemPrompt,
     prompt: userPrompt,
     temperature: 0.5,
@@ -79,8 +79,8 @@ ${content.slice(0, 8000)}`;
     jsonFormat: true,
   });
 
-  if (ollamaRes.success && ollamaRes.text) {
-    const parsed = extractSlidesJson(ollamaRes.text);
+  if (groqRes.success && groqRes.text) {
+    const parsed = extractSlidesJson(groqRes.text);
     if (parsed && parsed.length > 0) {
       return sanitizeSlides(parsed, title, style, count);
     }
@@ -108,11 +108,11 @@ Output ONLY valid JSON:
   "notes": "Speaker notes for the presenter"
 }`;
 
-  // Call Centralized Ollama Service with llama3.2
-  const config = getOllamaConfig();
-  const ollamaRes = await generateWithOllama({
+  // Call Centralized Groq Cloud Service
+  const config = getGroqConfig();
+  const groqRes = await generateWithGroq({
     task: 'document',
-    model: config.documentModel,
+    model: config.model,
     system: systemPrompt,
     prompt: `Enhance slide for "${slideTitle}" in deck "${deckTitle}". Output JSON with title, subtitle, bullets array, notes.`,
     temperature: 0.5,
@@ -120,8 +120,8 @@ Output ONLY valid JSON:
     jsonFormat: true,
   });
 
-  if (ollamaRes.success && ollamaRes.text) {
-    const match = ollamaRes.text.match(/\{[\s\S]*\}/);
+  if (groqRes.success && groqRes.text) {
+    const match = groqRes.text.match(/\{[\s\S]*\}/);
     if (match) {
       try {
         const parsed = JSON.parse(match[0]);
@@ -134,7 +134,7 @@ Output ONLY valid JSON:
           };
         }
       } catch (e) {
-        console.warn('Ollama enhance slide parse error:', e);
+        console.warn('Groq enhance slide parse error:', e);
       }
     }
   }

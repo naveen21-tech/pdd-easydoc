@@ -1,30 +1,28 @@
 import { NextResponse } from 'next/server';
-import { checkOllamaHealth } from '@/lib/ai/ollama';
+import { checkGroqHealth } from '@/lib/ai/groq';
 
 export const dynamic = 'force-dynamic';
 
 /**
- * Backend-Side Ollama Server & Model Health Check
+ * Backend-Side Groq AI Engine & Model Health Check
  * GET /api/ai/health
  */
 export async function GET() {
   try {
-    const health = await checkOllamaHealth();
+    const health = await checkGroqHealth();
 
     return NextResponse.json({
       status: health.isHealthy ? 'healthy' : 'unhealthy',
-      documentModel: health.documentModel,
-      mcqModel: health.mcqModel,
-      documentModelReady: health.documentModelAvailable,
-      mcqModelReady: health.mcqModelAvailable,
+      provider: health.provider,
+      model: health.model,
       latencyMs: health.latencyMs,
-      availableModels: health.availableModels,
       error: health.error,
     });
   } catch (err: any) {
     return NextResponse.json(
       {
         status: 'unhealthy',
+        provider: 'groq',
         error: 'Failed to verify AI service status. Please contact the administrator.',
       },
       { status: 500 }

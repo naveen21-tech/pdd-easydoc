@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
-import { generateMcqsWithOllama } from '@/lib/ai/ollama';
+import { generateMcqsWithGroq } from '@/lib/ai/groq';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,8 +38,8 @@ export async function POST(
     const instructions = body.instructions || '';
     const difficulty = body.difficulty || 'intermediate';
 
-    // Generate MCQs using Centralized Ollama LLM Service (qwen2.5)
-    const result = await generateMcqsWithOllama({
+    // Generate MCQs using Centralized Groq Cloud LLM Service (llama-3.3-70b-versatile)
+    const result = await generateMcqsWithGroq({
       topic,
       count: requestedCount,
       difficulty,

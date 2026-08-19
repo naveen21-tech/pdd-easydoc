@@ -1,9 +1,9 @@
 import { AIProvider } from '@/lib/types';
 import {
-  generateDocumentWithOllama,
+  generateDocumentWithGroq,
   generateFallbackDocument,
-  getOllamaConfig,
-} from '@/lib/ai/ollama';
+  getGroqConfig,
+} from '@/lib/ai/groq';
 
 export interface GenerateDocOptions {
   provider?: AIProvider;
@@ -25,12 +25,12 @@ export interface GenerateDocResult {
 }
 
 /**
- * Main Document Generation Engine: Powered by Centralized Ollama LLM Service (llama3.2)
+ * Main Document Generation Engine: Powered by Groq Cloud LPU AI (llama-3.3-70b-versatile)
  */
 export async function generateDocument(
   options: GenerateDocOptions
 ): Promise<GenerateDocResult> {
-  const result = await generateDocumentWithOllama({
+  const result = await generateDocumentWithGroq({
     title: options.title,
     templateName: options.templateName,
     tone: options.tone,
@@ -41,7 +41,7 @@ export async function generateDocument(
 
   return {
     content: result.content,
-    provider: 'ollama' as AIProvider,
+    provider: (result.provider || 'groq') as AIProvider,
     model: result.model,
     responseTimeMs: result.responseTimeMs,
     success: result.success,
@@ -49,4 +49,4 @@ export async function generateDocument(
   };
 }
 
-export { generateFallbackDocument };
+export { generateFallbackDocument, getGroqConfig };

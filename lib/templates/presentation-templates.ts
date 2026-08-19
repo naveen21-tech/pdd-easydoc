@@ -257,7 +257,7 @@ export const DEFAULT_PRESENTATION_TEMPLATES: PresentationTemplateItem[] = [
           'Client Layer: Web Browser & Flutter Mobile App with JWT auth session storage',
           'API Gateway: 39 RESTful serverless endpoints with role-based access control',
           'ORM & Database: Prisma Client connecting to PostgreSQL relational tables',
-          'AI Orchestration: Local/self-hosted Ollama server (llama3.2 + qwen2.5)',
+          'AI Orchestration: High-Speed Groq Cloud LPU Engine (llama-3.3-70b-versatile)',
         ],
         layout: 'split',
         notes: 'Explain your architectural layers from client requests down to the database.',
@@ -681,7 +681,7 @@ export const DEFAULT_PRESENTATION_TEMPLATES: PresentationTemplateItem[] = [
         bullets: [
           'User Auth: JWT tokens with session persistence in secure HTTP cookies',
           'API Layer: 39 compiled serverless routes handling business logic',
-          'AI Engine: Centralized Ollama service routing to llama3.2 and qwen2.5',
+          'AI Engine: Centralized Groq Cloud LPU service routing to llama-3.3-70b-versatile',
           'Data Storage: Relational schema managing Users, Groups, Docs, Tests, and Attempts',
         ],
         layout: 'split',
@@ -839,8 +839,8 @@ export const DEFAULT_PRESENTATION_TEMPLATES: PresentationTemplateItem[] = [
         bullets: [
           'Freemium B2C: Free access with basic generation; $9.99/mo Pro tier for power users',
           'Institutional B2B SaaS: $4.50 per student/month for universities and colleges',
-          'Enterprise Licensing: Custom on-premise Ollama AI deployments for corporate training',
-          'API Marketplace: Usage-based billing for third-party LMS integrations',
+          'Enterprise Licensing: Custom cloud Groq LPU AI deployments for corporate training',
+          'High-Speed AI Inference: Ultra-low latency generation via Groq Cloud models',
         ],
         layout: 'split',
         notes: 'Explain how the company generates predictable recurring revenue.',
@@ -850,7 +850,7 @@ export const DEFAULT_PRESENTATION_TEMPLATES: PresentationTemplateItem[] = [
         title: 'Competitive Advantage & Moat',
         subtitle: 'Why StudentDoc wins against legacy alternatives',
         bullets: [
-          'Self-Hosted AI Flexibility: Zero external API costs via local Ollama models',
+          'High-Speed Groq Cloud AI: Sub-500ms inference via dedicated LPU architecture',
           'Sub-Second Performance: Next.js 14 edge architecture vs. legacy monolithic LMS',
           'Unified Workflow: Documents, Exams, and Slides in a single integrated account',
           'Zero-Lockin Exports: Native editable DOCX, PPTX, and PDF file downloads',
@@ -1023,7 +1023,7 @@ export const DEFAULT_PRESENTATION_TEMPLATES: PresentationTemplateItem[] = [
         subtitle: 'Hurdles faced and lessons learned',
         bullets: [
           'Challenge: Managing real-time exam countdown across mobile app lifecycles\n→ Solved by synchronizing epoch timestamps with Supabase backend state',
-          'Challenge: Handling rate-limits on external LLM services\n→ Solved by building a centralized self-hosted Ollama service layer',
+          'Challenge: Handling low-latency generation on complex technical documents\n→ Solved by integrating high-speed Groq LPU Cloud service layer',
           'Key Takeaway: Resilient software requires proactive fallback mechanisms',
         ],
         layout: 'split',
@@ -1104,7 +1104,7 @@ export const DEFAULT_PRESENTATION_TEMPLATES: PresentationTemplateItem[] = [
         bullets: [
           'Deliverable 1: Cloud-native Web Application deployed on modern serverless edge',
           'Deliverable 2: Cross-platform Flutter Mobile Application for Android & iOS',
-          'Deliverable 3: AI Engine integrating self-hosted Ollama models for zero API fees',
+          'Deliverable 3: AI Engine integrating Groq Cloud LPU models with sub-500ms inference',
           'Deliverable 4: Comprehensive documentation, test suites, and admin portal',
         ],
         layout: 'split',
@@ -1168,7 +1168,7 @@ export const DEFAULT_PRESENTATION_TEMPLATES: PresentationTemplateItem[] = [
         subtitle: 'Quantitative and qualitative organizational impact',
         bullets: [
           '70% reduction in time spent creating documents and grading examinations',
-          'Zero recurring external AI API costs via self-hosted Ollama deployment',
+          'Ultra-fast sub-500ms inference via dedicated Groq Cloud LPU deployment',
           'Single unified platform replacing 3+ fragmented legacy subscriptions',
           'Positive ROI achieved within 4 months of full institutional deployment',
         ],
@@ -1212,7 +1212,7 @@ export const DEFAULT_PRESENTATION_TEMPLATES: PresentationTemplateItem[] = [
         bullets: [
           'Topic: Full-Stack Architecture of StudentDoc Cloud Engine',
           'Lead Systems Architect: Principal Software Engineer',
-          'Engineering Tech Brief: Next.js 14, Supabase, Flutter & Ollama',
+          'Engineering Tech Brief: Next.js 14, Supabase, Flutter & Groq Cloud',
         ],
         layout: 'title',
         notes: 'Introduce the technical presentation and state the engineering scope.',
@@ -1251,7 +1251,7 @@ export const DEFAULT_PRESENTATION_TEMPLATES: PresentationTemplateItem[] = [
           'TypeScript & Node.js 20: Type-safe serverless backend and full-stack modules',
           'Next.js 14 App Router: Server Components, dynamic streaming, and edge caching',
           'PostgreSQL 15 & Prisma ORM: ACID compliant relational persistence',
-          'Ollama LLM Server: Local inference engine running llama3.2 and qwen2.5',
+          'Groq Cloud LLM Engine: High-speed inference engine running llama-3.3-70b-versatile',
         ],
         layout: 'stats',
         notes: 'Explain your choice of technologies and modern architectural patterns.',
@@ -1327,7 +1327,7 @@ export const DEFAULT_PRESENTATION_TEMPLATES: PresentationTemplateItem[] = [
         subtitle: 'Summary of engineering accomplishments and open floor',
         bullets: [
           'Delivered an extensible, high-performance, and secure full-stack platform',
-          'Eliminated cloud AI operating costs through self-hosted Ollama routing',
+          'Achieved instant sub-500ms response times through Groq Cloud LPU acceleration',
           'Cross-platform codebase ready for immediate enterprise and college deployment',
           'Thank you! Open for technical questions and architectural discussions.',
         ],

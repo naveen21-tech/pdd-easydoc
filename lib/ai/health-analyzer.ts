@@ -1,4 +1,4 @@
-import { generateWithOllama, getOllamaConfig } from '@/lib/ai/ollama';
+import { generateWithGroq, getGroqConfig } from '@/lib/ai/groq';
 import { HealthReportItem, HealthIssueItem, AIProvider } from '@/lib/types';
 
 export interface AnalyzeHealthOptions {
@@ -50,11 +50,11 @@ Return ONLY raw JSON.`;
 Document Content:
 ${content.slice(0, 7000)}`;
 
-  // Call Centralized Ollama Service with llama3.2
-  const config = getOllamaConfig();
-  const ollamaRes = await generateWithOllama({
-    task: 'document',
-    model: config.documentModel,
+  // Call Centralized Groq Cloud Service
+  const config = getGroqConfig();
+  const groqRes = await generateWithGroq({
+    task: 'health',
+    model: config.model,
     system: systemPrompt,
     prompt: userPrompt,
     temperature: 0.3,
@@ -62,8 +62,8 @@ ${content.slice(0, 7000)}`;
     jsonFormat: true,
   });
 
-  if (ollamaRes.success && ollamaRes.text) {
-    const raw = ollamaRes.text.replace(/```json|```/g, '').trim();
+  if (groqRes.success && groqRes.text) {
+    const raw = groqRes.text.replace(/```json|```/g, '').trim();
     const match = raw.match(/\{[\s\S]*\}/);
     if (match) {
       try {
@@ -75,7 +75,7 @@ ${content.slice(0, 7000)}`;
           };
         }
       } catch (e) {
-        console.warn('Ollama health report parse error:', e);
+        console.warn('Groq health report parse error:', e);
       }
     }
   }

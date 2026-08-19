@@ -1,4 +1,4 @@
-import { generateWithOllama, getOllamaConfig } from '@/lib/ai/ollama';
+import { generateWithGroq, getGroqConfig } from '@/lib/ai/groq';
 import { VivaQuestionItem, VivaDifficulty, VivaCategory, AIProvider } from '@/lib/types';
 
 export interface GenerateVivaOptions {
@@ -77,11 +77,11 @@ Target Questions Count: ${count}
 Context & Specifications:
 ${(contextContent || title).slice(0, 8000)}`;
 
-  // Call Centralized Ollama Service with qwen2.5 for MCQ / Quiz generation
-  const config = getOllamaConfig();
-  const ollamaRes = await generateWithOllama({
+  // Call Centralized Groq Cloud Service for MCQ / Quiz generation
+  const config = getGroqConfig();
+  const groqRes = await generateWithGroq({
     task: 'mcq',
-    model: config.mcqModel,
+    model: config.model,
     system: systemPrompt,
     prompt: userPrompt,
     temperature: 0.4,
@@ -89,8 +89,8 @@ ${(contextContent || title).slice(0, 8000)}`;
     jsonFormat: true,
   });
 
-  if (ollamaRes.success && ollamaRes.text) {
-    const match = ollamaRes.text.match(/\[\s*\{[\s\S]*\}\s*\]/);
+  if (groqRes.success && groqRes.text) {
+    const match = groqRes.text.match(/\[\s*\{[\s\S]*\}\s*\]/);
     if (match) {
       try {
         const parsed = JSON.parse(match[0]);
@@ -98,13 +98,13 @@ ${(contextContent || title).slice(0, 8000)}`;
           return sanitizeQuestions(parsed, difficulty, count);
         }
       } catch (e) {
-        console.warn('Ollama viva questions parse error:', e);
+        console.warn('Groq viva questions parse error:', e);
       }
     }
   }
 
   // 3. Fallback Synthesizer
-  return generateFallbackVivaQuestions(title, difficulty, count);
+  return generateFallbackVivaQuestions(title, difficulty, count, categories);
 }
 
 export async function evaluateVivaAnswer(
@@ -130,17 +130,18 @@ Output ONLY a valid JSON object matching this schema:
   "missingPoints": ["Did not mention connection pooling or edge caching mechanisms"],
   "suggestedImprovements": ["Deepen understanding of asynchronous concurrency and error handling."],
   "feedbackComment": "Strong, concise answer demonstrating solid technical understanding."
-}`;
+}
+Return ONLY raw JSON.`;
 
   const userPrompt = `Question: ${question}
 Expected Answer: ${expectedAnswer}
 Candidate Answer: ${userAnswer}`;
 
-  // Call Centralized Ollama Service with llama3.2 for answer evaluation
-  const config = getOllamaConfig();
-  const ollamaRes = await generateWithOllama({
+  // Call Centralized Groq Cloud Service for answer evaluation
+  const config = getGroqConfig();
+  const groqRes = await generateWithGroq({
     task: 'document',
-    model: config.documentModel,
+    model: config.model,
     system: systemPrompt,
     prompt: userPrompt,
     temperature: 0.3,
@@ -148,8 +149,8 @@ Candidate Answer: ${userAnswer}`;
     jsonFormat: true,
   });
 
-  if (ollamaRes.success && ollamaRes.text) {
-    const match = ollamaRes.text.match(/\{[\s\S]*\}/);
+  if (groqRes.success && groqRes.text) {
+    const match = groqRes.text.match(/\{[\s\S]*\}/);
     if (match) {
       try {
         const parsed = JSON.parse(match[0]);
@@ -161,7 +162,7 @@ Candidate Answer: ${userAnswer}`;
           feedbackComment: parsed.feedbackComment || 'Satisfactory response.',
         };
       } catch (e) {
-        console.warn('Ollama viva evaluation parse error:', e);
+        console.warn('Groq viva evaluation parse error:', e);
       }
     }
   }
@@ -222,7 +223,8 @@ function sanitizeQuestions(
 function generateFallbackVivaQuestions(
   title: string,
   difficulty: VivaDifficulty,
-  count: number
+  count: number,
+  categories?: VivaCategory[]
 ): VivaQuestionItem[] {
   const bank: {
     category: VivaCategory;
@@ -559,9 +561,15 @@ function generateFallbackVivaQuestions(
     },
   ];
 
+  const filteredBank = categories && categories.length > 0
+    ? bank.filter((b) => categories.includes(b.category))
+    : bank;
+
+  const effectiveBank = filteredBank.length > 0 ? filteredBank : bank;
+
   const questions: VivaQuestionItem[] = [];
   for (let i = 0; i < count; i++) {
-    const item = bank[i % bank.length];
+    const item = effectiveBank[i % effectiveBank.length];
     const randomizedOptions = [...item.options];
     // Rotate options deterministically based on index for variation
     const shift = (i + 1) % 4;

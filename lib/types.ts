@@ -2,7 +2,7 @@
 
 export type Role = 'USER' | 'ADMIN';
 export type DocStatus = 'DRAFT' | 'COMPLETE';
-export type AIProvider = 'ollama' | 'openai' | 'anthropic' | 'gemini' | 'groq';
+export type AIProvider = 'groq' | 'openai' | 'anthropic' | 'gemini';
 
 export interface UserProfile {
   id: string;

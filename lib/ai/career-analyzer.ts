@@ -1,4 +1,4 @@
-import { generateWithOllama, getOllamaConfig } from '@/lib/ai/ollama';
+import { generateWithGroq, getGroqConfig } from '@/lib/ai/groq';
 import { ResumeData, ATSAnalysisResult, AIProvider } from '@/lib/types';
 
 export interface AnalyzeJDOptions {
@@ -65,11 +65,11 @@ ${jobDescription.slice(0, 5000)}
 CANDIDATE RESUME:
 ${resumeText.slice(0, 5000)}`;
 
-  // Call Centralized Ollama Service with llama3.2
-  const config = getOllamaConfig();
-  const ollamaRes = await generateWithOllama({
-    task: 'document',
-    model: config.documentModel,
+  // Call Centralized Groq Cloud Service
+  const config = getGroqConfig();
+  const groqRes = await generateWithGroq({
+    task: 'career',
+    model: config.model,
     system: systemPrompt,
     prompt: userPrompt,
     temperature: 0.3,
@@ -77,15 +77,15 @@ ${resumeText.slice(0, 5000)}`;
     jsonFormat: true,
   });
 
-  if (ollamaRes.success && ollamaRes.text) {
-    const raw = ollamaRes.text.replace(/```json|```/g, '').trim();
+  if (groqRes.success && groqRes.text) {
+    const raw = groqRes.text.replace(/```json|```/g, '').trim();
     const match = raw.match(/\{[\s\S]*\}/);
     if (match) {
       try {
         const parsed = JSON.parse(match[0]);
         if (typeof parsed.atsScore === 'number') return parsed;
       } catch (e) {
-        console.warn('Ollama ATS result parse error:', e);
+        console.warn('Groq ATS result parse error:', e);
       }
     }
   }
@@ -115,19 +115,19 @@ Skills: ${[...(resume.skills?.programmingLanguages || []), ...(resume.skills?.fr
 Summary: ${resume.summary || ''}
 Experience: ${resume.experience?.map((e) => `${e.role} at ${e.company}`).join('; ') || ''}`;
 
-  // Call Centralized Ollama Service with llama3.2
-  const config = getOllamaConfig();
-  const ollamaRes = await generateWithOllama({
-    task: 'document',
-    model: config.documentModel,
+  // Call Centralized Groq Cloud Service
+  const config = getGroqConfig();
+  const groqRes = await generateWithGroq({
+    task: 'career',
+    model: config.model,
     system: systemPrompt,
     prompt: userPrompt,
     temperature: 0.6,
     maxTokens: 2500,
   });
 
-  if (ollamaRes.success && ollamaRes.text) {
-    return ollamaRes.text;
+  if (groqRes.success && groqRes.text) {
+    return groqRes.text;
   }
 
   // Fallback Template
